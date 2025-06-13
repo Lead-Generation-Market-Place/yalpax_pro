@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:logger/web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:yalpax_pro/core/components/question_component.dart';
 import 'package:yalpax_pro/main.dart';
 
 import '../../../core/routes/routes.dart';
@@ -45,6 +47,12 @@ class AuthController extends GetxController {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+
+    ///////////////////////
+     searchController.removeListener(_onSearchChanged);
+    searchController.dispose();
+    zipCodeController.dispose();
+        services.clear();
     super.onClose();
   }
 Future<void> loadUserData() async {
@@ -360,5 +368,245 @@ Future<void> loadUserData() async {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /////////////////////////////////////
+  ///
+  ///
+final searchController = TextEditingController();
+  final zipCodeController = TextEditingController();
+
+  final RxList<Map<String, dynamic>> allServices = <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> filteredServices = <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxBool showClearButton = false.obs;
+  
+
+  final SupabaseClient supabase = Supabase.instance.client;
+
+  @override
+  void onInit() async{
+    super.onInit();
+    // Initial fetch of popular services or all services if search is empty
+        await fetchServices();
+    _fetchServices('');
+    searchController.addListener(_onSearchChanged);
+  }
+
+  Future<void> _fetchServices(String query) async {
+    isLoading.value = true;
+    try {
+      if (query.isEmpty) {
+        // Fetch initial popular services or all services when search is empty
+        final response = await supabase.from('services').select('id, name').order('name', ascending: true).limit(5); // Fetch ID as well
+        allServices.assignAll(List<Map<String, dynamic>>.from(response)); // Assign as List<Map<String, dynamic>>
+        filteredServices.assignAll(allServices);
+      } else {
+        // Real-time search from Supabase
+        final response = await supabase.from('services').select('id, name').ilike('name', '%' + query + '%').order('name', ascending: true); // Fetch ID as well
+        filteredServices.assignAll(List<Map<String, dynamic>>.from(response)); // Assign as List<Map<String, dynamic>>
+      }
+    } catch (e) {
+      print('Error fetching services: $e');
+      // Optionally, show a Get.snackbar or other UI feedback
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void _onSearchChanged() {
+    _fetchServices(searchController.text);
+    showClearButton.value = searchController.text.isNotEmpty;
+  }
+
+  void filterServices(String query) {
+    // This method is now redundant as _fetchServices handles filtering from Supabase
+    // Keeping it for now to avoid breaking existing calls, but its logic is moved
+  }
+
+  void clearSearch() {
+    searchController.clear();
+    _fetchServices(''); // Fetch all services again
+    showClearButton.value = false;
+  }
+
+  // @override
+  // void onClose() {
+  //   searchController.removeListener(_onSearchChanged);
+  //   searchController.dispose();
+  //   zipCodeController.dispose();
+  //   super.onClose();
+  // }
+
+
+
+
+ RxList<Map<String, dynamic>> services = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> questions = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> answers = <Map<String, dynamic>>[].obs;
+  // @override
+  // void onInit() async {
+  //   super.onInit();
+  //   await fetchServices();
+  // }
+
+  Future<void> fetchServices() async {
+    if (isLoading.value) return;
+
+    isLoading.value = true;
+    try {
+      final response = await supabase
+          .from('services')
+          .select(
+            'id, name, description, service_image_url, categories!inner(*)',
+          )
+          .order('id');
+
+      if (response != null) {
+        services.value = List<Map<String, dynamic>>.from(response);
+      }
+    } catch (e) {
+      print('Error fetching services: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load services. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void handleQuestionFlowAnswers(Map<String, dynamic> selectedAnswers) {
+    answers.value = selectedAnswers.entries.map((entry) {
+      return {
+        'question_id': entry.key,
+        'answer_id': entry.value is Set ? entry.value.toList() : [entry.value],
+      };
+    }).toList();
+  }
+
+  Future<void> fetchQuestions(int serviceId) async {
+    if (isLoading.value) return;
+
+    isLoading.value = true;
+    try {
+      final response = await supabase
+          .from('questions')
+          .select('''
+          *,
+          question_answers!inner(
+            answers!inner(*)
+          )
+        ''')
+          .eq('service_id', serviceId)
+          .order('id');
+
+      if (response != null) {
+        questions.value = List<Map<String, dynamic>>.from(response);
+        final parsedQuestions = parseQuestions(questions);
+
+        if (parsedQuestions.isEmpty) {
+          Get.snackbar(
+            'No Questions Found',
+            'There are no questions for this service.',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        } else {
+          final result = await Get.to(
+            () => QuestionFlowScreen(questions: parsedQuestions),
+          );
+          Logger().d('Answers of questions :-  $result');
+          Fluttertoast.showToast(msg: '$result');
+          if (result != null) {
+            handleQuestionFlowAnswers(result);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching questions: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load questions. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+//   @override
+//   void onClose() {
+//     services.clear();
+//     super.onClose();
+//   }
+// }
+
+List<Question> parseQuestions(List<Map<String, dynamic>> rawQuestions) {
+  return rawQuestions.map((q) {
+    final String typeStr = (q['type'] ?? '').toString().toLowerCase();
+    final QuestionType type = typeStr == 'checkbox'
+        ? QuestionType.multipleChoice
+        : QuestionType.singleChoice;
+
+    final options = (q['question_answers'] as List).map((qa) {
+      final ans = qa['answers'];
+      return QuestionOption(
+        id: ans['id'].toString(),
+        label: ans['text'] ?? '',
+        value: ans['id'],
+      );
+    }).toList();
+
+    return Question(
+      id: q['id'].toString(),
+      question: q['text'] ?? '',
+      type: type,
+      options: options,
+      isRequired: true,
+    );
+  }).toList();
+}
+
+
+
+//////////////////////////////
+//  var allServices = [].obs;
+  var selectedServices = <int>{}.obs;
+  var selectedService = {}.obs; // from FirstStep
+
+  void toggleService(int serviceId) {
+    if (selectedServices.contains(serviceId)) {
+      selectedServices.remove(serviceId);
+    } else {
+      selectedServices.add(serviceId);
+    }
+  }
+
+  void selectAllServices() {
+    for (var service in allServices) {
+      if (service['id'] != selectedService['id']) {
+        selectedServices.add(service['id']);
+      }
+    }
+  }
+
+  void submitSelectedServices() {
+    // Combine selectedService + selectedServices
+    final allSelected = [selectedService['id'], ...selectedServices];
+    print("Selected IDs: $allSelected");
+    // Save to backend or session here
+  }
+
+  ////////////////////////////////
+    var fullName = 'Feroz Durrani'.obs;
+  var email1 = 'durraniferoz9@gmail.com'.obs;
+  var phoneController = TextEditingController();
+  var enableTextMessages = true.obs;
+
+  void registerUser() {
+    final phone = phoneController.text;
+    final smsEnabled = enableTextMessages.value;
+    print("Phone: $phone, SMS enabled: $smsEnabled");
+    // Continue to next step or API
   }
 }

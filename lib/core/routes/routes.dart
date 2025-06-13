@@ -4,6 +4,10 @@ import 'package:yalpax_pro/feature/auth/views/login.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password_token.dart';
 import 'package:yalpax_pro/feature/auth/views/signup.dart';
+import 'package:yalpax_pro/feature/auth/views/signup/first_step.dart';
+import 'package:yalpax_pro/feature/auth/views/signup/fourth_step.dart';
+import 'package:yalpax_pro/feature/auth/views/signup/second_step.dart';
+import 'package:yalpax_pro/feature/auth/views/signup/third_step.dart';
 import 'package:yalpax_pro/feature/initial_page/controllers/initial_binding.dart';
 import 'package:yalpax_pro/feature/initial_page/views/initial_view.dart';
 import 'package:yalpax_pro/feature/jobs/controllers/jobs_binding.dart';
@@ -41,6 +45,10 @@ abstract class Routes {
   static const notification = '/notification';
   static const resetPassword = '/reset-password';
   static const resetPasswordToken = '/reset-password-token';
+  static const firstStep = '/firstStep';
+  static const secondStep = '/secondStep';
+  static const thirdStep = '/thirdStep';
+  static const fourthStep = '/fourthStep';
 }
 
 // Middleware
@@ -183,6 +191,30 @@ abstract class AppPages {
     GetPage(
       name: Routes.resetPasswordToken,
       page: () => ResetPasswordToken(),
+      binding: AuthBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.firstStep,
+      page: () => FirstStep(),
+      binding: AuthBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.secondStep,
+      page: () => SecondStep(),
+      binding: AuthBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.thirdStep,
+      page: () => ThirdStep(),
+      binding: AuthBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.fourthStep,
+      page: () => FourthStep(),
       binding: AuthBinding(),
       transition: Transition.fadeIn,
     ),

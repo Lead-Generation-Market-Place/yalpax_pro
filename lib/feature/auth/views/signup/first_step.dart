@@ -1,29 +1,29 @@
-import 'package:flutter/material.dart' hide SearchController;
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
-import 'package:yalpax_pro/core/widgets/bottom_navbar.dart';
+import 'package:yalpax_pro/core/routes/routes.dart';
+import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/foldable_widgets.dart';
-import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
-import 'package:yalpax_pro/feature/messages/controllers/messages_controller.dart';
+import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
-class MessageView extends GetView<MessagesController> {
-  const MessageView({super.key});
 
-  @override
+class FirstStep extends GetView<AuthController> {
+  const FirstStep({super.key});
+
+   @override
   Widget build(BuildContext context) {
-    final jobsController jobs_controller = Get.find<jobsController>();
+
 
     return Scaffold(
-      bottomNavigationBar: BottomNavbar(),
+    
       body: ResponsiveContainer(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search field
               Container(
-                height: 40,
+                height: 40, // Adjust height as needed
                 decoration: BoxDecoration(
                   color: AppColors.neutral50,
                   borderRadius: BorderRadius.circular(8),
@@ -39,18 +39,17 @@ class MessageView extends GetView<MessagesController> {
                       () => controller.showClearButton.value
                           ? IconButton(
                               icon: const Icon(Icons.clear, color: AppColors.neutral500),
-                              onPressed: controller.clearSearch,
+                              onPressed: () {
+                                controller.clearSearch();
+                              },
                             )
-                          : const SizedBox.shrink(),
+                          : const SizedBox.shrink(), // Use SizedBox.shrink() instead of null
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // Re-added horizontal padding for internal text field content
                   ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Zip code field
               Container(
                 decoration: BoxDecoration(
                   color: AppColors.neutral50,
@@ -63,15 +62,12 @@ class MessageView extends GetView<MessagesController> {
                     hintStyle: TextStyle(color: AppColors.neutral500),
                     border: InputBorder.none,
                     prefixIcon: const Icon(Icons.location_on, color: AppColors.neutral500),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // Re-added horizontal padding for internal text field content
                   ),
                   keyboardType: TextInputType.number,
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Service list
               Expanded(
                 child: Obx(
                   () => controller.isLoading.value
@@ -81,7 +77,7 @@ class MessageView extends GetView<MessagesController> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16.0), // Retained padding for text
                                   child: Text(
                                     'Popular services',
                                     style: TextStyle(
@@ -101,16 +97,16 @@ class MessageView extends GetView<MessagesController> {
                                         children: [
                                           ListTile(
                                             title: Text(service['name'] ?? ''),
-                                            visualDensity: VisualDensity.compact,
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                                            visualDensity: VisualDensity.compact, // Make list tile a bit smaller
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0), // Retained horizontal padding here
                                             onTap: () async {
                                               if (service['id'] != null) {
-                                                // await controller.fetchQuestions(service['id']);
+                                                await controller.fetchQuestions(service['id']);
                                                 print('Tapped: ${service['name']}');
                                               }
                                             },
                                           ),
-                                          Divider(height: 1, color: AppColors.neutral200),
+                                          Divider(height: 1, color: AppColors.neutral200), // Add a divider
                                         ],
                                       );
                                     },
@@ -127,10 +123,10 @@ class MessageView extends GetView<MessagesController> {
                                     ListTile(
                                       title: Text(service['name'] ?? ''),
                                       visualDensity: VisualDensity.compact,
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0), // Retained horizontal padding here
                                       onTap: () async {
                                         if (service['id'] != null) {
-                                          // await homeController.fetchQuestions(service['id']);
+                                          await controller.fetchQuestions(service['id']);
                                           print('Tapped: ${service['name']}');
                                         }
                                       },
@@ -142,6 +138,8 @@ class MessageView extends GetView<MessagesController> {
                             ),
                 ),
               ),
+              const SizedBox(height: 20,),
+              CustomButton(text: 'Next',onPressed: () => Get.toNamed(Routes.secondStep),)
             ],
           ),
         ),

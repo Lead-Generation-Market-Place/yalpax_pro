@@ -72,7 +72,7 @@ class InitialView extends GetView<InitialPageController> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          Get.toNamed(Routes.signup);
+                          Get.toNamed(Routes.firstStep);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.lightBlue,
