@@ -16,6 +16,12 @@ import 'core/utils/app_constants.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final supabase = Supabase.instance.client;
 
+
+
+
+
+
+
 Future<void> _initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('Initializing app...');
