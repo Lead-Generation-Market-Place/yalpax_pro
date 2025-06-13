@@ -17,11 +17,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final supabase = Supabase.instance.client;
 
 
-
-
-
-
-
 Future<void> _initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('Initializing app...');
@@ -170,7 +165,7 @@ class _ErrorScreen extends StatelessWidget {
                 Text(details.exception.toString(), style: Get.textTheme.bodySmall, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => Get.offAllNamed(Routes.home),
+                onPressed: () => Get.offAllNamed(Routes.jobs),
                 child: Text('Restart App'.tr),
               ),
             ],
@@ -199,7 +194,7 @@ class _UnknownRouteScreen extends StatelessWidget {
             Text('Page not found: $routeName'.tr, style: Get.textTheme.titleMedium),
             const SizedBox(height: 8),
             ElevatedButton(
-              onPressed: () => Get.offAllNamed(Routes.home),
+              onPressed: () => Get.offAllNamed(Routes.jobs),
               child: Text('Go to Home'.tr),
             ),
           ],

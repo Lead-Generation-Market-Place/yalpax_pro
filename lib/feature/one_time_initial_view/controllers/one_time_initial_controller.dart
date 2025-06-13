@@ -38,7 +38,7 @@ class OneTimeInitialController extends GetxController {
     debugPrint('Onboarding: Marking as complete');
     await _prefs.setBool(AppConstants.onboardingCompleteKey, true);
     debugPrint('Onboarding: Navigating to login');
-    Get.offAllNamed(Routes.login);
+    Get.offAllNamed(Routes.initial);
   }
 
   Future<void> skipOnboarding() async {

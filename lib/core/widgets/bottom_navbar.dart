@@ -11,19 +11,19 @@ class BottomNavController extends GetxController {
     selectedIndex.value = index;
     switch (index) {
       case 0:
-        Get.toNamed(Routes.home);
+        Get.toNamed(Routes.jobs);
         break;
       case 1:
-        Get.toNamed(Routes.search);
+        Get.toNamed(Routes.messages);
         break;
       case 2:
-        Get.toNamed(Routes.plan);
+        Get.toNamed(Routes.services);
         break;
       case 3:
-        Get.toNamed(Routes.team);
+        Get.toNamed(Routes.notification);
         break;
       case 4:
-        Get.toNamed(Routes.inbox);
+        Get.toNamed(Routes.profile);
         break;
     }
   }
@@ -66,27 +66,27 @@ class BottomNavbar extends StatelessWidget {
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
               activeIcon: Icon(Icons.home),
-              label: 'Home',
+              label: 'Jobs',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.search_outlined),
               activeIcon: Icon(Icons.search),
-              label: 'Search',
+              label: 'Messages',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.assignment_outlined),
               activeIcon: Icon(Icons.assignment),
-              label: 'Plan',
+              label: 'Services',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.groups_outlined),
               activeIcon: Icon(Icons.groups),
-              label: 'Team',
+              label: 'Notifications',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_outlined),
               activeIcon: Icon(Icons.chat),
-              label: 'Inbox',
+              label: 'Profile',
             ),
           ],
         ),

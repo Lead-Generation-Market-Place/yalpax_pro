@@ -41,15 +41,15 @@ class SplashController extends GetxController {
 
       if (isAuthenticated) {
         debugPrint('Splash: Navigating to home');
-        Get.offAllNamed(Routes.home);
+        Get.offAllNamed(Routes.jobs);
       } else {
         debugPrint('Splash: Navigating to login');
-        Get.offAllNamed(Routes.login);
+        Get.offAllNamed(Routes.initial);
       }
     } catch (e) {
       debugPrint('Splash: Error during initialization: $e');
       // In case of any error, default to login screen
-      Get.offAllNamed(Routes.login);
+      Get.offAllNamed(Routes.initial);
     }
   }
 } 

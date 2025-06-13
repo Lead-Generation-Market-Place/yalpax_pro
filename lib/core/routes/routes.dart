@@ -4,20 +4,23 @@ import 'package:yalpax_pro/feature/auth/views/login.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password_token.dart';
 import 'package:yalpax_pro/feature/auth/views/signup.dart';
-import 'package:yalpax_pro/feature/home/controllers/home_binding.dart';
-import 'package:yalpax_pro/feature/home/views/home_view.dart';
-import 'package:yalpax_pro/feature/inbox/views/inbox_view.dart';
+import 'package:yalpax_pro/feature/initial_page/controllers/initial_binding.dart';
+import 'package:yalpax_pro/feature/initial_page/views/initial_view.dart';
+import 'package:yalpax_pro/feature/jobs/controllers/jobs_binding.dart';
+import 'package:yalpax_pro/feature/jobs/views/jobs_view.dart';
+import 'package:yalpax_pro/feature/profile/views/profile_view.dart';
+import 'package:yalpax_pro/feature/messages/views/message_view.dart';
 import 'package:yalpax_pro/feature/one_time_initial_view/controllers/one_time_initial_binding.dart';
-import 'package:yalpax_pro/feature/plan/views/plan_view.dart';
-import 'package:yalpax_pro/feature/search/controllers/search_binding.dart';
-import 'package:yalpax_pro/feature/search/views/search_view.dart';
+import 'package:yalpax_pro/feature/services/views/services_view.dart';
+import 'package:yalpax_pro/feature/messages/controllers/messages_binding.dart';
+
 import 'package:yalpax_pro/feature/settings/views/settings_view.dart';
-import 'package:yalpax_pro/feature/team/views/team_view.dart';
+import 'package:yalpax_pro/feature/notifications/views/notification_view.dart';
 
 import '../../feature/splash/views/splash_view.dart';
 import '../../feature/splash/controllers/splash_controller.dart';
 import '../../feature/one_time_initial_view/views/one_time_initial_view.dart';
-import '../../feature/one_time_initial_view/controllers/one_time_initial_controller.dart';
+
 import '../../feature/auth/controllers/auth_binding.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -25,15 +28,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 abstract class Routes {
   static const splash = '/';
   static const onboarding = '/onboarding';
+  static const initial = '/initial';
+
   static const login = '/login';
   static const signup = '/signup';
-  static const home = '/home';
+  static const jobs = '/jobs';
   static const profile = '/profile';
   static const settings = '/settings';
-  static const search = '/search';
-  static const plan = '/plan';
-  static const inbox = '/inbox';
-  static const team = '/team';
+  static const messages = '/messages';
+  static const services = '/services';
+
+  static const notification = '/notification';
   static const resetPassword = '/reset-password';
   static const resetPasswordToken = '/reset-password-token';
 }
@@ -65,7 +70,7 @@ class NoAuthMiddleware extends GetMiddleware {
     final session = supabase.auth.currentSession;
     
     if (session != null) {
-      return const RouteSettings(name: Routes.home);
+      return const RouteSettings(name: Routes.jobs);
     }
     return null;
   }
@@ -107,16 +112,16 @@ abstract class AppPages {
     ),
 
     GetPage(
-      name: Routes.home,
-      page: () => HomeView(),
+      name: Routes.jobs,
+      page: () => JobsView(),
       // middlewares: [AuthMiddleware()],
-      binding: HomeBinding(),
+      binding: JobsBinding(),
       transition: Transition.fadeIn,
     ),
 
     GetPage(
       name: Routes.profile,
-      page: () => PlanView(),
+      page: () => ServicesView(),
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,
     ),
@@ -129,16 +134,16 @@ abstract class AppPages {
     ),
 
     GetPage(
-      name: Routes.search,
-      page: () => SearchView(),
+      name: Routes.messages,
+      page: () => MessageView(),
       middlewares: [AuthMiddleware()],
-      binding: SearchBinding(),
+      binding: MessagesBinding(),
       transition: Transition.downToUp,
     ),
 
     GetPage(
-      name: Routes.plan,
-      page: () => PlanView(),
+      name: Routes.services,
+      page: () => ServicesView(),
       middlewares: [AuthMiddleware()],
       transition: Transition.fadeIn,
     ),
@@ -150,15 +155,22 @@ abstract class AppPages {
       transition: Transition.fadeIn,
     ),
     GetPage(
-      name: Routes.inbox,
-      page: () => InboxView(),
+      name: Routes.profile,
+      page: () => ProfileView(),
       middlewares: [AuthMiddleware()],
       transition: Transition.fadeIn,
     ),
     GetPage(
-      name: Routes.team,
-      page: () => TeamView(),
+      name: Routes.notification,
+      page: () => NotificationView(),
       middlewares: [AuthMiddleware()],
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.initial,
+      page: () => InitialView(),
+
+      binding: InitialBinding(),
       transition: Transition.fadeIn,
     ),
 
@@ -177,23 +189,7 @@ abstract class AppPages {
   ];
 }
 
-// Navigation Helper
-class NavigationHelper {
-  static void goToLogin() => Get.offAllNamed(Routes.login);
-  static void goToSignup() => Get.toNamed(Routes.signup);
 
-  static void goToProfile() => Get.toNamed(Routes.profile);
-  static void goToSettings() => Get.toNamed(Routes.settings);
-  static void goToSearch() => Get.toNamed(Routes.search);
-  static void goTotasks() => Get.toNamed(Routes.plan);
-
-  static void goBack() => Get.back();
-
-  static void logout() {
-    // Add your logout logic here
-    goToLogin();
-  }
-}
 
 // Route Observer
 class RouteObserver extends GetObserver {

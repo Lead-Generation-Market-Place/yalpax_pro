@@ -114,7 +114,7 @@ Future<void> loadUserData() async {
         email.value = response.user?.email ?? '';
       }
 
-      Get.offAllNamed(Routes.home);
+      Get.offAllNamed(Routes.jobs);
       emailController.value = TextEditingValue.empty;
       passwordController.value = TextEditingValue.empty;
       return {'status': 'success', 'user': response.user};
@@ -239,7 +239,7 @@ Future<void> loadUserData() async {
         throw 'No ID Token found.';
       }
 
-      Get.offAllNamed(Routes.home);
+      Get.offAllNamed(Routes.jobs);
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Failed to sign in with Google. Please try again.',
@@ -266,7 +266,7 @@ Future<void> loadUserData() async {
         throw 'Apple sign in failed';
       }
 
-      Get.offAllNamed(Routes.home);
+      Get.offAllNamed(Routes.jobs);
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'Failed to sign in with Apple. Please try again.',

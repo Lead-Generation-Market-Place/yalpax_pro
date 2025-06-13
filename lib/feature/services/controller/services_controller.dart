@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
 
-class PlanController extends GetxController {
+class ServicesController extends GetxController {
   final isDarkMode = false.obs;
 }

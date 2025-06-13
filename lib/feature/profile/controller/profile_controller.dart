@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
 
-class InboxController extends GetxController {
+class ProfileController extends GetxController {
     final isDarkMode = false.obs;
 }
