@@ -9,11 +9,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/components/question_component.dart';
-import 'package:yalpax_pro/main.dart';
-
 import '../../../core/routes/routes.dart';
+import '../services/auth_service.dart';
 
 class AuthController extends GetxController {
+  final _authService = Get.find<AuthService>();
+  
   // Text Controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -21,7 +22,6 @@ class AuthController extends GetxController {
   final confirmPasswordController = TextEditingController();
 
   // Observable variables
-  final isLoading = false.obs;
   final acceptedTerms = false.obs;
   final obscurePassword = true.obs;
   final obscureConfirmPassword = true.obs;
@@ -33,13 +33,18 @@ class AuthController extends GetxController {
   RxString email = ''.obs;
   RxString name = ''.obs;
   RxString profilePictureUrl = ''.obs;
+
   // Reset password variables
   final resetEmailError = RxnString();
   final resetTokenError = RxnString();
   final resetPasswordError = RxnString();
   final resetConfirmPasswordError = RxnString();
 
-  RxString authUserId = ''.obs;
+  // Computed properties
+  bool get isAuthenticated => _authService.isAuthenticated.value;
+  var isLoading = false.obs;
+  User? get currentUser => _authService.currentUser.value;
+  String? get authError => _authService.authError.value;
 
   @override
   void onClose() {
@@ -47,26 +52,19 @@ class AuthController extends GetxController {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
-
-    ///////////////////////
-     searchController.removeListener(_onSearchChanged);
-    searchController.dispose();
-    zipCodeController.dispose();
-        services.clear();
     super.onClose();
   }
-Future<void> loadUserData() async {
+
+  Future<void> loadUserData() async {
     try {
-      final session = supabase.auth.currentSession;
-      if (session != null) {
-        final user = session.user;
-        email.value = user.email ?? '';
+      if (currentUser != null) {
+        email.value = currentUser!.email ?? '';
 
         // Get user profile from database
         final userProfile = await supabase
             .from('users_profiles')
             .select('profile_picture_url,username')
-            .eq('email', user.email ?? '')
+            .eq('email', currentUser!.email ?? '')
             .single();
 
         if (userProfile != null) {
@@ -78,173 +76,106 @@ Future<void> loadUserData() async {
       debugPrint('Error loading user data: $e');
     }
   }
+
   // Login Methods
-  Future<Map<String, dynamic>> login() async {
+  Future<void> login() async {
     try {
-      isLoading.value = true;
-
-      final credentials = {
-        'email': emailController.text,
-        'password': passwordController.text,
-      };
-
-      final response = await supabase.auth.signInWithPassword(
-        email: credentials['email'] ?? '',
-        password: credentials['password'] ?? '',
+      final success = await _authService.signIn(
+        emailController.text,
+        passwordController.text,
       );
 
-      if (response.session == null) {
-        return {'status': 'Login failed', 'user': null};
-      }
-
-      final userProfile = await supabase
-          .from('users_profiles')
-          .select()
-          .eq('email', credentials['email'] ?? '')
-          .select();
-   name.value = response.user?.userMetadata?['username'] ?? response.user?.email ?? '';
-        email.value = response.user?.email ?? '';
-
-        profilePictureUrl.value = userProfile[0]['profile_picture_url'];
-      if (userProfile.isEmpty) {
-        final insertResponse = await supabase.from('users_profiles').insert({
-          'email': response.user?.email,
-          'username': response.user?.userMetadata?['username'],
-        }).select();
-
-     
-        
-        if (insertResponse.isNotEmpty) {
-          return {'status': insertResponse, 'user': null};
-        }
+      if (success) {
+        await loadUserData();
+        Get.offAllNamed(Routes.jobs);
+        emailController.clear();
+        passwordController.clear();
       } else {
-        name.value = userProfile[0]['username'] ?? response.user?.email ?? '';
-        email.value = response.user?.email ?? '';
+        Fluttertoast.showToast(msg: 'Failed to login. Please try again.');
       }
-
-      Get.offAllNamed(Routes.jobs);
-      emailController.value = TextEditingValue.empty;
-      passwordController.value = TextEditingValue.empty;
-      return {'status': 'success', 'user': response.user};
     } catch (e) {
       Fluttertoast.showToast(msg: 'Failed to login. Please try again. $e');
-      return {'status': e.toString(), 'user': null};
-    } finally {
-      isLoading.value = false;
     }
   }
 
-  Future<void> signupWithGoogle() async {
+  Future<void> signUp() async {
     try {
-      isLoading.value = true;
-
-      final response = await Supabase.instance.client.auth.signUp(
-        email: emailController.text,
-        password: passwordController.text,
+      final success = await _authService.signUp(
+        emailController.text,
+        passwordController.text,
+        metadata: {'username': nameController.text},
       );
 
-      if (response.user != null) {
+      if (success) {
+        await _authService.signOut(); // Sign out after successful signup
+        emailController.clear();
+        passwordController.clear();
+        nameController.clear();
+        confirmPasswordController.clear();
         Get.toNamed(Routes.login);
       } else {
         Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
       }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
-    } finally {
-      isLoading.value = false;
     }
   }
 
-  Future<void> signUp() async {
-    try {
-      isLoading.value = true;
-
-      final response = await supabase.auth.signUp(
-        email: emailController.text,
-        password: passwordController.text,
-        data: {'username': nameController.text},
-      );
-
-      if (response.user?.identities?.isEmpty ?? true) {
-        Fluttertoast.showToast(msg: 'User with this email already exists');
-      }
-
-      // Sign out the user after successful signup
-      await supabase.auth.signOut();
-      emailController.value = TextEditingValue.empty;
-      passwordController.value = TextEditingValue.empty;
-      nameController.value = TextEditingValue.empty;
-      confirmPasswordController.value = TextEditingValue.empty;
-
-      Get.toNamed(Routes.login);
-    } catch (e) {
-      Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
-    } finally {
-      isLoading.value = false;
-    }
+  Future<void> signOut() async {
+    await _authService.signOut();
+    Get.offAllNamed(Routes.login);
   }
 
-  // Navigation Methods
   Future<void> resetPassword(String email) async {
     try {
-      isLoading.value = true;
-      await supabase.auth.resetPasswordForEmail(email);
-
-      emailController.clear();
-      Fluttertoast.showToast(msg: 'Reset email sent');
+      final success = await _authService.resetPassword(email);
+      if (success) {
+        emailController.clear();
+        Fluttertoast.showToast(msg: 'Reset email sent');
+      } else {
+        Fluttertoast.showToast(msg: 'Failed to send reset email');
+      }
     } catch (e) {
-      emailController.clear();
-      Fluttertoast.showToast(msg: 'Reset email sent');
-    } finally {
-      isLoading.value = false;
-      Fluttertoast.showToast(msg: 'Reset email sent');
+      Fluttertoast.showToast(msg: 'Failed to send reset email');
+    }
+  }
+
+  Future<void> updatePassword(String newPassword) async {
+    try {
+      final success = await _authService.updatePassword(newPassword);
+      if (success) {
+        Fluttertoast.showToast(msg: 'Password updated successfully');
+      } else {
+        Fluttertoast.showToast(msg: 'Failed to update password');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Failed to update password');
     }
   }
 
   // Social Auth Methods
-  StreamSubscription? _sub;
-
   Future<void> signInWithGoogle() async {
     try {
-      await supabase.auth.signOut();
+      await _authService.signOut();
 
-      /// TODO: update the Web client ID with your own.
-      ///
-      /// Web Client ID that you registered with Google Cloud.
-      const webClientId =
-          '117669178530-m7i284g3857t4f3ol9e2vo7j9v38h0af.apps.googleusercontent.com';
-
-      /// TODO: update the iOS client ID with your own.
-      ///
-      /// iOS Client ID that you registered with Google Cloud.
-      const iosClientId =
-          '117669178530-b37fu5du424kf8q4gmjnee5c5stqnd1q.apps.googleusercontent.com';
-
-      // Google sign in on Android will work without providing the Android
-      // Client ID registered on Google Cloud.
+      const webClientId = '117669178530-m7i284g3857t4f3ol9e2vo7j9v38h0af.apps.googleusercontent.com';
+      const iosClientId = '117669178530-b37fu5du424kf8q4gmjnee5c5stqnd1q.apps.googleusercontent.com';
 
       final GoogleSignIn googleSignIn = GoogleSignIn(
         clientId: iosClientId,
         serverClientId: webClientId,
-        // Force select account to show account picker every time
         forceCodeForRefreshToken: true,
-        // Clear cached credentials to show account picker
         signInOption: SignInOption.standard,
       );
 
-      // Sign out from Google first to clear any cached credentials
       await googleSignIn.signOut();
-
       final googleUser = await googleSignIn.signIn();
       final googleAuth = await googleUser!.authentication;
       final accessToken = googleAuth.accessToken;
       final idToken = googleAuth.idToken;
 
-      if (accessToken == null) {
-        throw 'No Access Token found.';
-      }
-      if (idToken == null) {
-        throw 'No ID Token found.';
+      if (accessToken == null || idToken == null) {
+        throw 'Failed to get Google auth tokens';
       }
 
       Get.offAllNamed(Routes.jobs);
@@ -252,21 +183,18 @@ Future<void> loadUserData() async {
       Fluttertoast.showToast(
         msg: 'Failed to sign in with Google. Please try again.',
       );
-    } finally {
-      isLoading.value = false;
     }
   }
 
   Future<void> signInWithApple() async {
     try {
-      isLoading.value = true;
       final response = await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.apple,
         redirectTo: kIsWeb
             ? null
             : Platform.isAndroid
-            ? 'us-connector://login-callback'
-            : 'us.connector://login-callback',
+                ? 'us-connector://login-callback'
+                : 'us.connector://login-callback',
         authScreenLaunchMode: LaunchMode.inAppWebView,
       );
 
@@ -279,115 +207,28 @@ Future<void> loadUserData() async {
       Fluttertoast.showToast(
         msg: 'Failed to sign in with Apple. Please try again.',
       );
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  // Future<void> signInWithGithub() async {
-  //   try {
-  //     isLoading.value = true;
-
-  //     // TODO: Update with your GitHub OAuth credentials
-  //     const githubClientId = 'YOUR_GITHUB_CLIENT_ID';
-  //     const githubClientSecret = 'YOUR_GITHUB_CLIENT_SECRET';
-  //     final response = await supabase.auth.signInWithOAuth(
-  //       OAuthProvider.github,
-  //       scopes: 'user:email',
-  //       queryParams: {
-  //         'client_id': githubClientId,
-  //         'client_secret': githubClientSecret
-  //       }
-  //     );
-
-  //     if (!response) {
-  //       throw 'GitHub sign in failed';
-  //     }
-
-  //    final userProfile = await supabase
-  //         .from('users_profiles')
-  //         .select()
-  //         .eq('email', response.user?.email ?? '')
-  //         .select();
-
-  //     if (userProfile == null) {
-  //       await supabase.from('users_profiles').insert({
-  //         'email': response.user?.email,
-  //         'username': response.user?.userMetadata?['user_name'],
-  //       });
-  //     }
-
-  //     Get.offAllNamed(Routes.home);
-  //   } catch (e) {
-  //     Get.snackbar(
-  //       'Error',
-  //       'Failed to sign in with Github. Please try again.',
-  //       snackPosition: SnackPosition.BOTTOM,
-  //     );
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
-  // Terms and Privacy Policy
-  void onTermsClick() {
-    // Navigate to Terms of Service
-  }
-
-  void onPrivacyClick() {
-    // Navigate to Privacy Policy
-  }
-
-  Future<void> resetPasswordWithToken(
-    String email,
-    String token,
-    String newPassword,
-  ) async {
-    try {
-      isLoading.value = true;
-      await supabase.auth.verifyOTP(
-        email: email,
-        token: token,
-        type: OtpType.recovery,
-      );
-
-      await supabase.auth.updateUser(UserAttributes(password: newPassword));
-
-      Get.offAllNamed(Routes.login);
-      Get.snackbar(
-        'Success',
-        'Password has been reset successfully. Please login with your new password.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Failed to reset password. Please try again.',
-      );
-    } finally {
-      isLoading.value = false;
     }
   }
 
   /////////////////////////////////////
   ///
   ///
-final searchController = TextEditingController();
+  final searchController = TextEditingController();
   final zipCodeController = TextEditingController();
 
-  final RxList<Map<String, dynamic>> allServices = <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
-  final RxList<Map<String, dynamic>> filteredServices = <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> allServices =
+      <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> filteredServices =
+      <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
   final RxBool showClearButton = false.obs;
-  
 
   final SupabaseClient supabase = Supabase.instance.client;
 
   @override
-  void onInit() async{
+  void onInit() async {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
-        await fetchServices();
+
     _fetchServices('');
     searchController.addListener(_onSearchChanged);
   }
@@ -397,13 +238,25 @@ final searchController = TextEditingController();
     try {
       if (query.isEmpty) {
         // Fetch initial popular services or all services when search is empty
-        final response = await supabase.from('services').select('id, name').order('name', ascending: true).limit(5); // Fetch ID as well
-        allServices.assignAll(List<Map<String, dynamic>>.from(response)); // Assign as List<Map<String, dynamic>>
+        final response = await supabase
+            .from('services')
+            .select('id, name')
+            .order('name', ascending: true)
+            .limit(20); // Fetch ID as well
+        allServices.assignAll(
+          List<Map<String, dynamic>>.from(response),
+        ); // Assign as List<Map<String, dynamic>>
         filteredServices.assignAll(allServices);
       } else {
         // Real-time search from Supabase
-        final response = await supabase.from('services').select('id, name').ilike('name', '%' + query + '%').order('name', ascending: true); // Fetch ID as well
-        filteredServices.assignAll(List<Map<String, dynamic>>.from(response)); // Assign as List<Map<String, dynamic>>
+        final response = await supabase
+            .from('services')
+            .select('id, name')
+            .ilike('name', '%' + query + '%')
+            .order('name', ascending: true); // Fetch ID as well
+        filteredServices.assignAll(
+          List<Map<String, dynamic>>.from(response),
+        ); // Assign as List<Map<String, dynamic>>
       }
     } catch (e) {
       print('Error fetching services: $e');
@@ -429,52 +282,11 @@ final searchController = TextEditingController();
     showClearButton.value = false;
   }
 
-  // @override
-  // void onClose() {
-  //   searchController.removeListener(_onSearchChanged);
-  //   searchController.dispose();
-  //   zipCodeController.dispose();
-  //   super.onClose();
-  // }
-
-
-
-
- RxList<Map<String, dynamic>> services = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> services = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> questions = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> answers = <Map<String, dynamic>>[].obs;
-  // @override
-  // void onInit() async {
-  //   super.onInit();
-  //   await fetchServices();
-  // }
 
-  Future<void> fetchServices() async {
-    if (isLoading.value) return;
 
-    isLoading.value = true;
-    try {
-      final response = await supabase
-          .from('services')
-          .select(
-            'id, name, description, service_image_url, categories!inner(*)',
-          )
-          .order('id');
-
-      if (response != null) {
-        services.value = List<Map<String, dynamic>>.from(response);
-      }
-    } catch (e) {
-      print('Error fetching services: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to load services. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
 
   void handleQuestionFlowAnswers(Map<String, dynamic> selectedAnswers) {
     answers.value = selectedAnswers.entries.map((entry) {
@@ -534,51 +346,95 @@ final searchController = TextEditingController();
     }
   }
 
-//   @override
-//   void onClose() {
-//     services.clear();
-//     super.onClose();
-//   }
-// }
+  List<Question> parseQuestions(List<Map<String, dynamic>> rawQuestions) {
+    return rawQuestions.map((q) {
+      final String typeStr = (q['type'] ?? '').toString().toLowerCase();
+      final QuestionType type = typeStr == 'checkbox'
+          ? QuestionType.multipleChoice
+          : QuestionType.singleChoice;
 
-List<Question> parseQuestions(List<Map<String, dynamic>> rawQuestions) {
-  return rawQuestions.map((q) {
-    final String typeStr = (q['type'] ?? '').toString().toLowerCase();
-    final QuestionType type = typeStr == 'checkbox'
-        ? QuestionType.multipleChoice
-        : QuestionType.singleChoice;
+      final options = (q['question_answers'] as List).map((qa) {
+        final ans = qa['answers'];
+        return QuestionOption(
+          id: ans['id'].toString(),
+          label: ans['text'] ?? '',
+          value: ans['id'],
+        );
+      }).toList();
 
-    final options = (q['question_answers'] as List).map((qa) {
-      final ans = qa['answers'];
-      return QuestionOption(
-        id: ans['id'].toString(),
-        label: ans['text'] ?? '',
-        value: ans['id'],
+      return Question(
+        id: q['id'].toString(),
+        question: q['text'] ?? '',
+        type: type,
+        options: options,
+        isRequired: true,
       );
     }).toList();
+  }
 
-    return Question(
-      id: q['id'].toString(),
-      question: q['text'] ?? '',
-      type: type,
-      options: options,
-      isRequired: true,
-    );
-  }).toList();
-}
-
-
-
-//////////////////////////////
-//  var allServices = [].obs;
+  //////////////////////////////
   var selectedServices = <int>{}.obs;
   var selectedService = {}.obs; // from FirstStep
 
   void toggleService(int serviceId) {
     if (selectedServices.contains(serviceId)) {
       selectedServices.remove(serviceId);
+      if (selectedServices.isEmpty) {
+        // When all services are deselected, fetch all services again
+        _fetchServices('');
+      }
     } else {
       selectedServices.add(serviceId);
+      // Fetch related services when a service is selected
+      _fetchRelatedServices(serviceId);
+    }
+  }
+
+  Future<void> _fetchRelatedServices(int serviceId) async {
+    isLoading.value = true;
+    try {
+      // First get the category_id of the selected service
+      final selectedService = await supabase
+          .from('services')
+          .select('''
+            id,
+            sub_categories!inner(
+              id,
+              category_id
+            )
+          ''')
+          .eq('id', serviceId)
+          .single();
+
+      if (selectedService != null) {
+        final categoryId = selectedService['sub_categories']['category_id'];
+        
+        // Now fetch all services that belong to the same category
+        final response = await supabase
+            .from('services')
+            .select('''
+              id,
+              name,
+              description,
+              service_image_url,
+              sub_categories!inner(
+                id,
+                category_id
+              )
+            ''')
+            .neq('id', serviceId) // Exclude the selected service
+            .eq('sub_categories.category_id', categoryId)
+            .order('name', ascending: true)
+            .limit(20);
+
+        if (response != null) {
+          filteredServices.assignAll(List<Map<String, dynamic>>.from(response));
+        }
+      }
+    } catch (e) {
+      print('Error fetching related services: $e');
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -598,7 +454,7 @@ List<Question> parseQuestions(List<Map<String, dynamic>> rawQuestions) {
   }
 
   ////////////////////////////////
-    var fullName = 'Feroz Durrani'.obs;
+  var fullName = 'Feroz Durrani'.obs;
   var email1 = 'durraniferoz9@gmail.com'.obs;
   var phoneController = TextEditingController();
   var enableTextMessages = true.obs;

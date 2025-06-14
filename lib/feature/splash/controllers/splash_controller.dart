@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/routes/routes.dart';
 import '../../../core/utils/app_constants.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../auth/services/auth_service.dart';
 
 class SplashController extends GetxController {
   late final SharedPreferences _prefs;
@@ -35,8 +35,8 @@ class SplashController extends GetxController {
       }
 
       // If onboarding is completed, check authentication status
-      final session = Supabase.instance.client.auth.currentSession;
-      final isAuthenticated = session != null && session.isExpired == false;
+      final authService = Get.find<AuthService>();
+      final isAuthenticated = authService.isAuthenticated.value;
       debugPrint('Splash: User authenticated: $isAuthenticated');
 
       if (isAuthenticated) {

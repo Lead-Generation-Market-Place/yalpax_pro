@@ -14,13 +14,13 @@ class SecondStep extends GetView<AuthController> {
       appBar: AppBar(
         title: const Text(''),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
           onPressed: () => Get.back(),
         ),
         actions: [
           TextButton(
             onPressed: () => controller.selectAllServices(),
-            child: Text('Select all', style: TextStyle(color: AppColors.info)),
+            child: Text('Select all', style: TextStyle(color: AppColors.primaryBlue)),
           ),
         ],
       ),
@@ -33,14 +33,18 @@ class SecondStep extends GetView<AuthController> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Select all the services you offer.',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'You’ll show up in search results and get jobs for all services you select.',
-                style: TextStyle(color: Colors.grey),
+              Text(
+                'You will show up in search results and get jobs for all services you select.',
+                style: TextStyle(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
 
@@ -48,27 +52,40 @@ class SecondStep extends GetView<AuthController> {
               CheckboxListTile(
                 value: true,
                 onChanged: null,
-                title: Text(selectedService['name'] ?? ''),
+                title: Text(
+                  selectedService['name'] ?? '',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
                 controlAffinity: ListTileControlAffinity.leading,
+                activeColor: AppColors.primaryBlue,
               ),
-              const Divider(),
+              Divider(color: AppColors.neutral200),
 
               // Other service options
               Expanded(
                 child: ListView(
-                  children: services.where((service) {
-                    return service['id'] != selectedService['id'];
-                  }).map((service) {
-                    final isChecked = controller.selectedServices.contains(service['id']);
-                    return CheckboxListTile(
-                      value: isChecked,
-                      onChanged: (val) {
-                        controller.toggleService(service['id']);
-                      },
-                      title: Text(service['name'] ?? ''),
-                      controlAffinity: ListTileControlAffinity.leading,
-                    );
-                  }).toList(),
+                  children: services
+                      .where((service) {
+                        return service['id'] != selectedService['id'];
+                      })
+                      .map((service) {
+                        final isChecked = controller.selectedServices.contains(
+                          service['id'],
+                        );
+                        return CheckboxListTile(
+                          value: isChecked,
+                          onChanged: (val) {
+                            controller.toggleService(service['id']);
+                          },
+                          title: Text(
+                            service['name'] ?? '',
+                            style: TextStyle(color: AppColors.textPrimary),
+                          ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          activeColor: AppColors.primaryBlue,
+                        );
+                      })
+                      .toList(),
                 ),
               ),
 
@@ -78,7 +95,7 @@ class SecondStep extends GetView<AuthController> {
                 onPressed: () {
                   // Proceed with selected services
                   controller.submitSelectedServices();
-   Get.toNamed(Routes.thirdStep);
+                  Get.toNamed(Routes.thirdStep);
                 },
               ),
             ],

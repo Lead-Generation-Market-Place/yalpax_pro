@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:yalpax_pro/core/constants/app_colors.dart';
+import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
-class FourthStep extends GetView<AuthController> {
-  const FourthStep({super.key});
+class FifthStep extends GetView<AuthController> {
+  const FifthStep({super.key});
 
-  @override
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -33,12 +33,17 @@ class FourthStep extends GetView<AuthController> {
                   children: [
                     const CircleAvatar(
                       radius: 36,
-                      backgroundImage: AssetImage('assets/images/avatar_placeholder.png'),
+                      backgroundImage: AssetImage(
+                        'assets/images/avatar_placeholder.png',
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       controller.fullName.value, // e.g. "Feroz Durrani"
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -73,7 +78,8 @@ class FourthStep extends GetView<AuthController> {
                 children: [
                   Checkbox(
                     value: controller.enableTextMessages.value,
-                    onChanged: (val) => controller.enableTextMessages.value = val ?? false,
+                    onChanged: (val) =>
+                        controller.enableTextMessages.value = val ?? false,
                   ),
                   const Expanded(
                     child: Text.rich(
@@ -89,11 +95,11 @@ class FourthStep extends GetView<AuthController> {
                           TextSpan(
                             text: 'Terms apply.',
                             style: TextStyle(color: Colors.blue),
-                          )
+                          ),
                         ],
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -121,7 +127,7 @@ class FourthStep extends GetView<AuthController> {
               CustomButton(
                 text: 'Continue',
                 onPressed: () {
-                  // TODO: validate and continue
+               Get.toNamed(Routes.sixthstep);
                   controller.registerUser();
                 },
               ),

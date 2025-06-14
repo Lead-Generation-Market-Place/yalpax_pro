@@ -1,13 +1,23 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/auth/views/login.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password_token.dart';
 import 'package:yalpax_pro/feature/auth/views/signup.dart';
-import 'package:yalpax_pro/feature/auth/views/signup/first_step.dart';
-import 'package:yalpax_pro/feature/auth/views/signup/fourth_step.dart';
-import 'package:yalpax_pro/feature/auth/views/signup/second_step.dart';
-import 'package:yalpax_pro/feature/auth/views/signup/third_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/eightStep.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/elevenStep.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/fifth_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/first_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/fourth_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/ninthStep.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/second_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/seventh_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/sixthStep.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/tenthStep.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/third_step.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/thirteenStep.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/twelvthStep.dart';
 import 'package:yalpax_pro/feature/initial_page/controllers/initial_binding.dart';
 import 'package:yalpax_pro/feature/initial_page/views/initial_view.dart';
 import 'package:yalpax_pro/feature/jobs/controllers/jobs_binding.dart';
@@ -26,7 +36,8 @@ import '../../feature/splash/controllers/splash_controller.dart';
 import '../../feature/one_time_initial_view/views/one_time_initial_view.dart';
 
 import '../../feature/auth/controllers/auth_binding.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+
+
 
 // Route Names
 abstract class Routes {
@@ -49,6 +60,16 @@ abstract class Routes {
   static const secondStep = '/secondStep';
   static const thirdStep = '/thirdStep';
   static const fourthStep = '/fourthStep';
+  static const fifthStep = '/fifthStep';
+  static const sixthstep = '/sixthStep';
+  static const seventhStep = '/seventhStep';
+  static const eightStep = '/eightStep';
+  static const ninthStep = '/ninthStep';
+  static const tenthStep = '/tenthStep';
+  static const eleventhStep = '/eleventhStep';
+  static const twelvthstep = '/twelvthstep';
+  static const thirteenStep = '/thirteenStep';
+
 }
 
 // Middleware
@@ -58,10 +79,9 @@ class AuthMiddleware extends GetMiddleware {
 
   @override
   RouteSettings? redirect(String? route) {
-    final supabase = Supabase.instance.client;
-    final session = supabase.auth.currentSession;
+    final authService = Get.find<AuthService>();
     
-    if (session == null) {
+    if (!authService.isAuthenticated.value) {
       return const RouteSettings(name: Routes.login);
     }
     return null;
@@ -74,10 +94,9 @@ class NoAuthMiddleware extends GetMiddleware {
 
   @override
   RouteSettings? redirect(String? route) {
-    final supabase = Supabase.instance.client;
-    final session = supabase.auth.currentSession;
+    final authService = Get.find<AuthService>();
     
-    if (session != null) {
+    if (authService.isAuthenticated.value) {
       return const RouteSettings(name: Routes.jobs);
     }
     return null;
@@ -218,6 +237,70 @@ abstract class AppPages {
       binding: AuthBinding(),
       transition: Transition.fadeIn,
     ),
+    GetPage(
+      name: Routes.fifthStep,
+      page: () => FifthStep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.sixthstep,
+      page: () => Sixthstep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.seventhStep,
+      page: () => SeventhStep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.eightStep,
+      page: () => Eightstep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.ninthStep,
+      page: () => Ninthstep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.tenthStep,
+      page: () => TenthStep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.eleventhStep,
+      page: () => Elevenstep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.twelvthstep,
+      page: () => Twelvthstep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.thirteenStep,
+      page: () => Thirteenstep(),
+      binding: AuthBinding(),
+    
+      transition: Transition.fadeIn,
+    ),
+
   ];
 }
 
