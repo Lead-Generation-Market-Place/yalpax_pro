@@ -229,11 +229,11 @@ class AuthController extends GetxController {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
 
-    _fetchServices('');
+  
     searchController.addListener(_onSearchChanged);
   }
 
-  Future<void> _fetchServices(String query) async {
+  Future<void> fetchServices(String query) async {
     isLoading.value = true;
     try {
       if (query.isEmpty) {
@@ -267,7 +267,7 @@ class AuthController extends GetxController {
   }
 
   void _onSearchChanged() {
-    _fetchServices(searchController.text);
+    fetchServices(searchController.text);
     showClearButton.value = searchController.text.isNotEmpty;
   }
 
@@ -278,7 +278,7 @@ class AuthController extends GetxController {
 
   void clearSearch() {
     searchController.clear();
-    _fetchServices(''); // Fetch all services again
+    fetchServices(''); // Fetch all services again
     showClearButton.value = false;
   }
 
@@ -376,19 +376,14 @@ class AuthController extends GetxController {
   var selectedServices = <int>{}.obs;
   var selectedService = {}.obs; // from FirstStep
 
-  void toggleService(int serviceId) {
-    if (selectedServices.contains(serviceId)) {
-      selectedServices.remove(serviceId);
-      if (selectedServices.isEmpty) {
-        // When all services are deselected, fetch all services again
-        _fetchServices('');
-      }
-    } else {
-      selectedServices.add(serviceId);
-      // Fetch related services when a service is selected
-      _fetchRelatedServices(serviceId);
-    }
+void toggleService(int serviceId) {
+  if (selectedServices.contains(serviceId)) {
+    selectedServices.clear();
+  } else {
+    selectedServices.clear();
+    selectedServices.add(serviceId);
   }
+}
 
   Future<void> _fetchRelatedServices(int serviceId) async {
     isLoading.value = true;
