@@ -363,12 +363,13 @@ class AuthController extends GetxController {
 
 void toggleService(int serviceId) {
   if (selectedServices.contains(serviceId)) {
-    selectedServices.clear();
+    selectedServices.remove(serviceId);
   } else {
-    selectedServices.clear();
     selectedServices.add(serviceId);
   }
 }
+
+// Remove the selectAllServices method if not needed
 void toggleCategories(int categoryId  ) {
   if (selectedCategories.contains(categoryId)) {
     selectedCategories.clear();

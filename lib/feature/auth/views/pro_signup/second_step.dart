@@ -12,95 +12,121 @@ class SecondStep extends GetView<AuthController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(''),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Get.back(),
-        ),
+        leading: const BackButton(),
         actions: [
           TextButton(
-            onPressed: () => controller.selectAllServices(),
-            child: Text('Select all', style: TextStyle(color: AppColors.primaryBlue)),
+            onPressed: () {
+              // Navigate to login screen
+            },
+            child: const Text(
+              'Log in',
+              style: TextStyle(color: Colors.blue),
+            ),
           ),
         ],
+        elevation: 0,
+        backgroundColor: Colors.white,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Obx(() {
-          final selectedService = controller.selectedService.value;
-          final services = controller.allServices;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Select all the services you offer.',
-                style: TextStyle(
-                  fontSize: 18, 
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'You will show up in search results and get jobs for all services you select.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 16),
-
-              // Previously selected service (disabled)
-              CheckboxListTile(
-                value: true,
-                onChanged: null,
-                title: Text(
-                  selectedService['name'] ?? '',
-                  style: TextStyle(color: AppColors.textPrimary),
-                ),
-                controlAffinity: ListTileControlAffinity.leading,
-                activeColor: AppColors.primaryBlue,
-              ),
-              Divider(color: AppColors.neutral200),
-
-              // Other service options
-              Expanded(
-                child: ListView(
-                  children: services
-                      .where((service) {
-                        return service['id'] != selectedService['id'];
-                      })
-                      .map((service) {
-                        final isChecked = controller.selectedServices.contains(
-                          service['id'],
-                        );
-                        return CheckboxListTile(
-                          value: isChecked,
-                          onChanged: (val) {
-                            controller.toggleService(service['id']);
-                          },
-                          title: Text(
-                            service['name'] ?? '',
-                            style: TextStyle(color: AppColors.textPrimary),
-                          ),
-                          controlAffinity: ListTileControlAffinity.leading,
-                          activeColor: AppColors.primaryBlue,
-                        );
-                      })
-                      .toList(),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              CustomButton(
-                text: 'Next',
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            const Icon(Icons.location_on_outlined, size: 32),
+            const SizedBox(height: 12),
+            const Text(
+              "New customers are waiting.",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "There were 5,123 Cleaner jobs on Thumbtack last month in your area.",
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
                 onPressed: () {
-                  // Proceed with selected services
-                  controller.submitSelectedServices();
-                  Get.toNamed(Routes.thirdStep);
+                  Get.toNamed(Routes.fifthStep);
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                child: const Text(
+                  "Sign up with email",
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
               ),
-            ],
-          );
-        }),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text("OR"),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Google signup
+                },
+                icon: const Icon(Icons.g_mobiledata),
+                label: const Text("Sign up with Google"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Facebook signup
+                },
+                icon: const Icon(Icons.facebook, color: Colors.blue),
+                label: const Text("Sign up with Facebook"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            const Spacer(),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 16),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(text: "By tapping any of the Sign up buttons, you agree to the "),
+                    TextSpan(
+                      text: "Terms of Use",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                    TextSpan(text: " and "),
+                    TextSpan(
+                      text: "Privacy Policy",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                    TextSpan(text: "."),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
