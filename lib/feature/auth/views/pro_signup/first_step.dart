@@ -5,6 +5,7 @@ import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/foldable_widgets.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
+import 'package:yalpax_pro/core/widgets/advanced_dropdown_field.dart';
 
 class FirstStep extends GetView<AuthController> {
   const FirstStep({super.key});
@@ -34,196 +35,116 @@ class FirstStep extends GetView<AuthController> {
               centerTitle: true,
             ),
 
-            // Search input
-            _buildSearchSection(),
-            _buildSearchSection(),
+            // Using the custom dropdown with search connected to controller
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Obx(() {
+                    final selectedCategory = controller.allCategories
+                        .firstWhere(
+                          (s) =>
+                              controller.selectedCategories.contains(s['id']),
+                          orElse: () => {},
+                        );
 
-            // Services list
-            _buildServicesList(),
+                    return AdvancedDropdownField<Map<String, dynamic>>(
+                      label: 'Select a category',
+                      hint: 'Search categories...',
+                      items: controller
+                          .filteredCategories, // Use filteredCategories
+                      selectedValue: selectedCategory.isEmpty
+                          ? null
+                          : selectedCategory,
+                      getLabel: (item) => item['name'] ?? '',
+                      onChanged: (selectedCategory) {
+                        if (selectedCategory != null) {
+                          controller.toggleCategories(selectedCategory['id']);
+                          // Clear subcategories when category changes
+                          controller.selectedSubCategories.clear();
+                        } else {
+                          controller.selectedCategories.clear();
+                        }
+                      },
+                      isRequired: true,
+                      enableSearch: true,
+                      onSearchChanged:
+                          controller.fetchCategories, // Use fetchCategories
+                    );
+                  }),
+
+                  // Subcategory dropdown
+                  Obx(() {
+                    final selectedSubCategory = controller.allSubCategories
+                        .firstWhere(
+                          // Use allSubCategories
+                          (s) => controller.selectedSubCategories.contains(
+                            s['id'],
+                          ),
+                          orElse: () => {},
+                        );
+
+                    return AdvancedDropdownField<Map<String, dynamic>>(
+                      label: 'Select a sub-category',
+                      hint: 'Search sub-categories...',
+                      items: controller
+                          .filteredSubCategories, // Use filteredSubCategories
+                      selectedValue: selectedSubCategory.isEmpty
+                          ? null
+                          : selectedSubCategory,
+                      getLabel: (item) => item['name'] ?? '',
+                      onChanged: (selectedSubCategory) {
+                        if (selectedSubCategory != null) {
+                          controller.toggleSubCategories(
+                            selectedSubCategory['id'],
+                          );
+                        } else {
+                          controller.selectedSubCategories.clear();
+                        }
+                      },
+                      isRequired: true,
+                      enableSearch: true,
+                      onSearchChanged: controller
+                          .fetchSubCategories, // Use fetchSubCategories
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                 
+              
+                  // Services dropdown
+             Obx(() {
+  final selectedService = controller.allServices.firstWhere(
+    (s) => controller.selectedServices.contains(s['id']),
+    orElse: () => {},
+  );
+
+  return AdvancedDropdownField<Map<String, dynamic>>(
+    label: 'Select a service',
+    hint: 'Search services...',
+    items: controller.filteredServices,  // Use filteredServices
+    selectedValue: selectedService.isEmpty ? null : selectedService,
+    getLabel: (item) => item['name'] ?? '',
+    onChanged: (selectedService) {
+      if (selectedService != null) {
+        controller.toggleService(selectedService['id']);
+      } else {
+        controller.selectedServices.clear();
+      }
+    },
+    isRequired: true,
+    enableSearch: true,
+    onSearchChanged: controller.fetchServices,  // Use fetchServices
+  );
+}),
+                ],
+              ),
+            ),
 
             // Next button
             _buildNextButton(),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSearchSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.neutral200.withOpacity(0.5),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Obx(() {
-        if (controller.selectedServices.isNotEmpty) {
-          final service = controller.allServices.firstWhere(
-            (s) => controller.selectedServices.contains(s['id']),
-            orElse: () => {},
-          );
-          if (service.isNotEmpty) {
-            return _buildSelectedServiceDisplay(service);
-          }
-        }
-        return _buildSearchField();
-      }),
-    );
-  }
-
-  Widget _buildSelectedServiceDisplay(Map<String, dynamic> service) {
-    return Container(
-      height: 35,
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.primaryBlue.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue),
-      ),
-      child: Row(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Icon(
-              Icons.check_circle,
-              color: AppColors.primaryBlue,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              service['name'] ?? '',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: Icon(
-              Icons.close,
-              color: AppColors.neutral500,
-              size: 20,
-            ),
-            onPressed: () {
-              controller.selectedServices.clear();
-              controller.searchController.clear();
-              controller.fetchServices('');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchField() {
-    return Container(
-      height: 35,
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.neutral50,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: TextField(
-        controller: controller.searchController,
-        decoration: InputDecoration(
-          hintText: 'Search services...',
-          hintStyle: TextStyle(color: AppColors.neutral500),
-          border: InputBorder.none,
-          prefixIcon: Icon(Icons.search, color: AppColors.neutral500),
-          suffixIcon: Obx(
-            () => controller.showClearButton.value
-                ? IconButton(
-                    icon: Icon(Icons.clear, color: AppColors.neutral500),
-                    onPressed: controller.clearSearch,
-                  )
-                : const SizedBox.shrink(),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildServicesList() {
-    return Expanded(
-      child: Obx(() {
-        if (controller.selectedServices.isEmpty) {
-          return ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  controller.searchController.text.isEmpty
-                      ? 'Available Services'
-                      : 'Search Results',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (controller.isLoading.value)
-                Container(
-                  height: 200,
-                  alignment: Alignment.center,
-                  child: CircularProgressIndicator(
-                    color: AppColors.primaryBlue,
-                  ),
-                )
-              else if (controller.filteredServices.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'No services found',
-                    style: TextStyle(
-                      color: AppColors.neutral500,
-                      fontSize: 16,
-                    ),
-                  ),
-                )
-              else
-                ...controller.filteredServices
-                    .map(
-                      (service) => ListTile(
-                        onTap: () {
-                          controller.toggleService(service['id']);
-                          if (controller.selectedServices.isNotEmpty) {
-                            controller.searchController.text =
-                                service['name'] ?? '';
-                          }
-                        },
-                        title: Text(
-                          service['name'] ?? '',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                          ),
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          color: AppColors.neutral500,
-                          size: 16,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
-                        ),
-                      ),
-                    )
-                    .toList(),
-            ],
-          );
-        }
-        return const SizedBox.shrink();
-      }),
     );
   }
 

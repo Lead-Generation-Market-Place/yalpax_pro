@@ -218,7 +218,15 @@ class AuthController extends GetxController {
 
   final RxList<Map<String, dynamic>> allServices =
       <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> allCategories =
+      <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> allSubCategories =
+      <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
   final RxList<Map<String, dynamic>> filteredServices =
+      <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> filteredCategories =
+      <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
+  final RxList<Map<String, dynamic>> filteredSubCategories =
       <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
   final RxBool showClearButton = false.obs;
 
@@ -228,8 +236,6 @@ class AuthController extends GetxController {
   void onInit() async {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
-
-  
     searchController.addListener(_onSearchChanged);
   }
 
@@ -265,20 +271,79 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+  Future<void> fetchCategories(String query) async {
+  isLoading.value = true;
+  try {
+    if (query.isEmpty) {
+      final response = await supabase
+          .from('categories')
+          .select('id, name')
+          .order('name', ascending: true)
+          .limit(20);
+      allCategories.assignAll(List<Map<String, dynamic>>.from(response));
+      filteredCategories.assignAll(allCategories);
+    } else {
+      final response = await supabase
+          .from('categories')  // Ensure we're querying categories table
+          .select('id, name')
+          .ilike('name', '%$query%')
+          .order('name', ascending: true);
+      filteredCategories.assignAll(List<Map<String, dynamic>>.from(response));  // Assign to filteredCategories
+    }
+  } catch (e) {
+    print('Error fetching categories: $e');
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+  Future<void> fetchSubCategories(String query) async {
+    isLoading.value = true;
+    try {
+      if (query.isEmpty) {
+        // Fetch initial popular services or all services when search is empty
+        final response = await supabase
+            .from('sub_categories')
+            .select('id, name')
+            .order('name', ascending: true)
+            .limit(20); // Fetch ID as well
+        allSubCategories.assignAll(
+          List<Map<String, dynamic>>.from(response),
+        ); // Assign as List<Map<String, dynamic>>
+        filteredSubCategories.assignAll(allSubCategories);
+      } else {
+        // Real-time search from Supabase
+        final response = await supabase
+            .from('sub_categories')
+            .select('id, name')
+            .ilike('name', '%' + query + '%')
+            .order('name', ascending: true); // Fetch ID as well
+        filteredSubCategories.assignAll(
+          List<Map<String, dynamic>>.from(response),
+        ); // Assign as List<Map<String, dynamic>>
+      }
+    } catch (e) {
+      print('Error fetching services: $e');
+      // Optionally, show a Get.snackbar or other UI feedback
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   void _onSearchChanged() {
     fetchServices(searchController.text);
+    fetchCategories(searchController.text);
+    fetchSubCategories(searchController.text);
     showClearButton.value = searchController.text.isNotEmpty;
   }
 
-  void filterServices(String query) {
-    // This method is now redundant as _fetchServices handles filtering from Supabase
-    // Keeping it for now to avoid breaking existing calls, but its logic is moved
-  }
+ 
 
   void clearSearch() {
     searchController.clear();
     fetchServices(''); // Fetch all services again
+    fetchCategories(''); // Fetch all categories again
+    fetchSubCategories(''); // Fetch all categories again
     showClearButton.value = false;
   }
 
@@ -286,94 +351,14 @@ class AuthController extends GetxController {
   RxList<Map<String, dynamic>> questions = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> answers = <Map<String, dynamic>>[].obs;
 
+  
 
-
-  void handleQuestionFlowAnswers(Map<String, dynamic> selectedAnswers) {
-    answers.value = selectedAnswers.entries.map((entry) {
-      return {
-        'question_id': entry.key,
-        'answer_id': entry.value is Set ? entry.value.toList() : [entry.value],
-      };
-    }).toList();
-  }
-
-  Future<void> fetchQuestions(int serviceId) async {
-    if (isLoading.value) return;
-
-    isLoading.value = true;
-    try {
-      final response = await supabase
-          .from('questions')
-          .select('''
-          *,
-          question_answers!inner(
-            answers!inner(*)
-          )
-        ''')
-          .eq('service_id', serviceId)
-          .order('id');
-
-      if (response != null) {
-        questions.value = List<Map<String, dynamic>>.from(response);
-        final parsedQuestions = parseQuestions(questions);
-
-        if (parsedQuestions.isEmpty) {
-          Get.snackbar(
-            'No Questions Found',
-            'There are no questions for this service.',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        } else {
-          final result = await Get.to(
-            () => QuestionFlowScreen(questions: parsedQuestions),
-          );
-          Logger().d('Answers of questions :-  $result');
-          Fluttertoast.showToast(msg: '$result');
-          if (result != null) {
-            handleQuestionFlowAnswers(result);
-          }
-        }
-      }
-    } catch (e) {
-      print('Error fetching questions: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to load questions. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  List<Question> parseQuestions(List<Map<String, dynamic>> rawQuestions) {
-    return rawQuestions.map((q) {
-      final String typeStr = (q['type'] ?? '').toString().toLowerCase();
-      final QuestionType type = typeStr == 'checkbox'
-          ? QuestionType.multipleChoice
-          : QuestionType.singleChoice;
-
-      final options = (q['question_answers'] as List).map((qa) {
-        final ans = qa['answers'];
-        return QuestionOption(
-          id: ans['id'].toString(),
-          label: ans['text'] ?? '',
-          value: ans['id'],
-        );
-      }).toList();
-
-      return Question(
-        id: q['id'].toString(),
-        question: q['text'] ?? '',
-        type: type,
-        options: options,
-        isRequired: true,
-      );
-    }).toList();
-  }
+  
 
   //////////////////////////////
   var selectedServices = <int>{}.obs;
+  var selectedCategories = <int>{}.obs;
+  var selectedSubCategories = <int>{}.obs;
   var selectedService = {}.obs; // from FirstStep
 
 void toggleService(int serviceId) {
@@ -384,54 +369,24 @@ void toggleService(int serviceId) {
     selectedServices.add(serviceId);
   }
 }
-
-  Future<void> _fetchRelatedServices(int serviceId) async {
-    isLoading.value = true;
-    try {
-      // First get the category_id of the selected service
-      final selectedService = await supabase
-          .from('services')
-          .select('''
-            id,
-            sub_categories!inner(
-              id,
-              category_id
-            )
-          ''')
-          .eq('id', serviceId)
-          .single();
-
-      if (selectedService != null) {
-        final categoryId = selectedService['sub_categories']['category_id'];
-        
-        // Now fetch all services that belong to the same category
-        final response = await supabase
-            .from('services')
-            .select('''
-              id,
-              name,
-              description,
-              service_image_url,
-              sub_categories!inner(
-                id,
-                category_id
-              )
-            ''')
-            .neq('id', serviceId) // Exclude the selected service
-            .eq('sub_categories.category_id', categoryId)
-            .order('name', ascending: true)
-            .limit(20);
-
-        if (response != null) {
-          filteredServices.assignAll(List<Map<String, dynamic>>.from(response));
-        }
-      }
-    } catch (e) {
-      print('Error fetching related services: $e');
-    } finally {
-      isLoading.value = false;
-    }
+void toggleCategories(int categoryId  ) {
+  if (selectedCategories.contains(categoryId)) {
+    selectedCategories.clear();
+  } else {
+    selectedServices.clear();
+    selectedServices.add(categoryId);
   }
+}
+void toggleSubCategories(int subCategoryId  ) {
+  if (selectedSubCategories.contains(subCategoryId)) {
+    selectedSubCategories.clear();
+  } else {
+    selectedSubCategories.clear();
+    selectedSubCategories.add(subCategoryId);
+  }
+}
+
+  
 
   void selectAllServices() {
     for (var service in allServices) {
