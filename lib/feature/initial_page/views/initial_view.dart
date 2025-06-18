@@ -13,10 +13,10 @@ class InitialView extends GetView<InitialPageController> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: ListView(
+        child: Column(
           children: [
             const SizedBox(height: 32),
-
+        
             // Header section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -47,9 +47,9 @@ class InitialView extends GetView<InitialPageController> {
                 ],
               ),
             ),
-
+        
             const SizedBox(height: 40),
-
+        
             // Stats Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -71,9 +71,9 @@ class InitialView extends GetView<InitialPageController> {
                 ),
               ),
             ),
-
+        
             const Spacer(),
-
+        
             // CTA Buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),

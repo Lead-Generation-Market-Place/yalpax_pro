@@ -4,7 +4,7 @@ import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/auth/views/login.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password_token.dart';
-import 'package:yalpax_pro/feature/auth/views/signup.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/signup_with_email.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/eightStep.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/elevenStep.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/fifth_step.dart';
@@ -46,7 +46,7 @@ abstract class Routes {
   static const initial = '/initial';
 
   static const login = '/login';
-  static const signup = '/signup';
+  static const signup_with_email = '/signup_with_email';
   static const jobs = '/jobs';
   static const profile = '/profile';
   static const settings = '/settings';
@@ -132,7 +132,7 @@ abstract class AppPages {
     ),
 
     GetPage(
-      name: Routes.signup,
+      name: Routes.signup_with_email,
       page: () => SignupView(),
       middlewares: [NoAuthMiddleware()],
       transition: Transition.fadeIn,
@@ -154,7 +154,7 @@ abstract class AppPages {
     ),
 
     GetPage(
-      name: Routes.signup,
+      name: Routes.signup_with_email,
       page: () => SignupView(),
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,

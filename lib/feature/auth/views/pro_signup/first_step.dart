@@ -12,48 +12,50 @@ class FirstStep extends GetView<AuthController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                backgroundColor: AppColors.surface,
-                elevation: 0,
-                pinned: true,
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-                  onPressed: () => Get.back(),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  backgroundColor: AppColors.surface,
+                  elevation: 0,
+                  pinned: true,
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
+                    onPressed: () => Get.back(),
+                  ),
+                  title: Text(
+                    'Add Services you offer',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  centerTitle: true,
                 ),
-                title: Text(
-                  'Add Services you offer',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      Obx(() => _buildCategoryDropdown()),
+                      const SizedBox(height: 16),
+                      Obx(() => _buildSubCategoryDropdown()),
+                      const SizedBox(height: 16),
+                      Obx(() => _buildServicesDropdown()),
+                      SizedBox(height: 80), // Space for button
+                    ]),
                   ),
                 ),
-                centerTitle: true,
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    Obx(() => _buildCategoryDropdown()),
-                    const SizedBox(height: 16),
-                    Obx(() => _buildSubCategoryDropdown()),
-                    const SizedBox(height: 16),
-                    Obx(() => _buildServicesDropdown()),
-                    SizedBox(height: 80), // Space for button
-                  ]),
-                ),
-              ),
-            ],
-          ),
-           Align( // Use Align instead of Positioned for more reliable positioning
-          alignment: Alignment.bottomCenter,
-          child: _buildNextButton(),
+              ],
+            ),
+            Align( // Use Align instead of Positioned for more reliable positioning
+              alignment: Alignment.bottomCenter,
+              child: _buildNextButton(),
+            ),
+          ],
         ),
-        ],
       ),
     );
   }
