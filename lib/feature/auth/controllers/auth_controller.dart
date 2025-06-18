@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:logger/web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:yalpax_pro/core/components/question_component.dart';
 import '../../../core/routes/routes.dart';
 import '../services/auth_service.dart';
 
@@ -112,7 +110,7 @@ class AuthController extends GetxController {
         passwordController.clear();
         nameController.clear();
         confirmPasswordController.clear();
-        Get.toNamed(Routes.login);
+        Get.toNamed(Routes.thirdStep);
       } else {
         Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
       }
@@ -123,6 +121,7 @@ class AuthController extends GetxController {
 
   Future<void> signOut() async {
     await _authService.signOut();
+
     Get.offAllNamed(Routes.login);
   }
 
@@ -153,38 +152,93 @@ class AuthController extends GetxController {
     }
   }
 
-  // Social Auth Methods
-  Future<void> signInWithGoogle() async {
-    try {
-      await _authService.signOut();
+///////////////////////////////////////////////////////////////////////////////
 
-      const webClientId = '117669178530-m7i284g3857t4f3ol9e2vo7j9v38h0af.apps.googleusercontent.com';
-      const iosClientId = '117669178530-b37fu5du424kf8q4gmjnee5c5stqnd1q.apps.googleusercontent.com';
 
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        clientId: iosClientId,
-        serverClientId: webClientId,
-        forceCodeForRefreshToken: true,
-        signInOption: SignInOption.standard,
-      );
 
-      await googleSignIn.signOut();
-      final googleUser = await googleSignIn.signIn();
-      final googleAuth = await googleUser!.authentication;
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
+ 
 
-      if (accessToken == null || idToken == null) {
-        throw 'Failed to get Google auth tokens';
-      }
+ 
 
-      Get.offAllNamed(Routes.jobs);
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Failed to sign in with Google. Please try again.',
-      );
-    }
+static SupabaseClient client(){
+  final supabase = Supabase.instance.client;
+  return supabase;
+}
+
+static Future<AuthResponse> signInWithGoogle() async {
+  /// TODO: update the Web client ID with your own.
+  
+
+
+  /// Web Client ID that you registered with Google Cloud.
+  const webClientId = '700150215178-ctv5m5b45btkfn0qdhhcgagusvkk3oeu.apps.googleusercontent.com';
+
+  /// TODO: update the iOS client ID with your own.
+  ///
+  /// iOS Client ID that you registered with Google Cloud.
+
+
+  final GoogleSignIn googleSignIn = GoogleSignIn(
+   
+    serverClientId: webClientId,
+    forceCodeForRefreshToken: true,
+     signInOption: SignInOption.standard,
+  );
+  await googleSignIn.signOut();
+  final googleUser = await googleSignIn.signIn();
+  final googleAuth = await googleUser!.authentication;
+  final accessToken = googleAuth.accessToken;
+  final idToken = googleAuth.idToken;
+
+  if (accessToken == null) {
+    throw 'No Access Token found.';
   }
+  if (idToken == null) {
+    throw 'No ID Token found.';
+  }
+
+  return client().auth.signInWithIdToken(
+    provider: OAuthProvider.google,
+    idToken: idToken,
+    accessToken: accessToken,
+  );
+
+
+}
+
+
+  // // Social Auth Methods
+  // Future<void> signInWithGoogle() async {
+  //   try {
+  //     await _authService.signOut();
+
+  //     const webClientId = '117669178530-m7i284g3857t4f3ol9e2vo7j9v38h0af.apps.googleusercontent.com';
+  //     const iosClientId = '117669178530-b37fu5du424kf8q4gmjnee5c5stqnd1q.apps.googleusercontent.com';
+
+  //     final GoogleSignIn googleSignIn = GoogleSignIn(
+  //       clientId: iosClientId,
+  //       serverClientId: webClientId,
+  //       forceCodeForRefreshToken: true,
+  //       signInOption: SignInOption.standard,
+  //     );
+
+  //     await googleSignIn.signOut();
+  //     final googleUser = await googleSignIn.signIn();
+  //     final googleAuth = await googleUser!.authentication;
+  //     final accessToken = googleAuth.accessToken;
+  //     final idToken = googleAuth.idToken;
+
+  //     if (accessToken == null || idToken == null) {
+  //       throw 'Failed to get Google auth tokens';
+  //     }
+
+  //     Get.offAllNamed(Routes.jobs);
+  //   } catch (e) {
+  //     Fluttertoast.showToast(
+  //       msg: 'Failed to sign in with Google. Please try again.',
+  //     );
+  //   }
+  // }
 
   Future<void> signInWithApple() async {
     try {

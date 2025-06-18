@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
@@ -7,7 +8,6 @@ import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
 class SecondStep extends GetView<AuthController> {
   const SecondStep({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,10 +18,7 @@ class SecondStep extends GetView<AuthController> {
             onPressed: () {
               // Navigate to login screen
             },
-            child: const Text(
-              'Log in',
-              style: TextStyle(color: Colors.blue),
-            ),
+            child: const Text('Log in', style: TextStyle(color: Colors.blue)),
           ),
         ],
         elevation: 0,
@@ -79,8 +76,30 @@ class SecondStep extends GetView<AuthController> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  // Google signup
+                onPressed: () async {
+                  final res = await AuthController.signInWithGoogle();
+                  final user = res.user;
+
+                  if (user != null && user.email != null) {
+                    // Fetch profile from users_profiles table
+                    final userProfile = await Supabase.instance.client
+                        .from('users_profiles')
+                        .select('profile_picture_url, username')
+                        .eq('email', user.email!)
+                        .maybeSingle();
+
+                    if (userProfile != null) {
+                      print('User Profile: $userProfile');
+                          // Navigate to initial route
+                    Get.toNamed(Routes.thirdStep);
+                    } else {
+                      print('No profile found for: ${user.email}');
+                    }
+
+                
+                  } else {
+                    print('Google Sign-In failed or returned no email.');
+                  }
                 },
                 icon: const Icon(Icons.g_mobiledata),
                 label: const Text("Sign up with Google"),
@@ -109,7 +128,10 @@ class SecondStep extends GetView<AuthController> {
               child: Text.rich(
                 TextSpan(
                   children: [
-                    TextSpan(text: "By tapping any of the Sign up buttons, you agree to the "),
+                    TextSpan(
+                      text:
+                          "By tapping any of the Sign up buttons, you agree to the ",
+                    ),
                     TextSpan(
                       text: "Terms of Use",
                       style: TextStyle(color: Colors.blue),

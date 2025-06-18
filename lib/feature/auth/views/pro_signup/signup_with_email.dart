@@ -20,6 +20,13 @@ class SignupView extends GetView<AuthController> {
       controller.confirmPasswordController.clear();
     });
     return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: Text('Sign Up', style: TextStyle(color: AppColors.textPrimary)),
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+      ),
       backgroundColor: AppColors.background,
       body: ResponsiveLayout(
         mobile: _buildMobileLayout(context),

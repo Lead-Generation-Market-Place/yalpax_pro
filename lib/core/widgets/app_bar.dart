@@ -17,6 +17,7 @@ class ScrollableAppBarWithFixedSearch extends StatelessWidget {
   final TextStyle? searchHintStyle;
   final IconThemeData? iconTheme;
   final IconThemeData? actionsIconTheme;
+  final bool includeSearch; // New parameter
 
   const ScrollableAppBarWithFixedSearch({
     Key? key,
@@ -26,65 +27,68 @@ class ScrollableAppBarWithFixedSearch extends StatelessWidget {
     this.onSearchChanged,
     this.searchHintText = "What do you need help with?",
     this.onSearchSubmitted,
-    this.searchBarHeight = 56.0, // Standard height for a search bar area
+    this.searchBarHeight = 56.0,
     this.backgroundColor = AppColors.surface,
     this.searchBarBackgroundColor,
     this.searchTextStyle,
     this.searchHintStyle,
     this.iconTheme,
     this.actionsIconTheme,
+    this.includeSearch = true, // Default to true (backward compatible)
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final effectiveSearchBarBackgroundColor = 
-        searchBarBackgroundColor ?? AppColors.background; // Default to a light background for search
-    final effectiveSearchTextStyle = 
+    final effectiveSearchBarBackgroundColor =
+        searchBarBackgroundColor ?? AppColors.background;
+    final effectiveSearchTextStyle =
         searchTextStyle ?? TextStyle(color: AppColors.textPrimary, fontSize: 16);
-    final effectiveSearchHintStyle = 
+    final effectiveSearchHintStyle =
         searchHintStyle ?? TextStyle(color: AppColors.textTertiary, fontSize: 16);
 
     return SliverAppBar(
-      pinned: true, 
+      pinned: true,
       floating: true,
-      snap: true, 
+      snap: true,
       elevation: 1.0,
       backgroundColor: backgroundColor,
       iconTheme: iconTheme ?? IconThemeData(color: AppColors.textPrimary),
       actionsIconTheme: actionsIconTheme ?? IconThemeData(color: AppColors.textPrimary),
       title: title,
       actions: actions,
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(searchBarHeight),
-        child: Container(
-          height: searchBarHeight,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          color: backgroundColor, // Match AppBar background or could be distinct
-          child: Container(
-            decoration: BoxDecoration(
-              color: effectiveSearchBarBackgroundColor,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
-            child: TextField(
-              controller: searchController,
-              onChanged: onSearchChanged,
-              onSubmitted: (_) => onSearchSubmitted?.call(),
-              style: effectiveSearchTextStyle,
-              decoration: InputDecoration(
-                hintText: searchHintText,
-                hintStyle: effectiveSearchHintStyle,
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: effectiveSearchHintStyle.color ?? AppColors.textTertiary,
-                  size: 22,
+      bottom: includeSearch // Conditionally include search bar
+          ? PreferredSize(
+              preferredSize: Size.fromHeight(searchBarHeight),
+              child: Container(
+                height: searchBarHeight,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                color: backgroundColor,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: effectiveSearchBarBackgroundColor,
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: onSearchChanged,
+                    onSubmitted: (_) => onSearchSubmitted?.call(),
+                    style: effectiveSearchTextStyle,
+                    decoration: InputDecoration(
+                      hintText: searchHintText,
+                      hintStyle: effectiveSearchHintStyle,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: effectiveSearchHintStyle.color ?? AppColors.textTertiary,
+                        size: 22,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
+                    ),
+                  ),
                 ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0), // Adjust for text field height
               ),
-            ),
-          ),
-        ),
-      ),
+            )
+          : null, // If includeSearch=false, bottom is null
     );
   }
 }

@@ -365,7 +365,7 @@ class LoginView extends GetView<AuthController> {
           children: [
             _buildSocialButton(
               icon: 'assets/images/google.png',
-              onPressed: () => controller.signInWithGoogle(),
+              onPressed: () => AuthController.signInWithGoogle(),
             ),
 
             // _buildSocialButton(

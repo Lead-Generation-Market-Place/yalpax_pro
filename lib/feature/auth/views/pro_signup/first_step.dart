@@ -11,6 +11,11 @@ class FirstStep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.selectedServices.clear();
+      controller.selectedCategories.clear();
+      controller.selectedSubCategories.clear();
+    });
     return Scaffold(
       body: SafeArea(
         child: Stack(
