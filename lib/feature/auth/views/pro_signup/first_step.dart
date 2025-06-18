@@ -16,7 +16,6 @@ class FirstStep extends GetView<AuthController> {
         children: [
           CustomScrollView(
             slivers: [
-              // AppBar as SliverAppBar
               SliverAppBar(
                 backgroundColor: AppColors.surface,
                 elevation: 0,
@@ -35,64 +34,63 @@ class FirstStep extends GetView<AuthController> {
                 ),
                 centerTitle: true,
               ),
-
-              // Main content area
               SliverPadding(
                 padding: const EdgeInsets.all(16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Category dropdown (single-select)
                     Obx(() => _buildCategoryDropdown()),
                     const SizedBox(height: 16),
-                    // Subcategory dropdown (single-select)
                     Obx(() => _buildSubCategoryDropdown()),
                     const SizedBox(height: 16),
-                    // Services dropdown (multi-select)
                     Obx(() => _buildServicesDropdown()),
-                    // Add space for the fixed button
-                    SizedBox(height: 80), // Same height as your button container
+                    SizedBox(height: 80), // Space for button
                   ]),
                 ),
               ),
             ],
           ),
-
-          // Fixed position button at bottom
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 50,
-            child: _buildNextButton(),
-          ),
+           Align( // Use Align instead of Positioned for more reliable positioning
+          alignment: Alignment.bottomCenter,
+          child: _buildNextButton(),
+        ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryDropdown() {
-    final selectedCategory = controller.allCategories.firstWhere(
-      (s) => controller.selectedCategories.contains(s['id']),
-      orElse: () => {},
-    );
-    return AdvancedDropdownField<Map<String, dynamic>>(
-      label: 'Select a category',
-      hint: 'Search categories...',
-      items: controller.filteredCategories,
-      selectedValue: selectedCategory.isEmpty ? null : selectedCategory,
-      getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedCategory) {
-        if (selectedCategory != null) {
-          controller.toggleCategories(selectedCategory['id']);
-          controller.selectedSubCategories.clear();
-        } else {
-          controller.selectedCategories.clear();
-        }
-      },
-      isRequired: true,
-      enableSearch: true,
-      onSearchChanged: controller.fetchCategories,
-    );
-  }
+ Widget _buildCategoryDropdown() {
+  final selectedCategory = controller.allCategories.firstWhere(
+    (s) => s['id'] != null && 
+          controller.selectedCategories.contains(s['id'].toString()),
+    orElse: () => {},
+  );
+  
+  return AdvancedDropdownField<Map<String, dynamic>>(
+    label: 'Select a category',
+    hint: 'Search categories...',
+    items: controller.filteredCategories,
+    selectedValue: selectedCategory.isEmpty ? null : selectedCategory,
+    getLabel: (item) => item['name'] ?? '',
+    onChanged: (selectedCategory) {
+      if (selectedCategory != null && selectedCategory['id'] != null) {
+        controller.toggleCategories(selectedCategory['id'].toString());
+        controller.selectedSubCategories.clear();
+        controller.selectedServices.clear();
+      } else {
+        controller.selectedCategories.clear();
+      }
+    },
+    validator: (value) {
+      if (value == null || controller.selectedCategories.isEmpty) {
+        return 'Please select a category';
+      }
+      return null;
+    },
+    isRequired: true,
+    enableSearch: true,
+    onSearchChanged: controller.fetchCategories,
+  );
+}
 
   Widget _buildSubCategoryDropdown() {
     final selectedSubCategory = controller.allSubCategories.firstWhere(
@@ -107,10 +105,16 @@ class FirstStep extends GetView<AuthController> {
       getLabel: (item) => item['name'] ?? '',
       onChanged: (selectedSubCategory) {
         if (selectedSubCategory != null) {
-          controller.toggleSubCategories(selectedSubCategory['id']);
+          controller.toggleSubCategories(selectedSubCategory['id'].toString());
         } else {
           controller.selectedSubCategories.clear();
         }
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please select a sub-category';
+        }
+        return null;
       },
       isRequired: true,
       enableSearch: true,
@@ -119,9 +123,9 @@ class FirstStep extends GetView<AuthController> {
   }
 
   Widget _buildServicesDropdown() {
-    final selectedServices = controller.allServices.where(
-      (s) => controller.selectedServices.contains(s['id']),
-    ).toList();
+    final selectedServices = controller.allServices
+        .where((s) => controller.selectedServices.contains(s['id']))
+        .toList();
     return AdvancedDropdownField<Map<String, dynamic>>(
       label: 'Select services',
       hint: 'Search services...',
@@ -132,9 +136,15 @@ class FirstStep extends GetView<AuthController> {
         controller.selectedServices.clear();
         for (var service in selectedServices) {
           if (service['id'] != null) {
-            controller.selectedServices.add(service['id']);
+            controller.selectedServices.add(service['id'].toString());
           }
         }
+      },
+      validator: (values) {
+        if (values == null || values.isEmpty) {
+          return 'Please select at least one service';
+        }
+        return null;
       },
       isRequired: true,
       enableSearch: true,
@@ -148,24 +158,27 @@ class FirstStep extends GetView<AuthController> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.neutral200, width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      child: CustomButton(
-        height: 48,
-        text: 'Next',
-        onPressed: () {
-          if (controller.selectedServices.isNotEmpty) {
-            Get.toNamed(Routes.secondStep);
-          } else {
-            Get.snackbar(
-              'Error',
-              'Please select at least one service',
-              backgroundColor: Colors.red,
-              colorText: Colors.white,
-            );
-          }
-        },
-      ),
+      child: Obx(() {
+        final isValid =
+            controller.selectedCategories.isNotEmpty &&
+            controller.selectedSubCategories.isNotEmpty &&
+            controller.selectedServices.isNotEmpty;
+
+        return CustomButton(
+          text: 'Next',
+          onPressed: isValid ? () => Get.toNamed(Routes.secondStep) : null,
+          enabled: isValid,
+          isFullWidth: true,
+        );
+      }),
     );
   }
 }

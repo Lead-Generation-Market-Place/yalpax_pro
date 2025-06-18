@@ -356,34 +356,39 @@ class AuthController extends GetxController {
   
 
   //////////////////////////////
-  var selectedServices = <int>{}.obs;
-  var selectedCategories = <int>{}.obs;
-  var selectedSubCategories = <int>{}.obs;
+  
   var selectedService = {}.obs; // from FirstStep
 
-void toggleService(int serviceId) {
+
+// Change from Set<int> to RxList<String> to match your ID types
+final selectedServices = <String>[].obs;
+final selectedCategories = <String>[].obs;
+final selectedSubCategories = <String>[].obs;
+void toggleCategories(String categoryId) {
+  if (selectedCategories.contains(categoryId)) {
+    selectedCategories.remove(categoryId);
+  } else {
+    selectedCategories
+      ..clear()
+      ..add(categoryId);
+  }
+}
+
+void toggleSubCategories(String subCategoryId) {
+  if (selectedSubCategories.contains(subCategoryId)) {
+    selectedSubCategories.remove(subCategoryId);
+  } else {
+    selectedSubCategories
+      ..clear()
+      ..add(subCategoryId);
+  }
+}
+
+void toggleServices(String serviceId) {
   if (selectedServices.contains(serviceId)) {
     selectedServices.remove(serviceId);
   } else {
     selectedServices.add(serviceId);
-  }
-}
-
-// Remove the selectAllServices method if not needed
-void toggleCategories(int categoryId  ) {
-  if (selectedCategories.contains(categoryId)) {
-    selectedCategories.clear();
-  } else {
-    selectedServices.clear();
-    selectedServices.add(categoryId);
-  }
-}
-void toggleSubCategories(int subCategoryId  ) {
-  if (selectedSubCategories.contains(subCategoryId)) {
-    selectedSubCategories.clear();
-  } else {
-    selectedSubCategories.clear();
-    selectedSubCategories.add(subCategoryId);
   }
 }
 
