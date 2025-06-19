@@ -127,14 +127,13 @@ abstract class AppPages {
       name: Routes.login,
       page: () => const LoginView(),
       binding: AuthBinding(),
-      middlewares: [NoAuthMiddleware()],
       transition: Transition.fadeIn,
     ),
 
     GetPage(
       name: Routes.signup_with_email,
-      page: () => SignupView(),
-      middlewares: [NoAuthMiddleware()],
+      page: () => SignupWithEmail(),
+  
       transition: Transition.fadeIn,
     ),
 
@@ -153,12 +152,7 @@ abstract class AppPages {
       transition: Transition.rightToLeft,
     ),
 
-    GetPage(
-      name: Routes.signup_with_email,
-      page: () => SignupView(),
-      middlewares: [AuthMiddleware()],
-      transition: Transition.rightToLeft,
-    ),
+   
 
     GetPage(
       name: Routes.messages,

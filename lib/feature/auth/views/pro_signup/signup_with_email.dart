@@ -8,8 +8,8 @@ import 'package:yalpax_pro/core/widgets/foldable_widgets.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
 
-class SignupView extends GetView<AuthController> {
-  const SignupView({super.key});
+class SignupWithEmail extends GetView<AuthController> {
+  const SignupWithEmail({super.key});
 
   @override
   Widget build(BuildContext context) {

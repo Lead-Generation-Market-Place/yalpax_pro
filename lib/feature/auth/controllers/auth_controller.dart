@@ -12,7 +12,7 @@ import '../services/auth_service.dart';
 
 class AuthController extends GetxController {
   final authService = Get.find<AuthService>();
-  
+
   // Text Controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -76,25 +76,37 @@ class AuthController extends GetxController {
   }
 
   // Login Methods
-  Future<void> login() async {
-    try {
-      final success = await authService.signIn(
-        emailController.text,
-        passwordController.text,
-      );
+ Future<void> login() async {
+  try {
+    final response = await supabase.auth.signInWithPassword(
+      email: emailController.text,
+      password: passwordController.text,
+    );
 
-      if (success) {
-        await loadUserData();
-        Get.offAllNamed(Routes.jobs);
-        emailController.clear();
-        passwordController.clear();
-      } else {
-        Fluttertoast.showToast(msg: 'Failed to login. Please try again.');
+    final user = response.user;
+
+    if (user != null) {
+      final userMetadata = user.userMetadata;
+      final username = userMetadata?['username']; // safely extract 'username'
+
+      if (username != null) {
+        await supabase.from('users_profiles').insert({
+          'email': emailController.text,
+          'username': username,
+        });
       }
-    } catch (e) {
-      Fluttertoast.showToast(msg: 'Failed to login. Please try again. $e');
+
+      Get.offAllNamed(Routes.jobs);
+      emailController.clear();
+      passwordController.clear();
+    } else {
+      Fluttertoast.showToast(msg: 'Failed to login. Please try again.');
     }
+  } catch (e) {
+    Fluttertoast.showToast(msg: 'Failed to login. Please try again. $e');
   }
+}
+
 
   Future<void> signUp() async {
     try {
@@ -152,60 +164,48 @@ class AuthController extends GetxController {
     }
   }
 
-///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
 
-
-
- 
-
- 
-
-static SupabaseClient client(){
-  final supabase = Supabase.instance.client;
-  return supabase;
-}
-
-static Future<AuthResponse> signInWithGoogle() async {
-  /// TODO: update the Web client ID with your own.
-  
-
-
-  /// Web Client ID that you registered with Google Cloud.
-  const webClientId = '700150215178-ctv5m5b45btkfn0qdhhcgagusvkk3oeu.apps.googleusercontent.com';
-
-  /// TODO: update the iOS client ID with your own.
-  ///
-  /// iOS Client ID that you registered with Google Cloud.
-
-
-  final GoogleSignIn googleSignIn = GoogleSignIn(
-   
-    serverClientId: webClientId,
-    forceCodeForRefreshToken: true,
-     signInOption: SignInOption.standard,
-  );
-  await googleSignIn.signOut();
-  final googleUser = await googleSignIn.signIn();
-  final googleAuth = await googleUser!.authentication;
-  final accessToken = googleAuth.accessToken;
-  final idToken = googleAuth.idToken;
-
-  if (accessToken == null) {
-    throw 'No Access Token found.';
-  }
-  if (idToken == null) {
-    throw 'No ID Token found.';
+  static SupabaseClient client() {
+    final supabase = Supabase.instance.client;
+    return supabase;
   }
 
-  return client().auth.signInWithIdToken(
-    provider: OAuthProvider.google,
-    idToken: idToken,
-    accessToken: accessToken,
-  );
+  static Future<AuthResponse> signInWithGoogle() async {
+    /// TODO: update the Web client ID with your own.
 
+    /// Web Client ID that you registered with Google Cloud.
+    const webClientId =
+        '700150215178-ctv5m5b45btkfn0qdhhcgagusvkk3oeu.apps.googleusercontent.com';
 
-}
+    /// TODO: update the iOS client ID with your own.
+    ///
+    /// iOS Client ID that you registered with Google Cloud.
 
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      serverClientId: webClientId,
+      forceCodeForRefreshToken: true,
+      signInOption: SignInOption.standard,
+    );
+    await googleSignIn.signOut();
+    final googleUser = await googleSignIn.signIn();
+    final googleAuth = await googleUser!.authentication;
+    final accessToken = googleAuth.accessToken;
+    final idToken = googleAuth.idToken;
+
+    if (accessToken == null) {
+      throw 'No Access Token found.';
+    }
+    if (idToken == null) {
+      throw 'No ID Token found.';
+    }
+
+    return client().auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+  }
 
   // // Social Auth Methods
   // Future<void> signInWithGoogle() async {
@@ -247,8 +247,8 @@ static Future<AuthResponse> signInWithGoogle() async {
         redirectTo: kIsWeb
             ? null
             : Platform.isAndroid
-                ? 'us-connector://login-callback'
-                : 'us.connector://login-callback',
+            ? 'us-connector://login-callback'
+            : 'us.connector://login-callback',
         authScreenLaunchMode: LaunchMode.inAppWebView,
       );
 
@@ -293,100 +293,113 @@ static Future<AuthResponse> signInWithGoogle() async {
     searchController.addListener(_onSearchChanged);
   }
 
- final RxList<Map<String, dynamic>> subCategoryServices = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> subCategoryServices =
+      <Map<String, dynamic>>[].obs;
 
-Future<void> fetchServicesBySubCategory(String subCategoryId) async {
-  isLoading.value = true;
-  try {
-    final response = await supabase
-        .from('services')
-        .select('id, name')
-        .eq('sub_categories_id', subCategoryId) // Assuming this relationship exists
-        .order('name', ascending: true);
-    
-    subCategoryServices.assignAll(List<Map<String, dynamic>>.from(response));
-    filteredServices.assignAll(subCategoryServices);
-  } catch (e) {
-    print('Error fetching services: $e');
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-// Update toggleSubCategories
-void toggleSubCategories(String subCategoryId) {
-  if (selectedSubCategories.contains(subCategoryId)) {
-    selectedSubCategories.remove(subCategoryId);
-    subCategoryServices.clear();
-    filteredServices.clear();
-  } else {
-    selectedSubCategories
-      ..clear()
-      ..add(subCategoryId);
-    fetchServicesBySubCategory(subCategoryId);
-  }
-}
-
-// Then update the services dropdown similarly to search locally
-  Future<void> fetchCategories(String query) async {
-  isLoading.value = true;
-  try {
-    if (query.isEmpty) {
+  Future<void> fetchServicesBySubCategory(String subCategoryId) async {
+    isLoading.value = true;
+    try {
       final response = await supabase
-          .from('categories')
+          .from('services')
           .select('id, name')
-          .order('name', ascending: true)
-          .limit(20);
-      allCategories.assignAll(List<Map<String, dynamic>>.from(response));
-      filteredCategories.assignAll(allCategories);
-    } else {
-      final response = await supabase
-          .from('categories')  // Ensure we're querying categories table
-          .select('id, name')
-          .ilike('name', '%$query%')
+          .eq(
+            'sub_categories_id',
+            subCategoryId,
+          ) // Assuming this relationship exists
           .order('name', ascending: true);
-      filteredCategories.assignAll(List<Map<String, dynamic>>.from(response));  // Assign to filteredCategories
+
+      subCategoryServices.assignAll(List<Map<String, dynamic>>.from(response));
+      filteredServices.assignAll(subCategoryServices);
+    } catch (e) {
+      print('Error fetching services: $e');
+    } finally {
+      isLoading.value = false;
     }
-  } catch (e) {
-    print('Error fetching categories: $e');
-  } finally {
-    isLoading.value = false;
   }
-}
-// In AuthController
-final RxList<Map<String, dynamic>> categorySubCategories = <Map<String, dynamic>>[].obs;
 
-Future<void> fetchSubCategoriesByCategory(String categoryId) async {
-  isLoading.value = true;
-  try {
-    final response = await supabase
-        .from('sub_categories')
-        .select('id, name')
-        .eq('category_id', categoryId) // Assuming you have a category_id column
-        .order('name', ascending: true);
-    
-    categorySubCategories.assignAll(List<Map<String, dynamic>>.from(response));
-    filteredSubCategories.assignAll(categorySubCategories);
-  } catch (e) {
-    print('Error fetching subcategories: $e');
-  } finally {
-    isLoading.value = false;
+  // Update toggleSubCategories
+  void toggleSubCategories(String subCategoryId) {
+    if (selectedSubCategories.contains(subCategoryId)) {
+      selectedSubCategories.remove(subCategoryId);
+      subCategoryServices.clear();
+      filteredServices.clear();
+    } else {
+      selectedSubCategories
+        ..clear()
+        ..add(subCategoryId);
+      fetchServicesBySubCategory(subCategoryId);
+    }
   }
-}
 
-// Modify the toggleCategories method to fetch subcategories
-void toggleCategories(String categoryId) {
-  if (selectedCategories.contains(categoryId)) {
-    selectedCategories.remove(categoryId);
-    categorySubCategories.clear();
-    filteredSubCategories.clear();
-  } else {
-    selectedCategories
-      ..clear()
-      ..add(categoryId);
-    fetchSubCategoriesByCategory(categoryId);
+  // Then update the services dropdown similarly to search locally
+  Future<void> fetchCategories(String query) async {
+    isLoading.value = true;
+    try {
+      if (query.isEmpty) {
+        final response = await supabase
+            .from('categories')
+            .select('id, name')
+            .order('name', ascending: true)
+            .limit(20);
+        allCategories.assignAll(List<Map<String, dynamic>>.from(response));
+        filteredCategories.assignAll(allCategories);
+      } else {
+        final response = await supabase
+            .from('categories') // Ensure we're querying categories table
+            .select('id, name')
+            .ilike('name', '%$query%')
+            .order('name', ascending: true);
+        filteredCategories.assignAll(
+          List<Map<String, dynamic>>.from(response),
+        ); // Assign to filteredCategories
+      }
+    } catch (e) {
+      print('Error fetching categories: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
-}
+
+  // In AuthController
+  final RxList<Map<String, dynamic>> categorySubCategories =
+      <Map<String, dynamic>>[].obs;
+
+  Future<void> fetchSubCategoriesByCategory(String categoryId) async {
+    isLoading.value = true;
+    try {
+      final response = await supabase
+          .from('sub_categories')
+          .select('id, name')
+          .eq(
+            'category_id',
+            categoryId,
+          ) // Assuming you have a category_id column
+          .order('name', ascending: true);
+
+      categorySubCategories.assignAll(
+        List<Map<String, dynamic>>.from(response),
+      );
+      filteredSubCategories.assignAll(categorySubCategories);
+    } catch (e) {
+      print('Error fetching subcategories: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Modify the toggleCategories method to fetch subcategories
+  void toggleCategories(String categoryId) {
+    if (selectedCategories.contains(categoryId)) {
+      selectedCategories.remove(categoryId);
+      categorySubCategories.clear();
+      filteredSubCategories.clear();
+    } else {
+      selectedCategories
+        ..clear()
+        ..add(categoryId);
+      fetchSubCategoriesByCategory(categoryId);
+    }
+  }
 
   void _onSearchChanged() {
     // fetchServices(searchController.text);
@@ -394,8 +407,6 @@ void toggleCategories(String categoryId) {
     // fetchSubCategories(searchController.text);
     showClearButton.value = searchController.text.isNotEmpty;
   }
-
- 
 
   void clearSearch() {
     searchController.clear();
@@ -409,48 +420,41 @@ void toggleCategories(String categoryId) {
   RxList<Map<String, dynamic>> questions = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> answers = <Map<String, dynamic>>[].obs;
 
-  
-
-  
-
   //////////////////////////////
-  
+
   var selectedService = {}.obs; // from FirstStep
 
+  // Change from Set<int> to RxList<String> to match your ID types
+  final selectedServices = <String>[].obs;
+  final selectedCategories = <String>[].obs;
+  final selectedSubCategories = <String>[].obs;
+  // void toggleCategories(String categoryId) {
+  //   if (selectedCategories.contains(categoryId)) {
+  //     selectedCategories.remove(categoryId);
+  //   } else {
+  //     selectedCategories
+  //       ..clear()
+  //       ..add(categoryId);
+  //   }
+  // }
 
-// Change from Set<int> to RxList<String> to match your ID types
-final selectedServices = <String>[].obs;
-final selectedCategories = <String>[].obs;
-final selectedSubCategories = <String>[].obs;
-// void toggleCategories(String categoryId) {
-//   if (selectedCategories.contains(categoryId)) {
-//     selectedCategories.remove(categoryId);
-//   } else {
-//     selectedCategories
-//       ..clear()
-//       ..add(categoryId);
-//   }
-// }
+  // void toggleSubCategories(String subCategoryId) {
+  //   if (selectedSubCategories.contains(subCategoryId)) {
+  //     selectedSubCategories.remove(subCategoryId);
+  //   } else {
+  //     selectedSubCategories
+  //       ..clear()
+  //       ..add(subCategoryId);
+  //   }
+  // }
 
-// void toggleSubCategories(String subCategoryId) {
-//   if (selectedSubCategories.contains(subCategoryId)) {
-//     selectedSubCategories.remove(subCategoryId);
-//   } else {
-//     selectedSubCategories
-//       ..clear()
-//       ..add(subCategoryId);
-//   }
-// }
-
-void toggleServices(String serviceId) {
-  if (selectedServices.contains(serviceId)) {
-    selectedServices.remove(serviceId);
-  } else {
-    selectedServices.add(serviceId);
+  void toggleServices(String serviceId) {
+    if (selectedServices.contains(serviceId)) {
+      selectedServices.remove(serviceId);
+    } else {
+      selectedServices.add(serviceId);
+    }
   }
-}
-
-  
 
   void selectAllServices() {
     for (var service in allServices) {

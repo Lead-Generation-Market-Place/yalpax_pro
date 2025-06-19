@@ -5,6 +5,7 @@ import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
+import 'package:yalpax_pro/main.dart';
 
 class SecondStep extends GetView<AuthController> {
   const SecondStep({super.key});
@@ -82,23 +83,18 @@ class SecondStep extends GetView<AuthController> {
 
                   if (user != null && user.email != null) {
                     // Fetch profile from users_profiles table
-                    
-                    final userProfile = await Supabase.instance.client
-                        .from('users_profiles')
-                        .select('profile_picture_url, username')
-                        .eq('email', user.email!)
-                        .maybeSingle();
 
-                    if (userProfile != null) {
-                      print('User Profile: $userProfile');
-                          // Navigate to initial route
-                    Get.toNamed(Routes.thirdStep);
-                    } else {
-                      print('No profile found for: ${user.email}');
-                      
+                    final userMetadata = user.userMetadata;
+                    final username =
+                        userMetadata?['name']; // safely extract 'username'
+
+                    if (username != null) {
+                      await supabase.from('users_profiles').insert({
+                        'email':user.email,
+                        'username': username,
+                      });
                     }
-
-                
+                      Get.toNamed(Routes.thirdStep);
                   } else {
                     print('Google Sign-In failed or returned no email.');
                   }
