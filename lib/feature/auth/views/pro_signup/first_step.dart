@@ -99,67 +99,90 @@ class FirstStep extends GetView<AuthController> {
   );
 }
 
-  Widget _buildSubCategoryDropdown() {
-    final selectedSubCategory = controller.allSubCategories.firstWhere(
-      (s) => controller.selectedSubCategories.contains(s['id']),
-      orElse: () => {},
-    );
-    return AdvancedDropdownField<Map<String, dynamic>>(
-      label: 'Select a sub-category',
-      hint: 'Search sub-categories...',
-      items: controller.filteredSubCategories,
-      selectedValue: selectedSubCategory.isEmpty ? null : selectedSubCategory,
-      getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedSubCategory) {
-        if (selectedSubCategory != null) {
-          controller.toggleSubCategories(selectedSubCategory['id'].toString());
-        } else {
-          controller.selectedSubCategories.clear();
-        }
-      },
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please select a sub-category';
-        }
-        return null;
-      },
-      isRequired: true,
-      enableSearch: true,
-      onSearchChanged: controller.fetchSubCategories,
-    );
-  }
+ Widget _buildSubCategoryDropdown() {
+  final selectedSubCategory = controller.categorySubCategories.firstWhere(
+    (s) => controller.selectedSubCategories.contains(s['id']),
+    orElse: () => {},
+  );
+  
+  return AdvancedDropdownField<Map<String, dynamic>>(
+    label: 'Select a sub-category',
+    hint: 'Search sub-categories...',
+    items: controller.filteredSubCategories,
+    selectedValue: selectedSubCategory.isEmpty ? null : selectedSubCategory,
+    getLabel: (item) => item['name'] ?? '',
+    onChanged: (selectedSubCategory) {
+      if (selectedSubCategory != null) {
+        controller.toggleSubCategories(selectedSubCategory['id'].toString());
+      } else {
+        controller.selectedSubCategories.clear();
+      }
+    },
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'Please select a sub-category';
+      }
+      return null;
+    },
+    isRequired: true,
+    enableSearch: true,
+    onSearchChanged: (query) {
+      // Local search instead of database query
+      if (query.isEmpty) {
+        controller.filteredSubCategories.assignAll(controller.categorySubCategories);
+      } else {
+        controller.filteredSubCategories.assignAll(
+          controller.categorySubCategories.where((subCat) => 
+            (subCat['name'] as String).toLowerCase().contains(query.toLowerCase())
+          ).toList()
+        );
+      }
+    },
+  );
+}
+ Widget _buildServicesDropdown() {
+  // Get services for the selected subcategory
+  final selectedServices = controller.subCategoryServices
+      .where((s) => controller.selectedServices.contains(s['id']))
+      .toList();
 
-  Widget _buildServicesDropdown() {
-    final selectedServices = controller.allServices
-        .where((s) => controller.selectedServices.contains(s['id']))
-        .toList();
-    return AdvancedDropdownField<Map<String, dynamic>>(
-      label: 'Select services',
-      hint: 'Search services...',
-      items: controller.filteredServices,
-      selectedValues: selectedServices,
-      getLabel: (item) => item['name'] ?? '',
-      onMultiChanged: (selectedServices) {
-        controller.selectedServices.clear();
-        for (var service in selectedServices) {
-          if (service['id'] != null) {
-            controller.selectedServices.add(service['id'].toString());
-          }
+  return AdvancedDropdownField<Map<String, dynamic>>(
+    label: 'Select services',
+    hint: 'Search services...',
+    items: controller.filteredServices,
+    selectedValues: selectedServices,
+    getLabel: (item) => item['name'] ?? '',
+    onMultiChanged: (selectedServices) {
+      controller.selectedServices.clear();
+      for (var service in selectedServices) {
+        if (service['id'] != null) {
+          controller.selectedServices.add(service['id'].toString());
         }
-      },
-      validator: (values) {
-        if (values == null || values.isEmpty) {
-          return 'Please select at least one service';
-        }
-        return null;
-      },
-      isRequired: true,
-      enableSearch: true,
-      multiSelect: true,
-      onSearchChanged: controller.fetchServices,
-    );
-  }
-
+      }
+    },
+    validator: (values) {
+      if (values == null || values.isEmpty) {
+        return 'Please select at least one service';
+      }
+      return null;
+    },
+    isRequired: true,
+    enableSearch: true,
+    multiSelect: true,
+    onSearchChanged: (query) {
+      // Local search instead of database query
+      if (query.isEmpty) {
+        controller.filteredServices.assignAll(controller.subCategoryServices);
+      } else {
+        controller.filteredServices.assignAll(
+          controller.subCategoryServices.where((service) => 
+            (service['name'] as String).toLowerCase().contains(query.toLowerCase())
+          ).toList()
+        );
+      }
+    },
+  );
+}
   Widget _buildNextButton() {
     return Container(
       padding: const EdgeInsets.all(16),

@@ -53,19 +53,19 @@ class _AdvancedDropdownFieldState<T> extends State<AdvancedDropdownField<T>> {
     selectedItem.value = widget.selectedValue;
     selectedItems.assignAll(widget.selectedValues ?? []);
   }
-
-  @override
-  void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedValue != selectedItem.value) {
-      selectedItem.value = widget.selectedValue;
-    }
-    if (widget.selectedValues != null && 
-        !listEquals(widget.selectedValues, selectedItems)) {
-      selectedItems.assignAll(widget.selectedValues!);
-    }
+@override
+void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
+  super.didUpdateWidget(oldWidget);
+  
+  if (widget.selectedValue != oldWidget.selectedValue) {
+    selectedItem.value = widget.selectedValue;
   }
-
+  
+  if (widget.selectedValues != null && 
+      !listEquals(widget.selectedValues, oldWidget.selectedValues)) {
+    selectedItems.assignAll(widget.selectedValues!);
+  }
+}
   String getItemLabel(T item) {
     return widget.getLabel != null ? widget.getLabel!(item) : item.toString();
   }

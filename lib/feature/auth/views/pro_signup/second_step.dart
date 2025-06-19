@@ -82,6 +82,7 @@ class SecondStep extends GetView<AuthController> {
 
                   if (user != null && user.email != null) {
                     // Fetch profile from users_profiles table
+                    
                     final userProfile = await Supabase.instance.client
                         .from('users_profiles')
                         .select('profile_picture_url, username')
@@ -94,6 +95,7 @@ class SecondStep extends GetView<AuthController> {
                     Get.toNamed(Routes.thirdStep);
                     } else {
                       print('No profile found for: ${user.email}');
+                      
                     }
 
                 

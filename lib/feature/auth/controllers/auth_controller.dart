@@ -11,7 +11,7 @@ import '../../../core/routes/routes.dart';
 import '../services/auth_service.dart';
 
 class AuthController extends GetxController {
-  final _authService = Get.find<AuthService>();
+  final authService = Get.find<AuthService>();
   
   // Text Controllers
   final nameController = TextEditingController();
@@ -39,10 +39,10 @@ class AuthController extends GetxController {
   final resetConfirmPasswordError = RxnString();
 
   // Computed properties
-  bool get isAuthenticated => _authService.isAuthenticated.value;
+  bool get isAuthenticated => authService.isAuthenticated.value;
   var isLoading = false.obs;
-  User? get currentUser => _authService.currentUser.value;
-  String? get authError => _authService.authError.value;
+  User? get currentUser => authService.currentUser.value;
+  String? get authError => authService.authError.value;
 
   @override
   void onClose() {
@@ -78,7 +78,7 @@ class AuthController extends GetxController {
   // Login Methods
   Future<void> login() async {
     try {
-      final success = await _authService.signIn(
+      final success = await authService.signIn(
         emailController.text,
         passwordController.text,
       );
@@ -98,14 +98,14 @@ class AuthController extends GetxController {
 
   Future<void> signUp() async {
     try {
-      final success = await _authService.signUp(
+      final success = await authService.signUp(
         emailController.text,
         passwordController.text,
         metadata: {'username': nameController.text},
       );
 
       if (success) {
-        await _authService.signOut(); // Sign out after successful signup
+        await authService.signOut(); // Sign out after successful signup
         emailController.clear();
         passwordController.clear();
         nameController.clear();
@@ -120,14 +120,14 @@ class AuthController extends GetxController {
   }
 
   Future<void> signOut() async {
-    await _authService.signOut();
+    await authService.signOut();
 
     Get.offAllNamed(Routes.login);
   }
 
   Future<void> resetPassword(String email) async {
     try {
-      final success = await _authService.resetPassword(email);
+      final success = await authService.resetPassword(email);
       if (success) {
         emailController.clear();
         Fluttertoast.showToast(msg: 'Reset email sent');
@@ -141,7 +141,7 @@ class AuthController extends GetxController {
 
   Future<void> updatePassword(String newPassword) async {
     try {
-      final success = await _authService.updatePassword(newPassword);
+      final success = await authService.updatePassword(newPassword);
       if (success) {
         Fluttertoast.showToast(msg: 'Password updated successfully');
       } else {
@@ -210,7 +210,7 @@ static Future<AuthResponse> signInWithGoogle() async {
   // // Social Auth Methods
   // Future<void> signInWithGoogle() async {
   //   try {
-  //     await _authService.signOut();
+  //     await authService.signOut();
 
   //     const webClientId = '117669178530-m7i284g3857t4f3ol9e2vo7j9v38h0af.apps.googleusercontent.com';
   //     const iosClientId = '117669178530-b37fu5du424kf8q4gmjnee5c5stqnd1q.apps.googleusercontent.com';
@@ -293,38 +293,41 @@ static Future<AuthResponse> signInWithGoogle() async {
     searchController.addListener(_onSearchChanged);
   }
 
-  Future<void> fetchServices(String query) async {
-    isLoading.value = true;
-    try {
-      if (query.isEmpty) {
-        // Fetch initial popular services or all services when search is empty
-        final response = await supabase
-            .from('services')
-            .select('id, name')
-            .order('name', ascending: true)
-            .limit(20); // Fetch ID as well
-        allServices.assignAll(
-          List<Map<String, dynamic>>.from(response),
-        ); // Assign as List<Map<String, dynamic>>
-        filteredServices.assignAll(allServices);
-      } else {
-        // Real-time search from Supabase
-        final response = await supabase
-            .from('services')
-            .select('id, name')
-            .ilike('name', '%' + query + '%')
-            .order('name', ascending: true); // Fetch ID as well
-        filteredServices.assignAll(
-          List<Map<String, dynamic>>.from(response),
-        ); // Assign as List<Map<String, dynamic>>
-      }
-    } catch (e) {
-      print('Error fetching services: $e');
-      // Optionally, show a Get.snackbar or other UI feedback
-    } finally {
-      isLoading.value = false;
-    }
+ final RxList<Map<String, dynamic>> subCategoryServices = <Map<String, dynamic>>[].obs;
+
+Future<void> fetchServicesBySubCategory(String subCategoryId) async {
+  isLoading.value = true;
+  try {
+    final response = await supabase
+        .from('services')
+        .select('id, name')
+        .eq('sub_categories_id', subCategoryId) // Assuming this relationship exists
+        .order('name', ascending: true);
+    
+    subCategoryServices.assignAll(List<Map<String, dynamic>>.from(response));
+    filteredServices.assignAll(subCategoryServices);
+  } catch (e) {
+    print('Error fetching services: $e');
+  } finally {
+    isLoading.value = false;
   }
+}
+
+// Update toggleSubCategories
+void toggleSubCategories(String subCategoryId) {
+  if (selectedSubCategories.contains(subCategoryId)) {
+    selectedSubCategories.remove(subCategoryId);
+    subCategoryServices.clear();
+    filteredServices.clear();
+  } else {
+    selectedSubCategories
+      ..clear()
+      ..add(subCategoryId);
+    fetchServicesBySubCategory(subCategoryId);
+  }
+}
+
+// Then update the services dropdown similarly to search locally
   Future<void> fetchCategories(String query) async {
   isLoading.value = true;
   try {
@@ -350,44 +353,45 @@ static Future<AuthResponse> signInWithGoogle() async {
     isLoading.value = false;
   }
 }
+// In AuthController
+final RxList<Map<String, dynamic>> categorySubCategories = <Map<String, dynamic>>[].obs;
 
-  Future<void> fetchSubCategories(String query) async {
-    isLoading.value = true;
-    try {
-      if (query.isEmpty) {
-        // Fetch initial popular services or all services when search is empty
-        final response = await supabase
-            .from('sub_categories')
-            .select('id, name')
-            .order('name', ascending: true)
-            .limit(20); // Fetch ID as well
-        allSubCategories.assignAll(
-          List<Map<String, dynamic>>.from(response),
-        ); // Assign as List<Map<String, dynamic>>
-        filteredSubCategories.assignAll(allSubCategories);
-      } else {
-        // Real-time search from Supabase
-        final response = await supabase
-            .from('sub_categories')
-            .select('id, name')
-            .ilike('name', '%' + query + '%')
-            .order('name', ascending: true); // Fetch ID as well
-        filteredSubCategories.assignAll(
-          List<Map<String, dynamic>>.from(response),
-        ); // Assign as List<Map<String, dynamic>>
-      }
-    } catch (e) {
-      print('Error fetching services: $e');
-      // Optionally, show a Get.snackbar or other UI feedback
-    } finally {
-      isLoading.value = false;
-    }
+Future<void> fetchSubCategoriesByCategory(String categoryId) async {
+  isLoading.value = true;
+  try {
+    final response = await supabase
+        .from('sub_categories')
+        .select('id, name')
+        .eq('category_id', categoryId) // Assuming you have a category_id column
+        .order('name', ascending: true);
+    
+    categorySubCategories.assignAll(List<Map<String, dynamic>>.from(response));
+    filteredSubCategories.assignAll(categorySubCategories);
+  } catch (e) {
+    print('Error fetching subcategories: $e');
+  } finally {
+    isLoading.value = false;
   }
+}
+
+// Modify the toggleCategories method to fetch subcategories
+void toggleCategories(String categoryId) {
+  if (selectedCategories.contains(categoryId)) {
+    selectedCategories.remove(categoryId);
+    categorySubCategories.clear();
+    filteredSubCategories.clear();
+  } else {
+    selectedCategories
+      ..clear()
+      ..add(categoryId);
+    fetchSubCategoriesByCategory(categoryId);
+  }
+}
 
   void _onSearchChanged() {
-    fetchServices(searchController.text);
+    // fetchServices(searchController.text);
     fetchCategories(searchController.text);
-    fetchSubCategories(searchController.text);
+    // fetchSubCategories(searchController.text);
     showClearButton.value = searchController.text.isNotEmpty;
   }
 
@@ -395,9 +399,9 @@ static Future<AuthResponse> signInWithGoogle() async {
 
   void clearSearch() {
     searchController.clear();
-    fetchServices(''); // Fetch all services again
+    // fetchServices(''); // Fetch all services again
     fetchCategories(''); // Fetch all categories again
-    fetchSubCategories(''); // Fetch all categories again
+    // fetchSubCategories(''); // Fetch all categories again
     showClearButton.value = false;
   }
 
@@ -418,25 +422,25 @@ static Future<AuthResponse> signInWithGoogle() async {
 final selectedServices = <String>[].obs;
 final selectedCategories = <String>[].obs;
 final selectedSubCategories = <String>[].obs;
-void toggleCategories(String categoryId) {
-  if (selectedCategories.contains(categoryId)) {
-    selectedCategories.remove(categoryId);
-  } else {
-    selectedCategories
-      ..clear()
-      ..add(categoryId);
-  }
-}
+// void toggleCategories(String categoryId) {
+//   if (selectedCategories.contains(categoryId)) {
+//     selectedCategories.remove(categoryId);
+//   } else {
+//     selectedCategories
+//       ..clear()
+//       ..add(categoryId);
+//   }
+// }
 
-void toggleSubCategories(String subCategoryId) {
-  if (selectedSubCategories.contains(subCategoryId)) {
-    selectedSubCategories.remove(subCategoryId);
-  } else {
-    selectedSubCategories
-      ..clear()
-      ..add(subCategoryId);
-  }
-}
+// void toggleSubCategories(String subCategoryId) {
+//   if (selectedSubCategories.contains(subCategoryId)) {
+//     selectedSubCategories.remove(subCategoryId);
+//   } else {
+//     selectedSubCategories
+//       ..clear()
+//       ..add(subCategoryId);
+//   }
+// }
 
 void toggleServices(String serviceId) {
   if (selectedServices.contains(serviceId)) {
