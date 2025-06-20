@@ -710,4 +710,5 @@ class AuthController extends GetxController {
       },
     );
   }
+  final TextEditingController businessNameController = TextEditingController();
 }

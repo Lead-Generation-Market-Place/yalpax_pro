@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
+import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
 class FifthStep extends GetView<AuthController> {
@@ -9,131 +10,242 @@ class FifthStep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(color: Colors.black),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Obx(() {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Create your free account.',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
+    final formKey = GlobalKey<FormState>();
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
-              // Avatar + Name
-              Center(
+    return Scaffold(
+      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+      appBar: AppBar(
+        title: Text(
+          'Business Profile',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, 
+              color: isDarkMode ? Colors.white : Colors.black),
+          onPressed: () => Get.back(),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Divider(
+            height: 1, 
+            thickness: 1,
+            color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: formKey,
+          child: ListView(
+       
+            children: [
+              // Header Section
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
-                      radius: 36,
-                      backgroundImage: AssetImage(
-                        'assets/images/avatar_placeholder.png',
+                    Text(
+                      'Stand out to customers',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Text(
-                    //   controller.fullName.value, // e.g. "Feroz Durrani"
-                    //   style: const TextStyle(
-                    //     fontWeight: FontWeight.bold,
-                    //     fontSize: 16,
-                    // ),
-                    // ),
+                    Text(
+                      'Add a few details to your profile to help customers get to know you better.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.grey[400] : Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
                   ],
+                ),
+              ),
+
+              // Progress Indicator
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: LinearProgressIndicator(
+                  value: 0.625, // 5/8 steps completed
+                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDarkMode ? Colors.blue[300]! : Colors.blue,
+                  ),
+                  minHeight: 6,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Email (non-editable)
-              TextFormField(
-                initialValue: controller.email.value,
-                enabled: false,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Phone input
-              TextField(
-                controller: controller.phoneController,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  hintText: '(937) 056-3174',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Checkbox
-              Row(
-                children: [
-                  Checkbox(
-                    value: controller.enableTextMessages.value,
-                    onChanged: (val) =>
-                        controller.enableTextMessages.value = val ?? false,
+              // Business Name Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Business Name',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.grey[300] : Colors.grey[800],
                   ),
-                  const Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        text: 'Enable text messages\n',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: CustomInput(
+                  label: '',
+                  hint: 'Enter your business name',
+                  autofocus: true,
+                  prefixIcon: Icon(
+                    Icons.business,
+                    color: isDarkMode ? Colors.grey[500] : Colors.grey[600],
+                  ),
+                  keyboardType: TextInputType.text,
+                  controller: controller.businessNameController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your business name';
+                    }
+                    if (value.length < 3) {
+                      return 'Name should be at least 3 characters';
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    // This will trigger the button color change
+                    controller.update();
+                  },
+                ),
+              ),
+
+              // Business Card Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.grey[800] : const Color(0xFFF4F6F8),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: isDarkMode ? Colors.grey[700]! : Colors.grey[200]!,
+                      width: 1,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         children: [
-                          TextSpan(
-                            text:
-                                'By leaving this box checked and tapping Continue, you authorize us to send you automated text messages. ',
-                            style: TextStyle(fontWeight: FontWeight.normal),
+                          Icon(
+                            Icons.lightbulb_outline,
+                            color: isDarkMode ? Colors.amber[300] : Colors.blue,
+                            size: 20,
                           ),
-                          TextSpan(
-                            text: 'Terms apply.',
-                            style: TextStyle(color: Colors.blue),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Why add a business name?',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Having a business name in your profile helps build trust and professionalism. '
+                        'It gives your brand identity, makes it easier for customers to recognize you, '
+                        'and increases your chances of getting hired.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[800],
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'A clear, strong name shows you\'re serious and organized about your work.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[800],
+                          height: 1.5,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Terms + Privacy
-              const Text.rich(
-                TextSpan(
-                  text: 'By tapping Continue, I agree to the ',
-                  children: [
-                    TextSpan(
-                      text: 'Terms of Use',
-                      style: TextStyle(color: Colors.blue),
-                    ),
-                    TextSpan(text: ' and '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: TextStyle(color: Colors.blue),
-                    ),
-                  ],
                 ),
               ),
-              const SizedBox(height: 24),
 
-              // Continue button
-              CustomButton(
-                text: 'Continue',
-                onPressed: () {
-                  Get.toNamed(Routes.sixthstep);
-                  controller.registerUser();
-                },
+              const Spacer(),
+
+              // Bottom Button Section
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.grey[900] : Colors.white,
+                  border: Border(
+                    top: BorderSide(
+                      color: isDarkMode ? Colors.grey[800]! : Colors.grey[200]!,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Obx(
+                  () => SizedBox(
+                    width: double.infinity,
+                    height: 20,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          Get.toNamed(Routes.eightStep);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: controller.businessNameController.text.trim().isEmpty
+                            ? (isDarkMode ? Colors.grey[700] : Colors.blue[100])
+                            : (isDarkMode ? Colors.blue[600] : Colors.blue),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: controller.businessNameController.text.trim().isEmpty
+                              ? (isDarkMode ? Colors.grey[500] : Colors.blue[300])
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
-          );
-        }),
+          ),
+        ),
       ),
     );
   }

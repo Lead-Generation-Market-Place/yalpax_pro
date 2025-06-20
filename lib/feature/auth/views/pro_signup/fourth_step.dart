@@ -8,28 +8,21 @@ class FourthStep extends GetView<AuthController> {
   const FourthStep({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    body: SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min, // Important to center vertically
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 32),
 
-            // Illustration
-            Center(
-              child: Image.asset(
-                'assets/images/business_profile.png', // Replace with actual image asset
-                height: 250,
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Stepper / Progress
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
+              // Stepper / Progress
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Row(
@@ -86,20 +79,16 @@ class FourthStep extends GetView<AuthController> {
                   ),
                 ],
               ),
-            ),
 
-            const Spacer(),
+              const SizedBox(height: 32),
 
-            // Next button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: SizedBox(
+              // Next button
+              SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate to next screen
-                    Get.toNamed(Routes.seventhStep);
+                    Get.toNamed(Routes.fifthStep);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.lightBlue,
@@ -113,11 +102,13 @@ class FourthStep extends GetView<AuthController> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
 }
