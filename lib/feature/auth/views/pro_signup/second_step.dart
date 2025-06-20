@@ -82,21 +82,59 @@ class SecondStep extends GetView<AuthController> {
                   final user = res.user;
 
                   if (user != null && user.email != null) {
-                    // Fetch profile from users_profiles table
-
+                    final email = user.email;
                     final userMetadata = user.userMetadata;
-                    final username =
-                        userMetadata?['name']; // safely extract 'username'
+                    String? username = userMetadata?['name'];
 
-                    if (username != null) {
-                      await supabase.from('users_profiles').insert({
-                        'email':user.email,
-                        'username': username,
-                      });
+                    if (username == null) {
+                      Get.snackbar(
+                        'Error',
+                        'Username not found in Google profile.',
+                      );
+                      return;
                     }
+
+                    // Check if user already exists by email
+                    final existingUser = await supabase
+                        .from('users_profiles')
+                        .select()
+                        .eq('email', email ?? '')
+                        .maybeSingle();
+
+                    if (existingUser != null) {
+                      // User with this email already exists, redirect
                       Get.toNamed(Routes.thirdStep);
-                  } else {
-                    print('Google Sign-In failed or returned no email.');
+                      return;
+                    }
+
+                    // Check if username already exists
+                    final usernameExists = await supabase
+                        .from('users_profiles')
+                        .select()
+                        .eq('username', username)
+                        .maybeSingle();
+
+                    // Generate a unique username if needed
+                    if (usernameExists != null) {
+                      final random =
+                          (1000 +
+                                  (10000 - 1000) *
+                                      (await Future.value(
+                                        DateTime.now().millisecondsSinceEpoch %
+                                            1000,
+                                      )) /
+                                      1000)
+                              .toInt();
+                      username = '${username}_$random';
+                    }
+
+                    // Insert new user
+                    await supabase.from('users_profiles').insert({
+                      'email': email,
+                      'username': username,
+                    });
+
+                    Get.toNamed(Routes.thirdStep);
                   }
                 },
                 icon: const Icon(Icons.g_mobiledata),
@@ -106,6 +144,7 @@ class SecondStep extends GetView<AuthController> {
                 ),
               ),
             ),
+
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
