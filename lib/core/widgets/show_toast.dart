@@ -9,7 +9,10 @@ class ShowToast {
     Color textColor = Colors.white,
     double fontSize = 16.0,
     double borderRadius = 8.0,
-    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+    EdgeInsetsGeometry padding = const EdgeInsets.symmetric(
+      horizontal: 16.0,
+      vertical: 10.0,
+    ),
     ToastPosition position = ToastPosition.bottom,
   }) {
     final overlay = Overlay.of(context);
@@ -31,10 +34,7 @@ class ShowToast {
               ),
               child: Text(
                 message,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: fontSize,
-                ),
+                style: TextStyle(color: textColor, fontSize: fontSize),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -102,7 +102,4 @@ class ShowToast {
   }
 }
 
-enum ToastPosition {
-  top,
-  bottom,
-}
+enum ToastPosition { top, bottom }

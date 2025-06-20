@@ -33,12 +33,13 @@ class AdvancedDropdownField<T> extends StatefulWidget {
     this.multiSelect = false,
     this.onSearchChanged,
   }) : assert(
-          !multiSelect || (selectedValues != null && onMultiChanged != null),
-          'For multi-select, selectedValues and onMultiChanged must be provided',
-        );
+         !multiSelect || (selectedValues != null && onMultiChanged != null),
+         'For multi-select, selectedValues and onMultiChanged must be provided',
+       );
 
   @override
-  State<AdvancedDropdownField<T>> createState() => _AdvancedDropdownFieldState<T>();
+  State<AdvancedDropdownField<T>> createState() =>
+      _AdvancedDropdownFieldState<T>();
 }
 
 class _AdvancedDropdownFieldState<T> extends State<AdvancedDropdownField<T>> {
@@ -53,28 +54,30 @@ class _AdvancedDropdownFieldState<T> extends State<AdvancedDropdownField<T>> {
     selectedItem.value = widget.selectedValue;
     selectedItems.assignAll(widget.selectedValues ?? []);
   }
-@override
-void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
-  super.didUpdateWidget(oldWidget);
-  
-  if (widget.selectedValue != oldWidget.selectedValue) {
-    selectedItem.value = widget.selectedValue;
+
+  @override
+  void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.selectedValue != oldWidget.selectedValue) {
+      selectedItem.value = widget.selectedValue;
+    }
+
+    if (widget.selectedValues != null &&
+        !listEquals(widget.selectedValues, oldWidget.selectedValues)) {
+      selectedItems.assignAll(widget.selectedValues!);
+    }
   }
-  
-  if (widget.selectedValues != null && 
-      !listEquals(widget.selectedValues, oldWidget.selectedValues)) {
-    selectedItems.assignAll(widget.selectedValues!);
-  }
-}
+
   String getItemLabel(T item) {
     return widget.getLabel != null ? widget.getLabel!(item) : item.toString();
   }
 
   String? _validate(T? val) {
     if (widget.validator != null) return widget.validator!(val);
-    if (widget.isRequired && 
-        ((!widget.multiSelect && val == null) || 
-         (widget.multiSelect && selectedItems.isEmpty))) {
+    if (widget.isRequired &&
+        ((!widget.multiSelect && val == null) ||
+            (widget.multiSelect && selectedItems.isEmpty))) {
       return '${widget.label ?? "This field"} is required';
     }
     return null;
@@ -165,9 +168,9 @@ void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
                       final itemsToShow = widget.onSearchChanged != null
                           ? widget.items
                           : widget.items.where((item) {
-                              return getItemLabel(item)
-                                  .toLowerCase()
-                                  .contains(searchController.text.toLowerCase());
+                              return getItemLabel(item).toLowerCase().contains(
+                                searchController.text.toLowerCase(),
+                              );
                             }).toList();
 
                       if (itemsToShow.isEmpty) {
@@ -197,9 +200,11 @@ void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
                           ElevatedButton(
                             onPressed: () {
                               widget.onMultiChanged?.call(selectedItems);
-                              field.didChange(selectedItems.isNotEmpty 
-                                  ? selectedItems.first 
-                                  : null);
+                              field.didChange(
+                                selectedItems.isNotEmpty
+                                    ? selectedItems.first
+                                    : null,
+                              );
                               Navigator.pop(context);
                             },
                             child: const Text('Done'),
@@ -251,10 +256,15 @@ void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   errorText: field.errorText,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                  suffixIcon: (selectedItem.value != null || selectedItems.isNotEmpty) && 
-                           (widget.onChanged != null || widget.onMultiChanged != null)
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 12,
+                  ),
+                  suffixIcon:
+                      (selectedItem.value != null ||
+                              selectedItems.isNotEmpty) &&
+                          (widget.onChanged != null ||
+                              widget.onMultiChanged != null)
                       ? IconButton(
                           icon: const Icon(Icons.clear, size: 20),
                           onPressed: () {
@@ -267,53 +277,57 @@ void didUpdateWidget(covariant AdvancedDropdownField<T> oldWidget) {
                         )
                       : const Icon(Icons.arrow_drop_down, size: 24),
                 ),
-                child: Obx(() => Text(
-                  widget.multiSelect
-                      ? selectedItems.isEmpty
-                          ? widget.hint ?? 'Select'
-                          : selectedItems.length == 1
+                child: Obx(
+                  () => Text(
+                    widget.multiSelect
+                        ? selectedItems.isEmpty
+                              ? widget.hint ?? 'Select'
+                              : selectedItems.length == 1
                               ? getItemLabel(selectedItems.first)
                               : '${selectedItems.length} selected'
-                      : selectedItem.value != null
-                          ? getItemLabel(selectedItem.value!)
-                          : widget.hint ?? 'Select',
-                  style: TextStyle(
-                    color: (selectedItem.value == null && selectedItems.isEmpty)
-                        ? Colors.grey[600]
-                        : Colors.black,
+                        : selectedItem.value != null
+                        ? getItemLabel(selectedItem.value!)
+                        : widget.hint ?? 'Select',
+                    style: TextStyle(
+                      color:
+                          (selectedItem.value == null && selectedItems.isEmpty)
+                          ? Colors.grey[600]
+                          : Colors.black,
+                    ),
                   ),
-                )),
+                ),
               ),
             ),
             if (widget.multiSelect && selectedItems.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Obx(() => Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: selectedItems.map((item) {
-                    return Chip(
-                      label: Text(getItemLabel(item)),
-                      onDeleted: () {
-                        selectedItems.remove(item);
-                        widget.onMultiChanged?.call(selectedItems);
-                        field.didChange(selectedItems.isNotEmpty 
-                            ? selectedItems.first 
-                            : null);
-                      },
-                    );
-                  }).toList(),
-                )),
+                child: Obx(
+                  () => Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: selectedItems.map((item) {
+                      return Chip(
+                        label: Text(getItemLabel(item)),
+                        onDeleted: () {
+                          selectedItems.remove(item);
+                          widget.onMultiChanged?.call(selectedItems);
+                          field.didChange(
+                            selectedItems.isNotEmpty
+                                ? selectedItems.first
+                                : null,
+                          );
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             if (field.errorText != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   field.errorText!,
-                  style: TextStyle(
-                    color: Colors.red[700],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.red[700], fontSize: 12),
                 ),
               ),
           ],

@@ -47,7 +47,9 @@ class SecondStep extends GetView<AuthController> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Get.toNamed(Routes.signup_with_email);
+                  // Get.toNamed(Routes.signup_with_email);
+
+                  Get.toNamed(Routes.thirdStep);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,

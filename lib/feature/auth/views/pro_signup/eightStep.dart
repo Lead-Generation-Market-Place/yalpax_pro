@@ -13,7 +13,10 @@ class Eightstep extends GetView<AuthController> {
     return Scaffold(
       backgroundColor: Colors.black.withOpacity(0.3),
       appBar: AppBar(
-        title: const Text('Business Profile', style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'Business Profile',
+          style: TextStyle(color: Colors.black),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -53,32 +56,37 @@ class Eightstep extends GetView<AuthController> {
                     style: TextStyle(fontSize: 15, color: Colors.black54),
                   ),
                   const SizedBox(height: 24),
-                  Obx(() => Column(
-                        children: [
-                          RadioListTile<String>(
-                            value: 'Fairfax',
-                            groupValue: selectedOption.value,
-                            onChanged: (value) => selectedOption.value = value!,
-                            title: const Text('Fairfax', style: TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: const Text('Fairfax, VA'),
-                            activeColor: Colors.blue,
+                  Obx(
+                    () => Column(
+                      children: [
+                        RadioListTile<String>(
+                          value: 'Fairfax',
+                          groupValue: selectedOption.value,
+                          onChanged: (value) => selectedOption.value = value!,
+                          title: const Text(
+                            'Fairfax',
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          RadioListTile<String>(
-                            value: 'NotListed',
-                            groupValue: selectedOption.value,
-                            onChanged: (value) => selectedOption.value = value!,
-                            title: const Text("My business isn’t shown here"),
-                            activeColor: Colors.blue,
-                          ),
-                        ],
-                      )),
+                          subtitle: const Text('Fairfax, VA'),
+                          activeColor: Colors.blue,
+                        ),
+                        RadioListTile<String>(
+                          value: 'NotListed',
+                          groupValue: selectedOption.value,
+                          onChanged: (value) => selectedOption.value = value!,
+                          title: const Text("My business isn’t shown here"),
+                          activeColor: Colors.blue,
+                        ),
+                      ],
+                    ),
+                  ),
                   const Spacer(),
                   SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: ElevatedButton(
                       onPressed: () {
-     Get.toNamed(Routes.ninthStep);
+                        Get.toNamed(Routes.ninthStep);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
@@ -88,14 +96,18 @@ class Eightstep extends GetView<AuthController> {
                       ),
                       child: const Text(
                         'Next',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );

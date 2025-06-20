@@ -1,121 +1,184 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/src/widgets/framework.dart';
 import 'package:get/get.dart';
+import 'package:yalpax_pro/core/constants/file_urls.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
+import 'package:yalpax_pro/core/widgets/custom_button.dart';
+import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
-class ThirdStep extends GetView<AuthController>{
+class ThirdStep extends GetView<AuthController> {
   const ThirdStep({super.key});
 
- @override
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Business Info')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: BusinessForm(),
-      ),
+    final formKey = GlobalKey<FormState>();
+
+    WidgetsBinding.instance.addPostFrameCallback(
+      (timeStamp) async => await controller.loadUserData(),
     );
-  }
-}
 
-class BusinessForm extends StatefulWidget {
-  @override
-  _BusinessFormState createState() => _BusinessFormState();
-}
+    final imageUrl = controller.profilePictureUrl.value;
 
-class _BusinessFormState extends State<BusinessForm> {
-  String? _heardAboutUs;
-  String? _businessSize;
-  final _otherController = TextEditingController();
+    return Scaffold(
+      appBar: AppBar(
+        leading: const BackButton(color: Colors.black),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-  final _formKey = GlobalKey<FormState>();
+          return Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Create your free account.',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                Center(
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () =>
+                            controller.showImagePickerBottomSheet(context),
+                        child: Obx(() {
+                          final hasImage =
+                              controller.profilePictureUrl.value.isNotEmpty;
+                          return CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey,
+                            backgroundImage: hasImage
+                                ? NetworkImage(
+                                    '${FileUrls.profilePicture}${controller.profilePictureUrl.value}',
+                                  )
+                                : null,
+                            child: !hasImage
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 8),
+                      Obx(
+                        () => Text(
+                          controller.name.value,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Obx(() {
+                  return CustomInput(
+                    initialValue: controller.email.value,
+                    enabled: false,
+                    label: 'Email',
+                    hint: 'Enter your email',
+                    prefixIcon: Icon(Icons.email),
+                    keyboardType: TextInputType.emailAddress,
 
-  bool get _isSubmitEnabled {
-    if (_heardAboutUs == null || _businessSize == null) return false;
-    if (_heardAboutUs == 'Other' && _otherController.text.isEmpty) return false;
-    return true;
-  }
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      return null;
+                    },
+                  );
+                }),
+                const SizedBox(height: 16),
+                CustomInput(
+                  label: 'Phone Number',
+                  keyboardType: TextInputType.phone,
+                  autofocus: true,
+                  prefixIcon: const Icon(
+                    Icons.phone_android_outlined,
+                  ), // ✅ This is the fix
+                  hint: '  (+1) 555-555-555',
+                  controller: controller.phoneController,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Phone number is required.';
+                    }
+                    return null;
+                  },
+                ),
 
-  @override
-  Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      onChanged: () => setState(() {}),
-      child: ListView(
-        children: [
-          const Text(
-            "You're in demand! There were 5,123 Cleaner jobs last month in your area.",
-            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Tell us more about your business',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'This information isn’t shared publicly. It helps us get to know our pros better and improve our services over time.',
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'How did you hear about us?',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          ...[
-            'Advertisement',
-            'Online search',
-            'Referral',
-            'Social Media',
-            'Other',
-          ].map((option) => RadioListTile(
-                title: Text(option),
-                value: option,
-                groupValue: _heardAboutUs,
-                onChanged: (value) {
-                  setState(() {
-                    _heardAboutUs = value as String?;
-                  });
-                },
-              )),
-          if (_heardAboutUs == 'Other')
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: TextFormField(
-                controller: _otherController,
-                decoration: const InputDecoration(labelText: 'Please specify (required)'),
-              ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: controller.enableTextMessages.value,
+                      onChanged: (val) =>
+                          controller.enableTextMessages.value = val ?? false,
+                    ),
+                    const Expanded(
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'Enable text messages\n',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                          children: [
+                            TextSpan(
+                              text:
+                                  'By leaving this box checked and tapping Continue, you authorize us to send you automated text messages. ',
+                              style: TextStyle(fontWeight: FontWeight.normal),
+                            ),
+                            TextSpan(
+                              text: 'Terms apply.',
+                              style: TextStyle(color: Colors.blue),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text.rich(
+                  TextSpan(
+                    text: 'By tapping Continue, I agree to the ',
+                    children: [
+                      TextSpan(
+                        text: 'Terms of Use',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                      TextSpan(text: ' and '),
+                      TextSpan(
+                        text: 'Privacy Policy',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                CustomButton(
+                  text: 'Continue',
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      controller.registerUser();
+                      Get.toNamed(Routes.fourthStep);
+                    }
+                  },
+                ),
+              ],
             ),
-          const SizedBox(height: 20),
-          const Text(
-            'How big is your business?',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          ...[
-            '1 person (I\'m the owner/operator)',
-            '2-3 people',
-            '4-9 people',
-            '10+',
-          ].map((option) => RadioListTile(
-                title: Text(option),
-                value: option,
-                groupValue: _businessSize,
-                onChanged: (value) {
-                  setState(() {
-                    _businessSize = value as String?;
-                  });
-                },
-              )),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _isSubmitEnabled ? () {Get.toNamed(Routes.fourthStep);} : null,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              backgroundColor: Colors.lightBlueAccent,
-            ),
-            child: const Text('Submit'),
-          ),
-        ],
+          );
+        }),
       ),
     );
   }

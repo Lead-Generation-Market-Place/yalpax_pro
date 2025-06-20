@@ -20,12 +20,13 @@ class SplashController extends GetxController {
     try {
       isInitialized.value = true;
       debugPrint('Splash: Starting initialization');
-      
+
       // Add a small delay to show splash screen
       await Future.delayed(const Duration(seconds: 2));
 
       // First, check if onboarding is completed
-      final hasCompletedOnboarding = _prefs.getBool(AppConstants.onboardingCompleteKey) ?? false;
+      final hasCompletedOnboarding =
+          _prefs.getBool(AppConstants.onboardingCompleteKey) ?? false;
       debugPrint('Splash: Onboarding completed: $hasCompletedOnboarding');
 
       if (!hasCompletedOnboarding) {
@@ -52,4 +53,4 @@ class SplashController extends GetxController {
       Get.offAllNamed(Routes.initial);
     }
   }
-} 
+}

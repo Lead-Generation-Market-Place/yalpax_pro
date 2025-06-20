@@ -67,10 +67,17 @@ class Elevenstep extends GetView<AuthController> {
                     border: Border.all(color: Colors.blue),
                   ),
                   child: selectedImage.value == null
-                      ? const Icon(Icons.camera_alt, size: 40, color: Colors.blue)
+                      ? const Icon(
+                          Icons.camera_alt,
+                          size: 40,
+                          color: Colors.blue,
+                        )
                       : ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(selectedImage.value!, fit: BoxFit.cover),
+                          child: Image.file(
+                            selectedImage.value!,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                 ),
               );
@@ -125,7 +132,7 @@ class Elevenstep extends GetView<AuthController> {
                         ),
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -141,9 +148,12 @@ class Elevenstep extends GetView<AuthController> {
                   backgroundColor: Colors.lightBlue,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text("Next", style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Next",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),

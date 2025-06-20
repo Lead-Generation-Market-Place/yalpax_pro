@@ -16,7 +16,6 @@ import 'core/utils/app_constants.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final supabase = Supabase.instance.client;
 
-
 Future<void> _initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('Initializing app...');
@@ -48,12 +47,14 @@ Future<void> _initializeApp() async {
   debugPrint('Initializing SharedPreferences...');
   final prefs = await SharedPreferences.getInstance();
   await Get.putAsync(() => Future.value(prefs));
-  
+
   // Check if onboarding is completed
-  final hasCompletedOnboarding = prefs.getBool(AppConstants.onboardingCompleteKey) ?? 
-  false;
-  debugPrint('Onboarding status: ${hasCompletedOnboarding ? 'Completed' : 'Not completed'}');
-  
+  final hasCompletedOnboarding =
+      prefs.getBool(AppConstants.onboardingCompleteKey) ?? false;
+  debugPrint(
+    'Onboarding status: ${hasCompletedOnboarding ? 'Completed' : 'Not completed'}',
+  );
+
   debugPrint('SharedPreferences initialized');
 
   // Dependency injection
@@ -157,12 +158,20 @@ class _ErrorScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, color: Get.theme.colorScheme.error, size: 48),
+              Icon(
+                Icons.error_outline,
+                color: Get.theme.colorScheme.error,
+                size: 48,
+              ),
               const SizedBox(height: 16),
               Text('Something went wrong'.tr, style: Get.textTheme.titleMedium),
               const SizedBox(height: 8),
               if (kDebugMode)
-                Text(details.exception.toString(), style: Get.textTheme.bodySmall, textAlign: TextAlign.center),
+                Text(
+                  details.exception.toString(),
+                  style: Get.textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => Get.offAllNamed(Routes.jobs),
@@ -189,9 +198,16 @@ class _UnknownRouteScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, color: Get.theme.colorScheme.error, size: 48),
+            Icon(
+              Icons.error_outline,
+              color: Get.theme.colorScheme.error,
+              size: 48,
+            ),
             const SizedBox(height: 16),
-            Text('Page not found: $routeName'.tr, style: Get.textTheme.titleMedium),
+            Text(
+              'Page not found: $routeName'.tr,
+              style: Get.textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
             ElevatedButton(
               onPressed: () => Get.offAllNamed(Routes.jobs),

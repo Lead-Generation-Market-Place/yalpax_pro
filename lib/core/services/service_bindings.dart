@@ -7,17 +7,11 @@ class ServiceBindings extends Bindings {
   Future<void> dependencies() async {
     // Core Services
     // Add your core services here
-    
-    // Controllers
-    Get.lazyPut<ThemeController>(
-      () => ThemeController(),
-      fenix: true,
-    );
 
-    Get.lazyPut<SplashController>(
-      () => SplashController(),
-      fenix: true,
-    );
+    // Controllers
+    Get.lazyPut<ThemeController>(() => ThemeController(), fenix: true);
+
+    Get.lazyPut<SplashController>(() => SplashController(), fenix: true);
 
     // Repositories
     // Add your repositories here
@@ -28,4 +22,4 @@ class ServiceBindings extends Bindings {
     // Utils
     // Add your utility services here
   }
-} 
+}

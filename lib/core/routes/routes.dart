@@ -37,8 +37,6 @@ import '../../feature/one_time_initial_view/views/one_time_initial_view.dart';
 
 import '../../feature/auth/controllers/auth_binding.dart';
 
-
-
 // Route Names
 abstract class Routes {
   static const splash = '/';
@@ -69,7 +67,6 @@ abstract class Routes {
   static const eleventhStep = '/eleventhStep';
   static const twelvthstep = '/twelvthstep';
   static const thirteenStep = '/thirteenStep';
-
 }
 
 // Middleware
@@ -80,7 +77,7 @@ class AuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     final authService = Get.find<AuthService>();
-    
+
     if (!authService.isAuthenticated.value) {
       return const RouteSettings(name: Routes.login);
     }
@@ -95,7 +92,7 @@ class NoAuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     final authService = Get.find<AuthService>();
-    
+
     if (authService.isAuthenticated.value) {
       return const RouteSettings(name: Routes.jobs);
     }
@@ -133,7 +130,7 @@ abstract class AppPages {
     GetPage(
       name: Routes.signup_with_email,
       page: () => SignupWithEmail(),
-  
+
       transition: Transition.fadeIn,
     ),
 
@@ -151,8 +148,6 @@ abstract class AppPages {
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,
     ),
-
-   
 
     GetPage(
       name: Routes.messages,
@@ -235,70 +230,67 @@ abstract class AppPages {
       name: Routes.fifthStep,
       page: () => FifthStep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.sixthstep,
       page: () => Sixthstep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.seventhStep,
       page: () => SeventhStep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.eightStep,
       page: () => Eightstep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.ninthStep,
       page: () => Ninthstep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.tenthStep,
       page: () => TenthStep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.eleventhStep,
       page: () => Elevenstep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.twelvthstep,
       page: () => Twelvthstep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.thirteenStep,
       page: () => Thirteenstep(),
       binding: AuthBinding(),
-    
+
       transition: Transition.fadeIn,
     ),
-
   ];
 }
-
-
 
 // Route Observer
 class RouteObserver extends GetObserver {

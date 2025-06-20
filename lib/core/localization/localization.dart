@@ -9,103 +9,97 @@ class LocalizationService extends Translations {
   static const fallbackLocale = Locale('en', 'US');
 
   // Supported languages
-  static final languages = [
-    'English',
-    'العربية',
-  ];
+  static final languages = ['English', 'العربية'];
 
   // Supported locales
-  static final locales = [
-    const Locale('en', 'US'),
-    const Locale('ar', 'SA'),
-  ];
+  static final locales = [const Locale('en', 'US'), const Locale('ar', 'SA')];
 
   // Keys and their translations
   @override
   Map<String, Map<String, String>> get keys => {
-        'en_US': {
-          // Bottom Navigation
-          'nav_home': 'Home',
-          'nav_search': 'Search',
-          'nav_favorites': 'Favorites',
-          'nav_settings': 'Settings',
+    'en_US': {
+      // Bottom Navigation
+      'nav_home': 'Home',
+      'nav_search': 'Search',
+      'nav_favorites': 'Favorites',
+      'nav_settings': 'Settings',
 
-          // General
-          'app_name': 'My App',
-          'welcome': 'Welcome',
-          'loading': 'Loading...',
-          'error': 'Error',
-          'success': 'Success',
-          'try_again': 'Try Again',
-          'ok': 'OK',
-          'cancel': 'Cancel',
-          'save': 'Save',
-          'delete': 'Delete',
-          'edit': 'Edit',
-          'update': 'Update',
+      // General
+      'app_name': 'My App',
+      'welcome': 'Welcome',
+      'loading': 'Loading...',
+      'error': 'Error',
+      'success': 'Success',
+      'try_again': 'Try Again',
+      'ok': 'OK',
+      'cancel': 'Cancel',
+      'save': 'Save',
+      'delete': 'Delete',
+      'edit': 'Edit',
+      'update': 'Update',
 
-          // Settings
-          'settings': 'Settings',
-          'language': 'Language',
-          'theme': 'Theme',
-          'dark_mode': 'Dark Mode',
-          'light_mode': 'Light Mode',
-          'system_default': 'System Default',
-          'notifications': 'Notifications',
-          'profile': 'Profile',
-          'about': 'About',
-          'logout': 'Logout',
+      // Settings
+      'settings': 'Settings',
+      'language': 'Language',
+      'theme': 'Theme',
+      'dark_mode': 'Dark Mode',
+      'light_mode': 'Light Mode',
+      'system_default': 'System Default',
+      'notifications': 'Notifications',
+      'profile': 'Profile',
+      'about': 'About',
+      'logout': 'Logout',
 
-          // Auth
-          'login': 'Login',
-          'register': 'Register',
-          'email': 'Email',
-          'password': 'Password',
-          'forgot_password': 'Forgot Password?',
-          'confirm_password': 'Confirm Password',
-        },
-        'ar_SA': {
-          // Bottom Navigation
-          'nav_home': 'الرئيسية',
-          'nav_search': 'البحث',
-          'nav_favorites': 'المفضلة',
-          'nav_settings': 'الإعدادات',
+      // Auth
+      'login': 'Login',
+      'register': 'Register',
+      'email': 'Email',
+      'password': 'Password',
+      'forgot_password': 'Forgot Password?',
+      'confirm_password': 'Confirm Password',
+    },
+    'ar_SA': {
+      // Bottom Navigation
+      'nav_home': 'الرئيسية',
+      'nav_search': 'البحث',
+      'nav_favorites': 'المفضلة',
+      'nav_settings': 'الإعدادات',
 
-          // General
-          'app_name': 'تطبيقي',
-          'welcome': 'مرحباً',
-          'loading': 'جاري التحميل...',
-          'error': 'خطأ',
-          'success': 'نجاح',
-          'try_again': 'حاول مرة أخرى',
-          'ok': 'موافق',
-          'cancel': 'إلغاء',
-          'save': 'حفظ',
-          'delete': 'حذف',
-          'edit': 'تعديل',
-          'update': 'تحديث',
+      // General
+      'app_name': 'تطبيقي',
+      'welcome': 'مرحباً',
+      'loading': 'جاري التحميل...',
+      'error': 'خطأ',
+      'success': 'نجاح',
+      'try_again': 'حاول مرة أخرى',
+      'ok': 'موافق',
+      'cancel': 'إلغاء',
+      'save': 'حفظ',
+      'delete': 'حذف',
+      'edit': 'تعديل',
+      'update': 'تحديث',
 
-          // Settings
-          'settings': 'الإعدادات',
-          'language': 'اللغة',
-          'theme': 'المظهر',
-          'dark_mode': 'الوضع الداكن',
-          'light_mode': 'الوضع الفاتح',
-          'system_default': 'إعدادات النظام',
-          'notifications': 'الإشعارات',
-          'profile': 'الملف الشخصي',
-          'about': 'حول التطبيق',
-          'logout': 'تسجيل الخروج',
+      // Settings
+      'settings': 'الإعدادات',
+      'language': 'اللغة',
+      'theme': 'المظهر',
+      'dark_mode': 'الوضع الداكن',
+      'light_mode': 'الوضع الفاتح',
+      'system_default': 'إعدادات النظام',
+      'notifications': 'الإشعارات',
+      'profile': 'الملف الشخصي',
+      'about': 'حول التطبيق',
+      'logout': 'تسجيل الخروج',
 
-          // Auth
-          'login': 'تسجيل الدخول',
-          'register': 'إنشاء حساب',
-          'email': 'البريد الإلكتروني',
-          'password': 'كلمة المرور',
-          'forgot_password': 'نسيت كلمة المرور؟',
-          'confirm_password': 'تأكيد كلمة المرور',
-        },
-      };
+      // Auth
+      'login': 'تسجيل الدخول',
+      'register': 'إنشاء حساب',
+      'email': 'البريد الإلكتروني',
+      'password': 'كلمة المرور',
+      'forgot_password': 'نسيت كلمة المرور؟',
+      'confirm_password': 'تأكيد كلمة المرور',
+    },
+  };
 
   // Gets locale from language, and updates the locale
   static void changeLocale(String lang) {

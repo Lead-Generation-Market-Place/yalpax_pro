@@ -11,10 +11,6 @@ class JobsView extends GetView<jobsController> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      bottomNavigationBar: BottomNavbar(),
-  
-    
-    );
+    return Scaffold(bottomNavigationBar: BottomNavbar());
   }
 }

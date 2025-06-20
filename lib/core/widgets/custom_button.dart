@@ -2,18 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import '../constants/app_colors.dart';
 
-enum CustomButtonType {
-  primary,
-  secondary,
-  outline,
-  text
-}
+enum CustomButtonType { primary, secondary, outline, text }
 
-enum CustomButtonSize {
-  small,
-  medium,
-  large
-}
+enum CustomButtonSize { small, medium, large }
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -46,7 +37,7 @@ class CustomButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDisabled = !enabled || isLoading || onPressed == null;
-    
+
     return Container(
       margin: margin,
       width: isFullWidth ? double.infinity : width,
@@ -65,8 +56,8 @@ class CustomButton extends StatelessWidget {
               border: type == CustomButtonType.outline && !isDisabled
                   ? Border.all(color: AppColors.primaryBlue)
                   : type == CustomButtonType.outline && isDisabled
-                      ? Border.all(color: AppColors.neutral400)
-                      : null,
+                  ? Border.all(color: AppColors.neutral400)
+                  : null,
               boxShadow: type != CustomButtonType.text && !isDisabled
                   ? [
                       BoxShadow(
@@ -109,13 +100,8 @@ class CustomButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon!,
-            size: iconSize,
-            color: textStyle.color,
-          ),
-          if (text.isNotEmpty)
-            const SizedBox(width: 8),
+          Icon(icon!, size: iconSize, color: textStyle.color),
+          if (text.isNotEmpty) const SizedBox(width: 8),
           Text(text, style: textStyle),
         ],
       );
@@ -126,8 +112,8 @@ class CustomButton extends StatelessWidget {
 
   Color _getBackgroundColor(bool isDisabled) {
     if (isDisabled) {
-      return type == CustomButtonType.text 
-          ? Colors.transparent 
+      return type == CustomButtonType.text
+          ? Colors.transparent
           : AppColors.neutral200;
     }
 
@@ -150,8 +136,8 @@ class CustomButton extends StatelessWidget {
 
     if (isDisabled) {
       return baseStyle.copyWith(
-        color: type == CustomButtonType.text 
-            ? AppColors.neutral400 
+        color: type == CustomButtonType.text
+            ? AppColors.neutral400
             : AppColors.neutral500,
       );
     }

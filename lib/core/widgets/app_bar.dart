@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 // Placeholder for foldable_widgets import if specific responsive utils are needed later
-// import '../widgets/foldable_widgets.dart'; 
+// import '../widgets/foldable_widgets.dart';
 
 class ScrollableAppBarWithFixedSearch extends StatelessWidget {
   final Widget? title;
@@ -42,9 +42,11 @@ class ScrollableAppBarWithFixedSearch extends StatelessWidget {
     final effectiveSearchBarBackgroundColor =
         searchBarBackgroundColor ?? AppColors.background;
     final effectiveSearchTextStyle =
-        searchTextStyle ?? TextStyle(color: AppColors.textPrimary, fontSize: 16);
+        searchTextStyle ??
+        TextStyle(color: AppColors.textPrimary, fontSize: 16);
     final effectiveSearchHintStyle =
-        searchHintStyle ?? TextStyle(color: AppColors.textTertiary, fontSize: 16);
+        searchHintStyle ??
+        TextStyle(color: AppColors.textTertiary, fontSize: 16);
 
     return SliverAppBar(
       pinned: true,
@@ -53,15 +55,20 @@ class ScrollableAppBarWithFixedSearch extends StatelessWidget {
       elevation: 1.0,
       backgroundColor: backgroundColor,
       iconTheme: iconTheme ?? IconThemeData(color: AppColors.textPrimary),
-      actionsIconTheme: actionsIconTheme ?? IconThemeData(color: AppColors.textPrimary),
+      actionsIconTheme:
+          actionsIconTheme ?? IconThemeData(color: AppColors.textPrimary),
       title: title,
       actions: actions,
-      bottom: includeSearch // Conditionally include search bar
+      bottom:
+          includeSearch // Conditionally include search bar
           ? PreferredSize(
               preferredSize: Size.fromHeight(searchBarHeight),
               child: Container(
                 height: searchBarHeight,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 color: backgroundColor,
                 child: Container(
                   decoration: BoxDecoration(
@@ -78,11 +85,16 @@ class ScrollableAppBarWithFixedSearch extends StatelessWidget {
                       hintStyle: effectiveSearchHintStyle,
                       prefixIcon: Icon(
                         Icons.search,
-                        color: effectiveSearchHintStyle.color ?? AppColors.textTertiary,
+                        color:
+                            effectiveSearchHintStyle.color ??
+                            AppColors.textTertiary,
                         size: 22,
                       ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12.0,
+                        horizontal: 10.0,
+                      ),
                     ),
                   ),
                 ),

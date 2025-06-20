@@ -1,5 +1,5 @@
 import 'package:get/get.dart';
 
 class ProfileController extends GetxController {
-    final isDarkMode = false.obs;
+  final isDarkMode = false.obs;
 }

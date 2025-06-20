@@ -56,14 +56,20 @@ class Thirteenstep extends GetView<AuthController> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 12),
-              _exampleCard("My focus is quality. I never cut corners, even when it’s more expensive. Some of my competitors are cheaper, but I will take the time to make sure you’re 100% happy."),
+              _exampleCard(
+                "My focus is quality. I never cut corners, even when it’s more expensive. Some of my competitors are cheaper, but I will take the time to make sure you’re 100% happy.",
+              ),
               const SizedBox(height: 12),
-              _exampleCard("I've been doing this for a really long time and I know how to get your home exactly what it needs. I’ll make sure to leave a note after each visit with references."),
+              _exampleCard(
+                "I've been doing this for a really long time and I know how to get your home exactly what it needs. I’ll make sure to leave a note after each visit with references.",
+              ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.blueAccent, width: 2)),
+                  border: Border(
+                    top: BorderSide(color: Colors.blueAccent, width: 2),
+                  ),
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(6),
                 ),

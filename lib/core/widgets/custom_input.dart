@@ -3,15 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../constants/app_colors.dart';
 
-enum CustomInputType {
-  text,
-  email,
-  password,
-  phone,
-  number,
-  multiline,
-  search
-}
+enum CustomInputType { text, email, password, phone, number, multiline, search }
 
 class CustomInput extends StatefulWidget {
   final String? label;
@@ -29,7 +21,7 @@ class CustomInput extends StatefulWidget {
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final TextCapitalization textCapitalization;
-  final CustomInputType type;
+  final CustomInputType? type;
   final Widget? prefix;
   final Widget? suffix;
   final Widget? prefixIcon;
@@ -54,6 +46,7 @@ class CustomInput extends StatefulWidget {
   final ScrollPhysics? scrollPhysics;
   final Brightness? keyboardAppearance;
   final InputDecoration? decoration;
+  final Icon? icon;
 
   const CustomInput({
     Key? key,
@@ -72,7 +65,7 @@ class CustomInput extends StatefulWidget {
     this.keyboardType,
     this.textInputAction,
     this.textCapitalization = TextCapitalization.none,
-    this.type = CustomInputType.text,
+    this.type,
     this.prefix,
     this.suffix,
     this.prefixIcon,
@@ -97,6 +90,7 @@ class CustomInput extends StatefulWidget {
     this.scrollPhysics,
     this.keyboardAppearance,
     this.decoration,
+    this.icon,
   }) : super(key: key);
 
   @override
@@ -112,7 +106,8 @@ class _CustomInputState extends State<CustomInput> {
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController(text: widget.initialValue);
+    _controller =
+        widget.controller ?? TextEditingController(text: widget.initialValue);
     _focusNode = widget.focusNode ?? FocusNode();
     _obscureText = widget.type == CustomInputType.password;
     _focusNode.addListener(_handleFocusChange);
@@ -146,7 +141,7 @@ class _CustomInputState extends State<CustomInput> {
 
   TextInputType _getKeyboardType() {
     if (widget.keyboardType != null) return widget.keyboardType!;
-    
+
     switch (widget.type) {
       case CustomInputType.email:
         return TextInputType.emailAddress;
@@ -165,7 +160,7 @@ class _CustomInputState extends State<CustomInput> {
 
   List<TextInputFormatter> _getInputFormatters() {
     final formatters = <TextInputFormatter>[];
-    
+
     if (widget.inputFormatters != null) {
       formatters.addAll(widget.inputFormatters!);
     }
@@ -186,7 +181,7 @@ class _CustomInputState extends State<CustomInput> {
 
   Widget? _buildSuffixIcon() {
     if (widget.suffixIcon != null) return widget.suffixIcon;
-    
+
     if (widget.type == CustomInputType.password) {
       return IconButton(
         icon: Icon(
@@ -196,7 +191,9 @@ class _CustomInputState extends State<CustomInput> {
         ),
         onPressed: _togglePasswordVisibility,
         splashRadius: 20, // Smaller splash for better UX
-        tooltip: _obscureText ? 'Show password' : 'Hide password', // Accessibility
+        tooltip: _obscureText
+            ? 'Show password'
+            : 'Hide password', // Accessibility
       );
     }
 
@@ -235,9 +232,9 @@ class _CustomInputState extends State<CustomInput> {
       validator: widget.validator,
       inputFormatters: _getInputFormatters(),
       style: TextStyle(
-        color: widget.enabled 
-          ? (isDark ? Colors.white : AppColors.textPrimary)
-          : AppColors.neutral500,
+        color: widget.enabled
+            ? (isDark ? Colors.white : AppColors.textPrimary)
+            : AppColors.neutral500,
       ),
       cursorColor: widget.cursorColor ?? AppColors.primaryBlue,
       cursorWidth: widget.cursorWidth!,
@@ -249,63 +246,69 @@ class _CustomInputState extends State<CustomInput> {
       scrollController: widget.scrollController,
       scrollPhysics: widget.scrollPhysics,
       keyboardAppearance: widget.keyboardAppearance,
-      decoration: widget.decoration ?? InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hint,
-        helperText: widget.helperText,
-        errorText: widget.errorText,
-        prefix: widget.prefix,
-        suffix: widget.suffix,
-        prefixIcon: widget.prefixIcon,
-        suffixIcon: _buildSuffixIcon(),
-        contentPadding: widget.contentPadding ?? const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        constraints: widget.constraints,
-        filled: true,
-        fillColor: widget.enabled
-            ? (isDark ? AppColors.neutral800 : AppColors.neutral50)
-            : (isDark ? AppColors.neutral900 : AppColors.neutral100),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.neutral700 : AppColors.neutral200,
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.neutral700 : AppColors.neutral200,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: AppColors.primaryBlue,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: AppColors.error,
-          ),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: AppColors.error,
-            width: 2,
-          ),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: isDark ? AppColors.neutral800 : AppColors.neutral100,
-          ),
-        ),
+      decoration:
+         
+    InputDecoration(
+      labelText: widget.label,
+      hintText: widget.hint,
+      helperText: widget.helperText,
+      errorText: widget.errorText,
+      prefix: widget.prefix,
+      suffix: widget.suffix,
+      prefixIcon: widget.prefixIcon != null
+          ? Padding(
+              padding: const EdgeInsets.only(left: 12, right: 12),
+              child: widget.prefixIcon,
+            )
+          : null,
+      prefixIconConstraints: const BoxConstraints(
+        minWidth: 48,
+        minHeight: 48,
       ),
+   
+
+
+
+            suffixIcon: _buildSuffixIcon(),
+            contentPadding:
+                widget.contentPadding ??
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            constraints: widget.constraints,
+            filled: true,
+            fillColor: widget.enabled
+                ? (isDark ? AppColors.neutral800 : AppColors.neutral50)
+                : (isDark ? AppColors.neutral900 : AppColors.neutral100),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.neutral700 : AppColors.neutral200,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.neutral700 : AppColors.neutral200,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: AppColors.error, width: 2),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.neutral800 : AppColors.neutral100,
+              ),
+            ),
+          ),
     );
   }
 }

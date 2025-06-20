@@ -13,10 +13,9 @@ import 'dart:io';
 import 'package:yalpax_pro/feature/settings/controller/setting_controller.dart';
 import 'package:yalpax_pro/main.dart';
 
-
 class SettingsView extends GetView<SettingsController> {
   final AuthController authController = Get.put(AuthController());
-  SettingsView({super.key}){
+  SettingsView({super.key}) {
     authController.loadUserData();
   }
 
@@ -101,10 +100,7 @@ class SettingsView extends GetView<SettingsController> {
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
               Get.back();
@@ -166,8 +162,6 @@ class SettingsView extends GetView<SettingsController> {
   }
 
   Widget build(BuildContext context) {
-
-
     // ThemeData for easy access to theme properties
     final theme = Theme.of(context);
     final imageUrl = authController.profilePictureUrl.value ?? '';
@@ -206,12 +200,15 @@ class SettingsView extends GetView<SettingsController> {
                     GestureDetector(
                       onTap: () => _showImagePickerBottomSheet(context),
                       child: Obx(() {
-                        final hasImage = authController.profilePictureUrl.value.isNotEmpty;
+                        final hasImage =
+                            authController.profilePictureUrl.value.isNotEmpty;
                         return CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey,
                           backgroundImage: hasImage
-                              ? NetworkImage('${FileUrls.profilePicture}$imageUrl')
+                              ? NetworkImage(
+                                  '${FileUrls.profilePicture}$imageUrl',
+                                )
                               : null,
                           child: !hasImage
                               ? const Icon(

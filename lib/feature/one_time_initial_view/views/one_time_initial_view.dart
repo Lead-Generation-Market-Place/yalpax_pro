@@ -4,8 +4,6 @@ import 'package:lottie/lottie.dart' show Lottie;
 import 'package:yalpax_pro/core/widgets/foldable_widgets.dart';
 import 'package:yalpax_pro/feature/one_time_initial_view/controllers/one_time_initial_controller.dart';
 
-
-
 class OneTimeInitialView extends GetView<OneTimeInitialController> {
   const OneTimeInitialView({super.key});
 
@@ -37,7 +35,9 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
               child: Lottie.asset(
                 'assets/lottie/splash1.json',
                 fit: BoxFit.contain,
-                width: Responsive.isMobile(context) ? Responsive.widthPercent(context, 80) : Responsive.widthPercent(context, 50),
+                width: Responsive.isMobile(context)
+                    ? Responsive.widthPercent(context, 80)
+                    : Responsive.widthPercent(context, 50),
               ),
             ),
             const SizedBox(height: 32),
@@ -59,7 +59,6 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
                 tablet: 400,
                 desktop: 500,
               ).get(context),
-             
             ),
           ],
         ),
@@ -81,7 +80,9 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
                 tablet: 250,
                 desktop: 300,
               ).get(context),
-              width: Responsive.isMobile(context) ? Responsive.widthPercent(context, 80) : Responsive.widthPercent(context, 50),
+              width: Responsive.isMobile(context)
+                  ? Responsive.widthPercent(context, 80)
+                  : Responsive.widthPercent(context, 50),
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 32),
@@ -116,7 +117,9 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
                 tablet: 250,
                 desktop: 300,
               ).get(context),
-              width: Responsive.isMobile(context) ? Responsive.widthPercent(context, 80) : Responsive.widthPercent(context, 50),
+              width: Responsive.isMobile(context)
+                  ? Responsive.widthPercent(context, 80)
+                  : Responsive.widthPercent(context, 50),
               fit: BoxFit.contain,
             ),
             const SizedBox(height: 32),
@@ -148,7 +151,9 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
               child: Lottie.asset(
                 'assets/lottie/splash4.json',
                 fit: BoxFit.contain,
-                width: Responsive.isMobile(context) ? Responsive.widthPercent(context, 80) : Responsive.widthPercent(context, 50),
+                width: Responsive.isMobile(context)
+                    ? Responsive.widthPercent(context, 80)
+                    : Responsive.widthPercent(context, 50),
               ),
             ),
             const SizedBox(height: 32),
@@ -170,9 +175,6 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
                 tablet: 400,
                 desktop: 500,
               ).get(context),
-           
-        
-              
             ),
           ],
         ),
@@ -181,90 +183,103 @@ class OneTimeInitialView extends GetView<OneTimeInitialController> {
   }
 
   Widget _buildBottomBar(BuildContext context) {
-    return Obx(() => Padding(
-      padding: ResponsiveValue<EdgeInsets>(
-        mobile: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        tablet: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        desktop: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0),
-      ).get(context),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TextButton(
-            onPressed: () => controller.skipOnboarding(),
-            child: Text(
-              'Skip',
-              style: TextStyle(
-                fontSize: ResponsiveValue<double>(
-                  mobile: 14,
-                  tablet: 16,
-                  desktop: 18,
-                ).get(context),
+    return Obx(
+      () => Padding(
+        padding: ResponsiveValue<EdgeInsets>(
+          mobile: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          tablet: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          desktop: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0),
+        ).get(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () => controller.skipOnboarding(),
+              child: Text(
+                'Skip',
+                style: TextStyle(
+                  fontSize: ResponsiveValue<double>(
+                    mobile: 14,
+                    tablet: 16,
+                    desktop: 18,
+                  ).get(context),
+                ),
               ),
             ),
-          ),
-          Row(
-            children: List.generate(4, (index) => _buildDot(index, context)),
-          ),
-          controller.currentPage.value == 3
-              ? ElevatedButton(
-                  onPressed: () => controller.finishOnboarding(),
-                  style: ElevatedButton.styleFrom(
-                    padding: ResponsiveValue<EdgeInsets>(
-                      mobile: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      tablet: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                      desktop: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                    ).get(context),
-                  ),
-                  child: Text(
-                    'Get Started',
-                    style: TextStyle(
-                      fontSize: ResponsiveValue<double>(
-                        mobile: 14,
-                        tablet: 16,
-                        desktop: 18,
+            Row(
+              children: List.generate(4, (index) => _buildDot(index, context)),
+            ),
+            controller.currentPage.value == 3
+                ? ElevatedButton(
+                    onPressed: () => controller.finishOnboarding(),
+                    style: ElevatedButton.styleFrom(
+                      padding: ResponsiveValue<EdgeInsets>(
+                        mobile: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        tablet: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 14,
+                        ),
+                        desktop: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 16,
+                        ),
                       ).get(context),
                     ),
-                  ),
-                )
-              : TextButton(
-                  onPressed: controller.nextPage,
-                  child: Text(
-                    'Next',
-                    style: TextStyle(
-                      fontSize: ResponsiveValue<double>(
-                        mobile: 14,
-                        tablet: 16,
-                        desktop: 18,
-                      ).get(context),
-                      color: Get.theme.primaryColor,
+                    child: Text(
+                      'Get Started',
+                      style: TextStyle(
+                        fontSize: ResponsiveValue<double>(
+                          mobile: 14,
+                          tablet: 16,
+                          desktop: 18,
+                        ).get(context),
+                      ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: controller.nextPage,
+                    child: Text(
+                      'Next',
+                      style: TextStyle(
+                        fontSize: ResponsiveValue<double>(
+                          mobile: 14,
+                          tablet: 16,
+                          desktop: 18,
+                        ).get(context),
+                        color: Get.theme.primaryColor,
+                      ),
                     ),
                   ),
-                ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   Widget _buildDot(int index, BuildContext context) {
-    return Obx(() => Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: ResponsiveValue<double>(
-        mobile: 8,
-        tablet: 10,
-        desktop: 12,
-      ).get(context),
-      height: ResponsiveValue<double>(
-        mobile: 8,
-        tablet: 10,
-        desktop: 12,
-      ).get(context),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: controller.currentPage.value == index
-            ? Get.theme.primaryColor
-            : Colors.grey[400],
+    return Obx(
+      () => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        width: ResponsiveValue<double>(
+          mobile: 8,
+          tablet: 10,
+          desktop: 12,
+        ).get(context),
+        height: ResponsiveValue<double>(
+          mobile: 8,
+          tablet: 10,
+          desktop: 12,
+        ).get(context),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: controller.currentPage.value == index
+              ? Get.theme.primaryColor
+              : Colors.grey[400],
+        ),
       ),
-    ));
+    );
   }
 }

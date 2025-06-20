@@ -7,7 +7,6 @@ import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/core/widgets/foldable_widgets.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
-
 class LoginView extends GetView<AuthController> {
   const LoginView({super.key});
 
@@ -197,7 +196,8 @@ class LoginView extends GetView<AuthController> {
               if (value.isEmpty) {
                 controller.passwordError.value = 'Password is required';
               } else if (value.length < 6) {
-                controller.passwordError.value = 'Password must be at least 6 characters';
+                controller.passwordError.value =
+                    'Password must be at least 6 characters';
               } else {
                 controller.passwordError.value = null;
               }
@@ -232,7 +232,7 @@ class LoginView extends GetView<AuthController> {
 
               // Validate before login
               bool isValid = true;
-              
+
               final email = controller.emailController.text;
               if (email.isEmpty) {
                 controller.emailError.value = 'Email is required';
@@ -247,7 +247,8 @@ class LoginView extends GetView<AuthController> {
                 controller.passwordError.value = 'Password is required';
                 isValid = false;
               } else if (password.length < 6) {
-                controller.passwordError.value = 'Password must be at least 6 characters';
+                controller.passwordError.value =
+                    'Password must be at least 6 characters';
                 isValid = false;
               }
 
@@ -296,7 +297,8 @@ class LoginView extends GetView<AuthController> {
     required TextEditingController controller,
     bool isPassword = false,
     TextInputType? keyboardType,
-    IconData? prefixIcon, required type,
+    IconData? prefixIcon,
+    required type,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

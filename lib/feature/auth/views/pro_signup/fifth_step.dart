@@ -7,7 +7,7 @@ import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 class FifthStep extends GetView<AuthController> {
   const FifthStep({super.key});
 
-   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -38,13 +38,13 @@ class FifthStep extends GetView<AuthController> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      controller.fullName.value, // e.g. "Feroz Durrani"
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    // Text(
+                    //   controller.fullName.value, // e.g. "Feroz Durrani"
+                    //   style: const TextStyle(
+                    //     fontWeight: FontWeight.bold,
+                    //     fontSize: 16,
+                    // ),
+                    // ),
                   ],
                 ),
               ),
@@ -52,7 +52,7 @@ class FifthStep extends GetView<AuthController> {
 
               // Email (non-editable)
               TextFormField(
-                initialValue: controller.email1.value,
+                initialValue: controller.email.value,
                 enabled: false,
                 decoration: const InputDecoration(
                   labelText: 'Email',
@@ -127,7 +127,7 @@ class FifthStep extends GetView<AuthController> {
               CustomButton(
                 text: 'Continue',
                 onPressed: () {
-               Get.toNamed(Routes.sixthstep);
+                  Get.toNamed(Routes.sixthstep);
                   controller.registerUser();
                 },
               ),

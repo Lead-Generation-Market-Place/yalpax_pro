@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:yalpax_pro/core/constants/file_urls.dart';
 
-
 class HorizontalServicesList extends StatelessWidget {
   final List<Map<String, dynamic>> services;
   final Function(Map<String, dynamic>) onServiceTap;
@@ -53,7 +52,7 @@ class HorizontalServicesList extends StatelessWidget {
         itemBuilder: (context, index) {
           final service = services[index];
           final imageUrl = service['service_image_url'] ?? '';
-          
+
           return GestureDetector(
             onTap: () => onServiceTap(service),
             child: SizedBox(
@@ -97,8 +96,8 @@ class HorizontalServicesList extends StatelessWidget {
                   Text(
                     service['name'] ?? 'Unnamed Service',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -110,4 +109,4 @@ class HorizontalServicesList extends StatelessWidget {
       ),
     );
   }
-} 
+}

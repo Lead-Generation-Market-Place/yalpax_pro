@@ -86,7 +86,11 @@ class TenthStep extends GetView<AuthController> {
             const SizedBox(height: 12),
             _buildTextField("Fairfax"),
             const SizedBox(height: 12),
-            _buildDropdownField("Virginia", ["Virginia", "California", "Texas"]),
+            _buildDropdownField("Virginia", [
+              "Virginia",
+              "California",
+              "Texas",
+            ]),
             const SizedBox(height: 12),
             _buildTextField("Zip code"),
             const SizedBox(height: 20),
@@ -136,7 +140,10 @@ class TenthStep extends GetView<AuthController> {
       decoration: InputDecoration(
         hintText: hint,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
       ),
     );
   }
@@ -150,7 +157,10 @@ class TenthStep extends GetView<AuthController> {
       onChanged: (value) {},
       decoration: InputDecoration(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 16,
+        ),
       ),
     );
   }

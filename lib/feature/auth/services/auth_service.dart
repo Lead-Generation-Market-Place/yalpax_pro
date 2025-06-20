@@ -8,13 +8,13 @@ import '../../../core/utils/app_constants.dart';
 class AuthService extends GetxService {
   final supabase = Supabase.instance.client;
   final logger = Logger();
-  
+
   // Auth state observables
   final isAuthenticated = false.obs;
   final isLoading = false.obs;
   final currentUser = Rxn<User>();
   final authError = RxnString();
-  
+
   // Stream subscription for auth state changes
   StreamSubscription<AuthState>? _authStateSubscription;
 
@@ -41,7 +41,7 @@ class AuthService extends GetxService {
     _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
-      
+
       switch (event) {
         case AuthChangeEvent.signedIn:
           isAuthenticated.value = true;
@@ -53,11 +53,11 @@ class AuthService extends GetxService {
           currentUser.value = null;
           _clearAuthState();
           break;
-          
+
         case AuthChangeEvent.tokenRefreshed:
           _saveAuthState(session);
           break;
-          
+
         default:
           break;
       }
@@ -80,12 +80,12 @@ class AuthService extends GetxService {
     try {
       isLoading.value = true;
       authError.value = null;
-      
+
       final response = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
-      
+
       return response.session != null;
     } catch (e) {
       authError.value = e.toString();
@@ -96,17 +96,21 @@ class AuthService extends GetxService {
     }
   }
 
-  Future<bool> signUp(String email, String password, {Map<String, dynamic>? metadata}) async {
+  Future<bool> signUp(
+    String email,
+    String password, {
+    Map<String, dynamic>? metadata,
+  }) async {
     try {
       isLoading.value = true;
       authError.value = null;
-      
+
       final response = await supabase.auth.signUp(
         email: email,
         password: password,
         data: metadata,
       );
-      
+
       return response.user != null;
     } catch (e) {
       authError.value = e.toString();
@@ -133,7 +137,7 @@ class AuthService extends GetxService {
     try {
       isLoading.value = true;
       authError.value = null;
-      
+
       await supabase.auth.resetPasswordForEmail(email);
       return true;
     } catch (e) {
@@ -149,7 +153,7 @@ class AuthService extends GetxService {
     try {
       isLoading.value = true;
       authError.value = null;
-      
+
       await supabase.auth.updateUser(UserAttributes(password: newPassword));
       return true;
     } catch (e) {
@@ -160,4 +164,4 @@ class AuthService extends GetxService {
       isLoading.value = false;
     }
   }
-} 
+}

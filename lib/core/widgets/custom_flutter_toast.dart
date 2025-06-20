@@ -12,7 +12,7 @@ class CustomFlutterToast {
   }) {
     // Dismiss current toast if exists
     _currentToast?.remove();
-    
+
     Color backgroundColor;
     Color textColor = Colors.white;
     IconData? icon;
@@ -49,7 +49,10 @@ class CustomFlutterToast {
           child: SafeArea(
             child: _ToastAnimation(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: backgroundColor,
@@ -112,12 +115,7 @@ class CustomFlutterToast {
   }
 }
 
-enum ToastType {
-  success,
-  error,
-  warning,
-  info,
-}
+enum ToastType { success, error, warning, info }
 
 // Animation widget for smooth appearance and disappearance
 class _ToastAnimation extends StatefulWidget {
@@ -129,7 +127,8 @@ class _ToastAnimation extends StatefulWidget {
   _ToastAnimationState createState() => _ToastAnimationState();
 }
 
-class _ToastAnimationState extends State<_ToastAnimation> with SingleTickerProviderStateMixin {
+class _ToastAnimationState extends State<_ToastAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -150,10 +149,7 @@ class _ToastAnimationState extends State<_ToastAnimation> with SingleTickerProvi
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -168,10 +164,7 @@ class _ToastAnimationState extends State<_ToastAnimation> with SingleTickerProvi
   Widget build(BuildContext context) {
     return SlideTransition(
       position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: widget.child,
-      ),
+      child: FadeTransition(opacity: _fadeAnimation, child: widget.child),
     );
   }
 }

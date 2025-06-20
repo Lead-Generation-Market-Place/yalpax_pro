@@ -83,16 +83,14 @@ class RealtimeService {
         );
       }
 
-      channel.subscribe(
-        (status, error) {
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            _log('Subscribed to $channelKey successfully');
-          } else {
-            _log('Subscription failed: $status', isError: true, error: error);
-            if (onError != null) onError(error);
-          }
-        },
-      );
+      channel.subscribe((status, error) {
+        if (status == RealtimeSubscribeStatus.subscribed) {
+          _log('Subscribed to $channelKey successfully');
+        } else {
+          _log('Subscription failed: $status', isError: true, error: error);
+          if (onError != null) onError(error);
+        }
+      });
 
       _channels[channelKey] = channel;
     } catch (e) {
@@ -134,7 +132,11 @@ class RealtimeService {
           await _client.removeChannel(entry.value);
           _log('Unsubscribed from ${entry.key}');
         } catch (e) {
-          _log('Failed to unsubscribe from ${entry.key}', isError: true, error: e);
+          _log(
+            'Failed to unsubscribe from ${entry.key}',
+            isError: true,
+            error: e,
+          );
           if (onError != null) onError(e);
         }
       }

@@ -13,7 +13,7 @@ class SettingsController extends GetxController {
   Future<void> updateProfileImage(File imageFile) async {
     try {
       isLoading.value = true;
-      
+
       // Get the current user's email
       final user = supabase.auth.currentUser;
       if (user == null) {
@@ -21,7 +21,8 @@ class SettingsController extends GetxController {
       }
 
       // Upload image to Supabase Storage
-      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName =
+          '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final response = await supabase.storage
           .from('userprofilepicture')
           .upload(fileName, imageFile);
@@ -39,7 +40,7 @@ class SettingsController extends GetxController {
 
       // Update the local state
       authController.profilePictureUrl.value = fileName;
-      
+
       Get.snackbar(
         'Success',
         'Profile picture updated successfully',

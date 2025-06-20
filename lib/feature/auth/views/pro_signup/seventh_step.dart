@@ -8,12 +8,16 @@ class SeventhStep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController businessNameController = TextEditingController();
+    final TextEditingController businessNameController =
+        TextEditingController();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Business Profile', style: TextStyle(color: Colors.black)),
+        title: const Text(
+          'Business Profile',
+          style: TextStyle(color: Colors.black),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -59,7 +63,10 @@ class SeventhStep extends GetView<AuthController> {
                 controller: businessNameController,
                 decoration: InputDecoration(
                   hintText: 'Business name',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),
@@ -108,7 +115,7 @@ class SeventhStep extends GetView<AuthController> {
                   ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

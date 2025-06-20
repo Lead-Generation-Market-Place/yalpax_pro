@@ -1,12 +1,17 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:logger/logger.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:yalpax_pro/core/widgets/image_picker.dart';
 import '../../../core/routes/routes.dart';
 import '../services/auth_service.dart';
 
@@ -53,60 +58,70 @@ class AuthController extends GetxController {
     super.onClose();
   }
 
+    
   Future<void> loadUserData() async {
-    try {
-      if (currentUser != null) {
-        email.value = currentUser!.email ?? '';
-
-        // Get user profile from database
-        final userProfile = await supabase
-            .from('users_profiles')
-            .select('profile_picture_url,username')
-            .eq('email', currentUser!.email ?? '')
-            .single();
-
-        if (userProfile != null) {
-          profilePictureUrl.value = userProfile['profile_picture_url'];
-          name.value = userProfile['username'];
-        }
-      }
-    } catch (e) {
-      debugPrint('Error loading user data: $e');
-    }
-  }
-
-  // Login Methods
- Future<void> login() async {
   try {
-    final response = await supabase.auth.signInWithPassword(
-      email: emailController.text,
-      password: passwordController.text,
-    );
-
-    final user = response.user;
-
-    if (user != null) {
-      final userMetadata = user.userMetadata;
-      final username = userMetadata?['username']; // safely extract 'username'
-
-      if (username != null) {
-        await supabase.from('users_profiles').insert({
-          'email': emailController.text,
-          'username': username,
-        });
-      }
-
-      Get.offAllNamed(Routes.jobs);
-      emailController.clear();
-      passwordController.clear();
-    } else {
-      Fluttertoast.showToast(msg: 'Failed to login. Please try again.');
+    isLoading.value = true;
+    if (currentUser == null) {
+      debugPrint('User is not logged in.');
+      return;
     }
+
+    email.value = currentUser!.email ?? '';
+
+    final userProfile = await supabase
+        .from('users_profiles')
+        .select('profile_picture_url,username,email')
+        .eq('email', currentUser!.email ?? '')
+        .maybeSingle(); // safer than .single()
+
+    if (userProfile != null) {
+      profilePictureUrl.value = userProfile['profile_picture_url'] ?? '';
+      name.value = userProfile['username'] ?? '';
+      // email.value = userProfile['email'] ?? '';
+    } else {
+      debugPrint('No user profile found in the database.');
+    }
+
   } catch (e) {
-    Fluttertoast.showToast(msg: 'Failed to login. Please try again. $e');
+    debugPrint('Error loading user data: $e');
+  }finally{
+    isLoading.value = false;
   }
 }
 
+
+  // Login Methods
+  Future<void> login() async {
+    try {
+      final response = await supabase.auth.signInWithPassword(
+        email: emailController.text,
+        password: passwordController.text,
+      );
+
+      final user = response.user;
+
+      if (user != null) {
+        final userMetadata = user.userMetadata;
+        final username = userMetadata?['username']; // safely extract 'username'
+
+        if (username != null) {
+          await supabase.from('users_profiles').insert({
+            'email': emailController.text,
+            'username': username,
+          });
+        }
+
+        Get.offAllNamed(Routes.jobs);
+        emailController.clear();
+        passwordController.clear();
+      } else {
+        Fluttertoast.showToast(msg: 'Failed to login. Please try again.');
+      }
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Failed to login. Please try again. $e');
+    }
+  }
 
   Future<void> signUp() async {
     try {
@@ -290,6 +305,7 @@ class AuthController extends GetxController {
   void onInit() async {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
+  
     searchController.addListener(_onSearchChanged);
   }
 
@@ -471,10 +487,10 @@ class AuthController extends GetxController {
     // Save to backend or session here
   }
 
-  ////////////////////////////////
-  var fullName = 'Feroz Durrani'.obs;
-  var email1 = 'durraniferoz9@gmail.com'.obs;
-  var phoneController = TextEditingController();
+  //////////////////////////////////////////////////////////////////////
+  ///thirdstep
+
+  final TextEditingController phoneController = TextEditingController();
   var enableTextMessages = true.obs;
 
   void registerUser() {
@@ -482,5 +498,216 @@ class AuthController extends GetxController {
     final smsEnabled = enableTextMessages.value;
     print("Phone: $phone, SMS enabled: $smsEnabled");
     // Continue to next step or API
+  }
+
+  
+
+  Future<void> showPermissionDialog(
+    String title,
+    String message,
+    Permission permission,
+  ) async {
+    await Get.dialog(
+      AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              await openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+    Future<bool> handlePermission(ImageSource source) async {
+    final androidVersion =
+        await DeviceInfoPlugin().androidInfo; //package to get Device Info
+
+    if (source == ImageSource.camera) {
+      if (Platform.isAndroid) {
+        if (androidVersion.version.sdkInt <= 28) {
+          final status = await Permission.camera.status;
+
+          if (status.isPermanentlyDenied) {
+            await showPermissionDialog(
+              'Camera Permission Required',
+              'Camera access is required to take photos. Please enable it in your device settings.',
+              Permission.camera,
+            );
+            return false;
+          }
+
+          final result = await Permission.camera.request();
+          if (result.isDenied) {
+            Get.snackbar(
+              'Permission Required',
+              'Camera permission is required to take photos',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+            return false;
+          }
+        } else {
+          return true; // No permission needed for Android 10+
+        }
+      }
+    } else {
+      // For gallery access
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.status;
+        if (androidVersion.version.sdkInt <= 28) {
+          if (status.isPermanentlyDenied) {
+            await showPermissionDialog(
+              'Storage Permission Required',
+              'Storage access is required to select images. Please enable it in your device settings.',
+              Permission.storage,
+            );
+            return false;
+          }
+
+          final result = await Permission.storage.request();
+          if (result.isDenied) {
+            Get.snackbar(
+              'Permission Required',
+              'Storage permission is required to select images',
+              snackPosition: SnackPosition.BOTTOM,
+            );
+            return false;
+          }
+        } else {
+          return true;
+          ;
+        }
+      } else if (Platform.isIOS) {
+        // On iOS, we need photos permission
+        final status = await Permission.photos.status;
+        if (status.isPermanentlyDenied) {
+          await showPermissionDialog(
+            'Photos Permission Required',
+            'Photos access is required to select images. Please enable it in your device settings.',
+            Permission.photos,
+          );
+          return false;
+        }
+
+        final result = await Permission.photos.request();
+        if (result.isDenied) {
+          Get.snackbar(
+            'Permission Required',
+            'Photos permission is required to select images',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+
+  Future<void> updateProfileImage(File imageFile) async {
+    try {
+      isLoading.value = true;
+      
+      // Get the current user's email
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Upload image to Supabase Storage
+      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final response = await supabase.storage
+          .from('userprofilepicture')
+          .upload(fileName, imageFile);
+
+      // Get the public URL of the uploaded image
+      final imageUrl = supabase.storage
+          .from('userprofilepicture')
+          .getPublicUrl(fileName);
+
+      // Update the user's profile in the database
+      await supabase
+          .from('users_profiles')
+          .update({'profile_picture_url': fileName})
+          .eq('email', email);
+
+      // Update the local state
+      profilePictureUrl.value = fileName;
+      
+      Get.snackbar(
+        'Success',
+        'Profile picture updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Logger().e('Error updating profile image: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to update profile picture',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+
+  
+
+  void showImagePickerBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () async {
+                  Navigator.pop(context);
+
+                  if (await handlePermission(ImageSource.camera)) {
+                    final file = await ImagePickerService().pickFromCamera();
+                    if (file != null) {
+                      // TODO: Handle the picked image file
+                      // You can upload it to your server or update the profile picture
+                      updateProfileImage(file);
+                      Logger().d(file);
+                      Get.snackbar('Success', 'Image captured successfully');
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (await handlePermission(ImageSource.gallery)) {
+                    final file = await ImagePickerService().pickFromGallery();
+                    if (file != null) {
+                      Logger().d(file);
+                      // TODO: Handle the picked image file
+                      // You can upload it to your server or update the profile picture
+                      updateProfileImage(file);
+                      Get.snackbar('Success', 'Image selected successfully');
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

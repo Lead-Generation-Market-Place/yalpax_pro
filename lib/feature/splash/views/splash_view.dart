@@ -25,14 +25,16 @@ class SplashView extends GetView<SplashController> {
             ),
             const SizedBox(height: 24),
             // Loading indicator
-            Obx(() => controller.isInitialized.value
-              ? const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                )
-              : const SizedBox.shrink()),
+            Obx(
+              () => controller.isInitialized.value
+                  ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
     );
   }
-} 
+}

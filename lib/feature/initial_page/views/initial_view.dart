@@ -16,7 +16,7 @@ class InitialView extends GetView<InitialPageController> {
         child: Column(
           children: [
             const SizedBox(height: 32),
-        
+
             // Header section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -26,7 +26,11 @@ class InitialView extends GetView<InitialPageController> {
                   CircleAvatar(
                     radius: 28,
                     backgroundColor: Colors.grey.shade200,
-                    child: const Icon(Icons.flash_on, size: 28, color: Colors.black87),
+                    child: const Icon(
+                      Icons.flash_on,
+                      size: 28,
+                      color: Colors.black87,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -47,9 +51,9 @@ class InitialView extends GetView<InitialPageController> {
                 ],
               ),
             ),
-        
+
             const SizedBox(height: 40),
-        
+
             // Stats Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -71,12 +75,15 @@ class InitialView extends GetView<InitialPageController> {
                 ),
               ),
             ),
-        
+
             const Spacer(),
-        
+
             // CTA Buttons
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 24,
+              ),
               child: Column(
                 children: [
                   SizedBox(
