@@ -11,135 +11,55 @@ import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 class SignupWithEmail extends GetView<AuthController> {
   const SignupWithEmail({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      controller.nameController.clear();
-      controller.emailController.clear();
-      controller.passwordController.clear();
-      controller.confirmPasswordController.clear();
-    });
-    return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: Text('Sign Up', style: TextStyle(color: AppColors.textPrimary)),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-      ),
-      backgroundColor: AppColors.background,
-      body: ResponsiveLayout(
-        mobile: _buildMobileLayout(context),
-        tablet: _buildTabletLayout(context),
-        desktop: _buildDesktopLayout(context),
-      ),
-    );
-  }
+ @override
+Widget build(BuildContext context) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    controller.nameController.clear();
+    controller.emailController.clear();
+    controller.passwordController.clear();
+    controller.confirmPasswordController.clear();
+  });
 
-  Widget _buildMobileLayout(BuildContext context) {
-    return ResponsiveContainer(
+  final width = MediaQuery.of(context).size.width;
+
+  return Scaffold(
+    appBar: AppBar(
+      leading: const BackButton(),
+      title: Text('Sign Up', style: TextStyle(color: AppColors.textPrimary)),
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      iconTheme: IconThemeData(color: AppColors.textPrimary),
+    ),
+    backgroundColor: AppColors.background,
+    body: Center(
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: Responsive.heightPercent(context, 8)),
-              _buildLogo(),
-              const SizedBox(height: 32),
-              _buildWelcomeText(),
-              const SizedBox(height: 32),
-              _buildSignupForm(),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: width >= 1000 ? 600 : 500, // adjust max width for large screens
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (width >= 800) ...[
+                  // Optionally show a logo or illustration on wider screens
+                  _buildLogo(),
+                  const SizedBox(height: 24),
+                ],
+                _buildWelcomeText(),
+                const SizedBox(height: 32),
+                _buildSignupForm(),
+              ],
+            ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildTabletLayout(BuildContext context) {
-    return ResponsiveContainer(
-      maxWidth: 600,
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: Responsive.heightPercent(context, 10)),
-              _buildLogo(),
-              const SizedBox(height: 32),
-              _buildWelcomeText(),
-              const SizedBox(height: 32),
-              _buildSignupForm(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDesktopLayout(BuildContext context) {
-    return Row(
-      children: [
-        // Left side - Image or Decoration
-        Expanded(
-          flex: 6,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue,
-              image: const DecorationImage(
-                image: AssetImage('assets/images/signup_bg.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(48.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildLogo(isLight: true),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Join Our Community',
-                      style: TextStyle(
-                        color: AppColors.textOnPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Right side - Signup Form
-        Expanded(
-          flex: 4,
-          child: ResponsiveContainer(
-            maxWidth: 480,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: Responsive.heightPercent(context, 10)),
-                    _buildWelcomeText(),
-                    const SizedBox(height: 32),
-                    _buildSignupForm(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
+ 
   Widget _buildLogo({bool isLight = false}) {
     return Image.asset(
       'assets/images/signup.png',

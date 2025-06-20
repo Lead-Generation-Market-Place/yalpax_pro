@@ -17,7 +17,7 @@ class SecondStep extends GetView<AuthController> {
         actions: [
           TextButton(
             onPressed: () {
-              // Navigate to login screen
+              Get.toNamed(Routes.login);
             },
             child: const Text('Log in', style: TextStyle(color: Colors.blue)),
           ),
