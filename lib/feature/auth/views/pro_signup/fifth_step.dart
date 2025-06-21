@@ -10,6 +10,9 @@ class FifthStep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback(
+          (_) async => controller.businessNameController.clear(),
+    );
     final formKey = GlobalKey<FormState>();
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
@@ -27,14 +30,16 @@ class FifthStep extends GetView<AuthController> {
         backgroundColor: isDarkMode ? Colors.grey[900] : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, 
-              color: isDarkMode ? Colors.white : Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
           onPressed: () => Get.back(),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Divider(
-            height: 1, 
+            height: 1,
             thickness: 1,
             color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
           ),
@@ -44,7 +49,6 @@ class FifthStep extends GetView<AuthController> {
         child: Form(
           key: formKey,
           child: ListView(
-       
             children: [
               // Header Section
               Padding(
@@ -77,8 +81,10 @@ class FifthStep extends GetView<AuthController> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: LinearProgressIndicator(
-                  value: 0.625, // 5/8 steps completed
-                  backgroundColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                  value: 0.625,
+                  backgroundColor: isDarkMode
+                      ? Colors.grey[800]
+                      : Colors.grey[200],
                   valueColor: AlwaysStoppedAnimation<Color>(
                     isDarkMode ? Colors.blue[300]! : Colors.blue,
                   ),
@@ -122,7 +128,6 @@ class FifthStep extends GetView<AuthController> {
                     return null;
                   },
                   onChanged: (value) {
-                    // This will trigger the button color change
                     controller.update();
                   },
                 ),
@@ -133,7 +138,9 @@ class FifthStep extends GetView<AuthController> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.grey[800] : const Color(0xFFF4F6F8),
+                    color: isDarkMode
+                        ? Colors.grey[800]
+                        : const Color(0xFFF4F6F8),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -176,7 +183,9 @@ class FifthStep extends GetView<AuthController> {
                         'and increases your chances of getting hired.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[800],
+                          color: isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[800],
                           height: 1.5,
                         ),
                       ),
@@ -185,7 +194,9 @@ class FifthStep extends GetView<AuthController> {
                         'A clear, strong name shows you\'re serious and organized about your work.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[800],
+                          color: isDarkMode
+                              ? Colors.grey[400]
+                              : Colors.grey[800],
                           height: 1.5,
                           fontStyle: FontStyle.italic,
                         ),
@@ -195,11 +206,13 @@ class FifthStep extends GetView<AuthController> {
                 ),
               ),
 
-              const Spacer(),
-
+              const SizedBox(height: 40), // ← Replaced Spacer
               // Bottom Button Section
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.grey[900] : Colors.white,
                   border: Border(
@@ -209,39 +222,17 @@ class FifthStep extends GetView<AuthController> {
                     ),
                   ),
                 ),
-                child: Obx(
-                  () => SizedBox(
-                    width: double.infinity,
-                    height: 20,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          Get.toNamed(Routes.eightStep);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: controller.businessNameController.text.trim().isEmpty
-                            ? (isDarkMode ? Colors.grey[700] : Colors.blue[100])
-                            : (isDarkMode ? Colors.blue[600] : Colors.blue),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: Text(
-                        'Continue',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                          color: controller.businessNameController.text.trim().isEmpty
-                              ? (isDarkMode ? Colors.grey[500] : Colors.blue[300])
-                              : Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
+                child: CustomButton(
+                  text: 'Continue',
+                  isLoading: controller.isLoading.value
+                  ,
+                  onPressed: ()async {
+                    if (formKey.currentState?.validate() ?? false) {
+                  await  controller.addBusinessName();
+                    }
+                  },
                 ),
+
               ),
             ],
           ),

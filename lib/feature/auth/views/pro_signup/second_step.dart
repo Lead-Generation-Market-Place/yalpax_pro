@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
-import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
-import 'package:yalpax_pro/main.dart';
 
 class SecondStep extends GetView<AuthController> {
   const SecondStep({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,11 +81,8 @@ class SecondStep extends GetView<AuthController> {
                   final user = res.user;
 
                   if (user != null && user.email != null) {
-                    final email = user.email;
-                    final userMetadata = user.userMetadata;
-                    String? username = userMetadata?['name'];
-
-                    if (username == null) {
+                    final name = user.userMetadata?['name'];
+                    if (name == null || name.trim().isEmpty) {
                       Get.snackbar(
                         'Error',
                         'Username not found in Google profile.',
@@ -96,49 +90,13 @@ class SecondStep extends GetView<AuthController> {
                       return;
                     }
 
-                    // Check if user already exists by email
-                    final existingUser = await supabase
-                        .from('users_profiles')
-                        .select()
-                        .eq('email', email ?? '')
-                        .maybeSingle();
-
-                    if (existingUser != null) {
-                      // User with this email already exists, redirect
-                      Get.toNamed(Routes.thirdStep);
-                      return;
-                    }
-
-                    // Check if username already exists
-                    final usernameExists = await supabase
-                        .from('users_profiles')
-                        .select()
-                        .eq('username', username)
-                        .maybeSingle();
-
-                    // Generate a unique username if needed
-                    if (usernameExists != null) {
-                      final random =
-                          (1000 +
-                                  (10000 - 1000) *
-                                      (await Future.value(
-                                        DateTime.now().millisecondsSinceEpoch %
-                                            1000,
-                                      )) /
-                                      1000)
-                              .toInt();
-                      username = '${username}_$random';
-                    }
-
-                    // Insert new user
-                    await supabase.from('users_profiles').insert({
-                      'email': email,
-                      'username': username,
-                    });
-
-                    Get.toNamed(Routes.thirdStep);
+                    await controller.handlePostLogin(
+                      user: res.user,
+                      usernameFromOAuth: res.user?.userMetadata?['name'],
+                    );
                   }
                 },
+
                 icon: const Icon(Icons.g_mobiledata),
                 label: const Text("Sign up with Google"),
                 style: OutlinedButton.styleFrom(

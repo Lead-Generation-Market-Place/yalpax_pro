@@ -15,9 +15,8 @@ Widget build(BuildContext context) {
       child: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min, // Important to center vertically
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
+
             children: [
               const SizedBox(height: 32),
 

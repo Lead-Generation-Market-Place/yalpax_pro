@@ -28,9 +28,6 @@ class ThirdStep extends GetView<AuthController> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Obx(() {
-          if (controller.isLoading.value) {
-            return const Center(child: CircularProgressIndicator());
-          }
 
           return Form(
             key: formKey,
@@ -168,6 +165,7 @@ class ThirdStep extends GetView<AuthController> {
 
                 CustomButton(
                   text: 'Continue',
+                  isLoading: controller.isLoading.value,
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       controller.registerUser();

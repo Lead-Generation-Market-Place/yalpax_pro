@@ -56,7 +56,7 @@ class CustomButton extends StatelessWidget {
               border: type == CustomButtonType.outline && !isDisabled
                   ? Border.all(color: AppColors.primaryBlue)
                   : type == CustomButtonType.outline && isDisabled
-                  ? Border.all(color: AppColors.neutral400)
+                  ? Border.all(color: AppColors.lighten(Colors.white))
                   : null,
               boxShadow: type != CustomButtonType.text && !isDisabled
                   ? [
@@ -111,6 +111,10 @@ class CustomButton extends StatelessWidget {
   }
 
   Color _getBackgroundColor(bool isDisabled) {
+    if (isLoading) {
+      return AppColors.primaryBlue;
+    }
+
     if (isDisabled) {
       return type == CustomButtonType.text
           ? Colors.transparent
@@ -127,6 +131,7 @@ class CustomButton extends StatelessWidget {
         return Colors.transparent;
     }
   }
+
 
   TextStyle _getTextStyle(bool isDisabled) {
     final baseStyle = TextStyle(
