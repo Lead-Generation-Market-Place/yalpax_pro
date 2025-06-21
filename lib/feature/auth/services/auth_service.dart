@@ -34,7 +34,12 @@ class AuthService extends GetxService {
   void _initializeAuthState() {
     final session = supabase.auth.currentSession;
     isAuthenticated.value = session != null && !session.isExpired;
-    currentUser.value = session?.user;
+    currentUser.value = supabase.auth.currentUser;
+
+    if (currentUser.value != null) {
+      logger.i('Current user id: ${currentUser.value!.id}');
+      logger.i('Current user email: ${currentUser.value!.email}');
+    }
   }
 
   void _setupAuthStateListener() {

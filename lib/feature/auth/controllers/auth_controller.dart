@@ -58,38 +58,35 @@ class AuthController extends GetxController {
     super.onClose();
   }
 
-    
   Future<void> loadUserData() async {
-  try {
-    isLoading.value = true;
-    if (currentUser == null) {
-      debugPrint('User is not logged in.');
-      return;
+    try {
+      isLoading.value = true;
+      if (currentUser == null) {
+        debugPrint('User is not logged in.');
+        return;
+      }
+
+      email.value = currentUser!.email ?? '';
+
+      final userProfile = await supabase
+          .from('users_profiles')
+          .select('profile_picture_url,username,email')
+          .eq('email', currentUser!.email ?? '')
+          .maybeSingle(); // safer than .single()
+
+      if (userProfile != null) {
+        profilePictureUrl.value = userProfile['profile_picture_url'] ?? '';
+        name.value = userProfile['username'] ?? '';
+        // email.value = userProfile['email'] ?? '';
+      } else {
+        debugPrint('No user profile found in the database.');
+      }
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+    } finally {
+      isLoading.value = false;
     }
-
-    email.value = currentUser!.email ?? '';
-
-    final userProfile = await supabase
-        .from('users_profiles')
-        .select('profile_picture_url,username,email')
-        .eq('email', currentUser!.email ?? '')
-        .maybeSingle(); // safer than .single()
-
-    if (userProfile != null) {
-      profilePictureUrl.value = userProfile['profile_picture_url'] ?? '';
-      name.value = userProfile['username'] ?? '';
-      // email.value = userProfile['email'] ?? '';
-    } else {
-      debugPrint('No user profile found in the database.');
-    }
-
-  } catch (e) {
-    debugPrint('Error loading user data: $e');
-  }finally{
-    isLoading.value = false;
   }
-}
-
 
   // Login Methods
   Future<void> login() async {
@@ -102,17 +99,88 @@ class AuthController extends GetxController {
       final user = response.user;
 
       if (user != null) {
-        final userMetadata = user.userMetadata;
-        final username = userMetadata?['username']; // safely extract 'username'
+        // Set global auth state
 
-        if (username != null) {
+        final email = user.email;
+        final username = user.userMetadata?['username'];
+
+        if (email == null) {
+          Fluttertoast.showToast(msg: 'Email not available for this user.');
+          return;
+        }
+
+        if (username == null || username.trim().isEmpty) {
+          Fluttertoast.showToast(
+            msg: 'Username missing in Supabase Auth metadata.',
+          );
+          return;
+        }
+
+        // Check if user exists in users_profiles
+        final existingUser = await supabase
+            .from('users_profiles')
+            .select()
+            .eq('email', email)
+            .maybeSingle();
+
+        final proServiceResponse = await supabase
+            .from('pro_services')
+            .select()
+            .eq('user_id', user.id);
+        if (proServiceResponse.isEmpty) {
+          if (selectedServices.isEmpty) {
+            Fluttertoast.showToast(
+              msg: 'Please select the services you offer.',
+            );
+            return;
+          }
+        }
+
+        if (existingUser == null) {
+          // Check for username conflict
+          final usernameExists = await supabase
+              .from('users_profiles')
+              .select()
+              .eq('username', username)
+              .maybeSingle();
+
+          var finalUsername = username;
+
+          if (usernameExists != null) {
+            final random = DateTime.now().millisecondsSinceEpoch % 10000;
+            finalUsername = '${username}_$random';
+          }
+
           await supabase.from('users_profiles').insert({
-            'email': emailController.text,
-            'username': username,
+            'email': email,
+            'username': finalUsername,
           });
         }
 
-        Get.offAllNamed(Routes.jobs);
+        // Check if user is a professional
+
+        authService.isAuthenticated.value = true;
+        authService.currentUser.value = user;
+        if (proServiceResponse.isNotEmpty) {
+          if (existingUser?['phone_number'] != null) {
+            Get.offAllNamed(Routes.jobs);
+          } else {
+            final serviceProvierResponse = await supabase
+                .from('service_providers')
+                .select('business_name')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            if (serviceProvierResponse == null) {
+              Get.toNamed(Routes.fourthStep);
+            }
+          }
+        } else {
+          await proSignUpProces();
+          Get.toNamed(Routes.thirdStep);
+        }
+
+        // Clear fields
         emailController.clear();
         passwordController.clear();
       } else {
@@ -305,7 +373,7 @@ class AuthController extends GetxController {
   void onInit() async {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
-  
+
     searchController.addListener(_onSearchChanged);
   }
 
@@ -500,8 +568,6 @@ class AuthController extends GetxController {
     // Continue to next step or API
   }
 
-  
-
   Future<void> showPermissionDialog(
     String title,
     String message,
@@ -525,8 +591,7 @@ class AuthController extends GetxController {
     );
   }
 
-
-    Future<bool> handlePermission(ImageSource source) async {
+  Future<bool> handlePermission(ImageSource source) async {
     final androidVersion =
         await DeviceInfoPlugin().androidInfo; //package to get Device Info
 
@@ -611,11 +676,10 @@ class AuthController extends GetxController {
     return true;
   }
 
-
   Future<void> updateProfileImage(File imageFile) async {
     try {
       isLoading.value = true;
-      
+
       // Get the current user's email
       final user = supabase.auth.currentUser;
       if (user == null) {
@@ -623,7 +687,8 @@ class AuthController extends GetxController {
       }
 
       // Upload image to Supabase Storage
-      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final fileName =
+          '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final response = await supabase.storage
           .from('userprofilepicture')
           .upload(fileName, imageFile);
@@ -641,7 +706,7 @@ class AuthController extends GetxController {
 
       // Update the local state
       profilePictureUrl.value = fileName;
-      
+
       Get.snackbar(
         'Success',
         'Profile picture updated successfully',
@@ -658,9 +723,6 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
-
-
-  
 
   void showImagePickerBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -710,5 +772,54 @@ class AuthController extends GetxController {
       },
     );
   }
+
   final TextEditingController businessNameController = TextEditingController();
+
+  /////////////////////////////////////////////////////////////////////////////////////
+  // professional Signup
+
+  Future<void> proSignUpProces() async {
+    try {
+      isLoading.value = true;
+
+      final authUser = authService.currentUser.value;
+      if (authUser == null) throw 'User not authenticated';
+
+      // Get user_profiles.id based on the current user's email
+      final userProfileResponse = await supabase
+          .from('users_profiles')
+          .select('id')
+          .eq('email', authService.currentUser.value!.email ?? '')
+          .maybeSingle();
+
+      final profileId = userProfileResponse?['id'];
+      if (profileId == null) throw 'User profile not found';
+      // Check if the user is already a professional
+
+      // Build list of rows to insert (for each selected service)
+      final List<Map<String, dynamic>> rowsToInsert = selectedServices.map((
+        serviceId,
+      ) {
+        return {'user_id': profileId, 'service_id': int.tryParse(serviceId)};
+      }).toList();
+
+      // Insert all rows at once
+      await supabase.from('pro_services').insert(rowsToInsert);
+
+      Get.snackbar(
+        'Success',
+        'Professional services added',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Logger().e('Error in proSignUpProces: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to process professional signup',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }
