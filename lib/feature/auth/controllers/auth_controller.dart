@@ -54,16 +54,11 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
     super.onClose();
   }
 
   Future<void> loadUserData() async {
     try {
-      isLoading.value = true;
       if (currentUser == null) {
         debugPrint('User is not logged in.');
         return;
@@ -86,14 +81,13 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
-    } finally {
-      isLoading.value = false;
     }
   }
 
   // Login Methods
   Future<void> handlePostLogin({User? user, String? usernameFromOAuth}) async {
     try {
+      user ??= supabase.auth.currentUser;
       if (user == null) {
         Fluttertoast.showToast(msg: 'User data is missing.');
         return;
@@ -164,18 +158,124 @@ class AuthController extends GetxController {
         Get.toNamed(Routes.fourthStep);
       } else if (serviceProvider.isNotEmpty) {
         Get.toNamed(Routes.jobs);
+        authService.isAuthenticated.value = true;
+        authService.currentUser.value = user;
       } else {
         await proSignUpProces();
         Get.toNamed(Routes.thirdStep);
       }
 
-      authService.isAuthenticated.value = true;
-      authService.currentUser.value = user;
-
       emailController.clear();
       passwordController.clear();
     } catch (e) {
       Fluttertoast.showToast(msg: 'Post-login error: $e');
+    }
+  }
+
+  Future<void> Login() async {
+    try {
+      isLoading.value = true;
+      // Validate input fields
+      if (emailController.text.trim().isEmpty ||
+          passwordController.text.trim().isEmpty) {
+        Fluttertoast.showToast(msg: 'Please enter both email and password');
+        return;
+      }
+
+      // Sign in with Supabase
+      final response = await supabase.auth.signInWithPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // Check if user exists in auth
+      if (response.user == null) {
+        Fluttertoast.showToast(msg: 'Authentication failed. Please try again.');
+        return;
+      }
+
+      final user = response.user;
+      final email = user?.email ?? '';
+      final username = user?.userMetadata?['username']?.toString();
+
+      // Check user profile in database
+      final existingUser = await supabase
+          .from('users_profiles')
+          .select()
+          .eq('email', email)
+          .maybeSingle();
+
+      // Handle new users
+      if (existingUser == null) {
+        if (username == null || username.trim().isEmpty) {
+          Fluttertoast.showToast(msg: 'Username is required.');
+          return;
+        }
+
+        // Check for username uniqueness
+        final usernameExists = await supabase
+            .from('users_profiles')
+            .select()
+            .eq('username', username)
+            .maybeSingle();
+
+        var finalUsername = username;
+        if (usernameExists != null) {
+          final random = DateTime.now().millisecondsSinceEpoch % 10000;
+          finalUsername = '${username}_$random';
+        }
+
+        // Create new user profile
+        await supabase.from('users_profiles').insert({
+          'email': email,
+          'username': finalUsername,
+        });
+      }
+
+      // Check for service provider status
+      final proServiceResponse = await supabase
+          .from('pro_services')
+          .select()
+          .eq('user_id', user!.id)
+          .select();
+
+      // Handle service provider flow
+      if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
+        Fluttertoast.showToast(msg: 'Please select the services you offer.');
+        Get.toNamed(Routes.initial);
+        return;
+      } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
+        await proSignUpProces();
+      }
+
+      // Check service provider profile
+      final serviceProvider = await supabase
+          .from('service_providers')
+          .select('business_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      // Determine next steps based on user state
+      if (existingUser != null && existingUser['phone_number'] == null) {
+        Get.toNamed(Routes.thirdStep);
+      } else if (serviceProvider == null) {
+        Get.toNamed(Routes.fourthStep);
+      } else {
+        Get.toNamed(Routes.jobs);
+        // Update authentication state
+        authService.isAuthenticated.value = true;
+        authService.currentUser.value = user;
+      }
+
+      // Clear input fields
+      emailController.clear();
+      passwordController.clear();
+    } on AuthException catch (e) {
+      Fluttertoast.showToast(msg: 'Login failed: ${e.message}');
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'An error occurred: ${e.toString()}');
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -193,7 +293,7 @@ class AuthController extends GetxController {
         passwordController.clear();
         nameController.clear();
         confirmPasswordController.clear();
-        Get.toNamed(Routes.thirdStep);
+        Get.toNamed(Routes.login);
       } else {
         Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
       }
@@ -204,6 +304,8 @@ class AuthController extends GetxController {
 
   Future<void> signOut() async {
     await authService.signOut();
+    authService.isAuthenticated.value = false;
+    authService.currentUser.value = null;
 
     Get.offAllNamed(Routes.login);
   }
@@ -459,6 +561,11 @@ class AuthController extends GetxController {
     }
   }
 
+  var forceUpdate = false.obs;
+  void toggleForceUpdate() {
+    forceUpdate.value = !forceUpdate.value;
+  }
+
   // Modify the toggleCategories method to fetch subcategories
   void toggleCategories(String categoryId) {
     if (selectedCategories.contains(categoryId)) {
@@ -501,26 +608,6 @@ class AuthController extends GetxController {
   final selectedCategories = <String>[].obs;
   final selectedSubCategories = <String>[].obs;
 
-  // void toggleCategories(String categoryId) {
-  //   if (selectedCategories.contains(categoryId)) {
-  //     selectedCategories.remove(categoryId);
-  //   } else {
-  //     selectedCategories
-  //       ..clear()
-  //       ..add(categoryId);
-  //   }
-  // }
-
-  // void toggleSubCategories(String subCategoryId) {
-  //   if (selectedSubCategories.contains(subCategoryId)) {
-  //     selectedSubCategories.remove(subCategoryId);
-  //   } else {
-  //     selectedSubCategories
-  //       ..clear()
-  //       ..add(subCategoryId);
-  //   }
-  // }
-
   void toggleServices(String serviceId) {
     if (selectedServices.contains(serviceId)) {
       selectedServices.remove(serviceId);
@@ -551,24 +638,29 @@ class AuthController extends GetxController {
   var enableTextMessages = true.obs;
 
   Future<void> registerUser() async {
-   final authUserId =  supabase.auth.currentUser!.id;
+    final authUserId = supabase.auth.currentUser!.id;
     final phone = phoneController.text;
     final smsEnabled = enableTextMessages.value;
-    try{
+    try {
       isLoading.value = true;
 
+      final userPhoneNumberResponse = await supabase
+          .from('users_profiles')
+          .update({
+            'phone_number': phoneController.text,
+            'profile_picture_url': profilePictureUrl.value,
+          })
+          .eq('id', authUserId)
+          .single();
 
-    final userPhoneNumberResponse = await supabase
-        .from('users_profiles')
-        .update({'phone_number': phoneController.text})
-        .eq('id', authUserId).single();
-
-   if(userPhoneNumberResponse.isNotEmpty){
-     Fluttertoast.showToast(msg: 'You phone number have been added successfully.');
-   }
-    }catch(e){
-      print(e);// Continue to next step or API
-    }finally{
+      if (userPhoneNumberResponse.isNotEmpty) {
+        Fluttertoast.showToast(
+          msg: 'You phone number have been added successfully.',
+        );
+      }
+    } catch (e) {
+      print(e); // Continue to next step or API
+    } finally {
       isLoading.value = false;
     }
   }
@@ -810,6 +902,16 @@ class AuthController extends GetxController {
 
       // Insert all rows at once
       await supabase.from('pro_services').insert(rowsToInsert);
+
+      final userPone = await supabase
+          .from('users_profiles')
+          .select('phone_number')
+          .eq('email', authService.currentUser.value!.email ?? '')
+          .single();
+
+      if (userPone['phone_number'] == null) {
+        Get.toNamed(Routes.thirdStep);
+      }
 
       Get.snackbar(
         'Success',

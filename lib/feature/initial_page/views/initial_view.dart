@@ -13,7 +13,7 @@ class InitialView extends GetView<InitialPageController> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
+        child: ListView(
           children: [
             const SizedBox(height: 32),
 

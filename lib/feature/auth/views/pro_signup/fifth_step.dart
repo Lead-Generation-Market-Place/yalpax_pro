@@ -13,7 +13,7 @@ class FifthStep extends GetView<AuthController> {
     WidgetsBinding.instance.addPostFrameCallback(
           (_) async => controller.businessNameController.clear(),
     );
-    final formKey = GlobalKey<FormState>();
+    final formKeyFifthStep = GlobalKey<FormState>();
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
@@ -47,7 +47,7 @@ class FifthStep extends GetView<AuthController> {
       ),
       body: SafeArea(
         child: Form(
-          key: formKey,
+          key: formKeyFifthStep,
           child: ListView(
             children: [
               // Header Section
@@ -227,7 +227,7 @@ class FifthStep extends GetView<AuthController> {
                   isLoading: controller.isLoading.value
                   ,
                   onPressed: ()async {
-                    if (formKey.currentState?.validate() ?? false) {
+                    if (formKeyFifthStep.currentState?.validate() ?? false) {
                   await  controller.addBusinessName();
                     }
                   },

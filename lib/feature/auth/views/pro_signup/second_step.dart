@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
+import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
 class SecondStep extends GetView<AuthController> {
@@ -44,9 +45,9 @@ class SecondStep extends GetView<AuthController> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Get.toNamed(Routes.signup_with_email);
+                  Get.toNamed(Routes.signup_with_email);
 
-                  Get.toNamed(Routes.thirdStep);
+                  // Get.toNamed(Routes.thirdStep);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
@@ -73,39 +74,35 @@ class SecondStep extends GetView<AuthController> {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final res = await AuthController.signInWithGoogle();
-                  final user = res.user;
 
-                  if (user != null && user.email != null) {
-                    final name = user.userMetadata?['name'];
-                    if (name == null || name.trim().isEmpty) {
-                      Get.snackbar(
-                        'Error',
-                        'Username not found in Google profile.',
-                      );
-                      return;
-                    }
+            CustomButton(
+              text: 'Sign up with Google',
+              icon: Icons.g_mobiledata,
+              onPressed: () async {
+                final res = await AuthController.signInWithGoogle();
+                final user = res.user;
 
-                    await controller.handlePostLogin(
-                      user: res.user,
-                      usernameFromOAuth: res.user?.userMetadata?['name'],
+                if (user != null && user.email != null) {
+                  final name = user.userMetadata?['name'];
+                  if (name == null || name.trim().isEmpty) {
+                    Get.snackbar(
+                      'Error',
+                      'Username not found in Google profile.',
                     );
+                    return;
                   }
-                },
 
-                icon: const Icon(Icons.g_mobiledata),
-                label: const Text("Sign up with Google"),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
+                  await controller.handlePostLogin(
+                    user: res.user,
+                    usernameFromOAuth: res.user?.userMetadata?['name'],
+                  );
+                }
+              },
+              isFullWidth: true,
+              size: CustomButtonSize.large,
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

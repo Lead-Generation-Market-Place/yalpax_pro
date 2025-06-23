@@ -21,7 +21,7 @@ class AuthService extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    _initializeAuthState();
+    initializeAuthState();
     _setupAuthStateListener();
   }
 
@@ -31,9 +31,9 @@ class AuthService extends GetxService {
     super.onClose();
   }
 
-  void _initializeAuthState() {
+  void initializeAuthState() {
     final session = supabase.auth.currentSession;
-    isAuthenticated.value = session != null && !session.isExpired;
+    isAuthenticated.value = session != null && !session.isExpired && isAuthenticated.value  != false;
     currentUser.value = supabase.auth.currentUser;
 
     if (currentUser.value != null) {

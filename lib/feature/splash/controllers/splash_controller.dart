@@ -7,50 +7,51 @@ import '../../auth/services/auth_service.dart';
 
 class SplashController extends GetxController {
   late final SharedPreferences _prefs;
-  final isInitialized = false.obs;
+  late final AuthService _authService;
+  final isInitialized = false.obs; // Changed to public for the view
 
   @override
   void onInit() {
     super.onInit();
     _prefs = Get.find<SharedPreferences>();
+    _authService = Get.put(AuthService());
     _initializeApp();
   }
 
   Future<void> _initializeApp() async {
     try {
-      isInitialized.value = true;
       debugPrint('Splash: Starting initialization');
 
-      // Add a small delay to show splash screen
+      // Minimum splash duration (2 seconds) while we load everything
       await Future.delayed(const Duration(seconds: 2));
+      _authService.initializeAuthState();
 
-      // First, check if onboarding is completed
+      // Check onboarding status
       final hasCompletedOnboarding =
           _prefs.getBool(AppConstants.onboardingCompleteKey) ?? false;
       debugPrint('Splash: Onboarding completed: $hasCompletedOnboarding');
 
       if (!hasCompletedOnboarding) {
         debugPrint('Splash: Navigating to onboarding');
-        Get.offAllNamed(Routes.onboarding);
+        await Get.offAllNamed(Routes.onboarding);
         return;
       }
 
-      // If onboarding is completed, check authentication status
-      final authService = Get.find<AuthService>();
-      final isAuthenticated = authService.isAuthenticated.value;
-      debugPrint('Splash: User authenticated: $isAuthenticated');
+      // Determine next route based on auth state
+      final nextRoute = _authService.isAuthenticated.value ==true
+          ? Routes.jobs
+          : Routes.initial;
 
-      if (isAuthenticated) {
-        debugPrint('Splash: Navigating to home');
-        Get.offAllNamed(Routes.jobs);
-      } else {
-        debugPrint('Splash: Navigating to login');
-        Get.offAllNamed(Routes.initial);
-      }
-    } catch (e) {
-      debugPrint('Splash: Error during initialization: $e');
-      // In case of any error, default to login screen
-      Get.offAllNamed(Routes.initial);
+      debugPrint('Splash: Navigating to $nextRoute');
+      await Get.offAllNamed(nextRoute);
+
+    } catch (e, stackTrace) {
+      debugPrint('Splash: Initialization error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      await Get.offAllNamed(Routes.initial);
+      Get.snackbar('Error', 'Failed to initialize app');
+    } finally {
+      isInitialized.value = true;
     }
   }
 }

@@ -77,11 +77,9 @@ class AuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     final authService = Get.find<AuthService>();
-
-    if (!authService.isAuthenticated.value) {
-      return const RouteSettings(name: Routes.login);
-    }
-    return null;
+    return authService.isAuthenticated.value
+        ? null
+        : const RouteSettings(name: Routes.login);
   }
 }
 
@@ -92,11 +90,9 @@ class NoAuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     final authService = Get.find<AuthService>();
-
-    if (authService.isAuthenticated.value) {
-      return const RouteSettings(name: Routes.jobs);
-    }
-    return null;
+    return authService.isAuthenticated.value
+        ? const RouteSettings(name: Routes.jobs)
+        : null;
   }
 }
 
@@ -122,7 +118,7 @@ abstract class AppPages {
     // Auth Pages
     GetPage(
       name: Routes.login,
-      page: () => const LoginView(),
+      page: () =>  LoginView(),
       binding: AuthBinding(),
       transition: Transition.fadeIn,
     ),
@@ -137,7 +133,7 @@ abstract class AppPages {
     GetPage(
       name: Routes.jobs,
       page: () => JobsView(),
-      // middlewares: [AuthMiddleware()],
+      middlewares: [AuthMiddleware()],
       binding: JobsBinding(),
       transition: Transition.fadeIn,
     ),
