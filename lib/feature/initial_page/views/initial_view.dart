@@ -76,7 +76,7 @@ class InitialView extends GetView<InitialPageController> {
               ),
             ),
 
-            const Spacer(),
+            const SizedBox(height: 40),
 
             // CTA Buttons
             Padding(
