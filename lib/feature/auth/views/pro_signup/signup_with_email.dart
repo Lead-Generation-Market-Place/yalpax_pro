@@ -12,13 +12,6 @@ class SignupWithEmail extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.nameController.clear();
-      controller.emailController.clear();
-      controller.passwordController.clear();
-      controller.confirmPasswordController.clear();
-    });
-
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(

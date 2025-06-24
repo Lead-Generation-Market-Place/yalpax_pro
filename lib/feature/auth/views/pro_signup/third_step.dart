@@ -47,152 +47,154 @@ class _ThirdStepState extends State<ThirdStep> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Form(
-            key: formKeyThirdStep,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Create your free account.',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-                Center(
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        onTap: () =>
-                            controller.showImagePickerBottomSheet(context),
-                        child: Obx(() {
-                          final hasImage =
-                              controller.profilePictureUrl.value.isNotEmpty;
-                          return CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.grey,
-                            backgroundImage: hasImage
-                                ? NetworkImage(
-                                    '${FileUrls.profilePicture}${controller.profilePictureUrl.value}',
-                                  )
-                                : null,
-                            child: !hasImage
-                                ? const Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Colors.white,
-                                  )
-                                : null,
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 8),
-                      Obx(
-                        () => Text(
-                          controller.name.value,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Obx(() {
-                  return CustomInput(
-                    initialValue: controller.email.value,
-                    enabled: false,
-                    label: 'Email',
-                    hint: 'Enter your email',
-                    prefixIcon: const Icon(Icons.email),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Email is required';
-                      }
-                      return null;
-                    },
-                  );
-                }),
-                const SizedBox(height: 16),
-                CustomInput(
-                  label: 'Phone Number',
-                  keyboardType: TextInputType.phone,
-                  autofocus: true,
-                  prefixIcon: const Icon(Icons.phone_android_outlined),
-                  hint: '  (+1) 555-555-555',
-                  controller: controller.phoneController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Phone number is required.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
+          key: formKeyThirdStep,
+          child: ListView(
+            children: [
+              const Text(
+                'Create your free account.',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: Column(
                   children: [
-                    Obx(
-                      () => Checkbox(
-                        value: controller.enableTextMessages.value,
-                        onChanged: (val) =>
-                            controller.enableTextMessages.value = val ?? false,
-                      ),
+                    GestureDetector(
+                      onTap: () =>
+                          controller.showImagePickerBottomSheet(context),
+                      child: Obx(() {
+                        // Prioritize Google account image if available
+                        final imageUrl =
+                            controller.googleAccountPictureUrl.value.isNotEmpty
+                            ? controller.googleAccountPictureUrl.value
+                            : controller.profilePictureUrl.value;
+
+                        final hasImage = imageUrl.isNotEmpty;
+
+                        return CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey,
+                          backgroundImage: hasImage
+                              ? NetworkImage(imageUrl)
+                              : null,
+                          child: !hasImage
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        );
+                      }),
                     ),
-                    const Expanded(
-                      child: Text.rich(
-                        TextSpan(
-                          text: 'Enable text messages\n',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                          children: [
-                            TextSpan(
-                              text:
-                                  'By leaving this box checked and tapping Continue, you authorize us to send you automated text messages. ',
-                              style: TextStyle(fontWeight: FontWeight.normal),
-                            ),
-                            TextSpan(
-                              text: 'Terms apply.',
-                              style: TextStyle(color: Colors.blue),
-                            ),
-                          ],
+                    const SizedBox(height: 8),
+                    Obx(
+                      () => Text(
+                        controller.name.value,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text.rich(
-                  TextSpan(
-                    text: 'By tapping Continue, I agree to the ',
-                    children: [
-                      TextSpan(
-                        text: 'Terms of Use',
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                      TextSpan(text: ' and '),
-                      TextSpan(
-                        text: 'Privacy Policy',
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    ],
+              ),
+              const SizedBox(height: 24),
+              Obx(() {
+                return CustomInput(
+                  initialValue: controller.email.value,
+                  enabled: false,
+                  label: 'Email',
+                  hint: 'Enter your email',
+                  prefixIcon: const Icon(Icons.email),
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email is required';
+                    }
+                    return null;
+                  },
+                );
+              }),
+              const SizedBox(height: 16),
+              CustomInput(
+                label: 'Phone Number',
+                keyboardType: TextInputType.phone,
+                autofocus: true,
+                prefixIcon: const Icon(Icons.phone_android_outlined),
+                hint: '  (+1) 555-555-555',
+                controller: controller.phoneController,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Phone number is required.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Obx(
+                    () => Checkbox(
+                      value: controller.enableTextMessages.value,
+                      onChanged: (val) =>
+                          controller.enableTextMessages.value = val ?? false,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Obx(
-                  () => CustomButton(
-                    text: 'Continue',
-                    isLoading: controller.isLoading.value,
-                    onPressed: () {
-                      if (formKeyThirdStep.currentState!.validate()) {
-                        controller.registerUser();
-                        Get.toNamed(Routes.fourthStep);
-                      }
-                    },
+                  const Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'Enable text messages\n',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                        children: [
+                          TextSpan(
+                            text:
+                                'By leaving this box checked and tapping Continue, you authorize us to send you automated text messages. ',
+                            style: TextStyle(fontWeight: FontWeight.normal),
+                          ),
+                          TextSpan(
+                            text: 'Terms apply.',
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text.rich(
+                TextSpan(
+                  text: 'By tapping Continue, I agree to the ',
+                  children: [
+                    TextSpan(
+                      text: 'Terms of Use',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                    TextSpan(text: ' and '),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-        )
-       
+              ),
+              const SizedBox(height: 24),
+              Obx(
+                () => CustomButton(
+                  text: 'Continue',
+                  isLoading: controller.isLoading.value,
+                  onPressed: () {
+                    if (formKeyThirdStep.currentState!.validate()) {
+                      controller.registerUser();
+                      Get.toNamed(Routes.fourthStep);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

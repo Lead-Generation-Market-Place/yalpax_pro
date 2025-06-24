@@ -101,30 +101,7 @@ class AuthService extends GetxService {
     }
   }
 
-  Future<bool> signUp(
-    String email,
-    String password, {
-    Map<String, dynamic>? metadata,
-  }) async {
-    try {
-      isLoading.value = true;
-      authError.value = null;
-
-      final response = await supabase.auth.signUp(
-        email: email,
-        password: password,
-        data: metadata,
-      );
-
-      return response.user != null;
-    } catch (e) {
-      authError.value = e.toString();
-      logger.e('Sign up error: $e');
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
-  }
+ 
 
   Future<void> signOut() async {
     try {

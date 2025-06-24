@@ -11,7 +11,7 @@ class FifthStep extends GetView<AuthController> {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback(
-          (_) async => controller.businessNameController.clear(),
+      (_) async => controller.businessNameController.clear(),
     );
     final formKeyFifthStep = GlobalKey<FormState>();
     final theme = Theme.of(context);
@@ -224,15 +224,13 @@ class FifthStep extends GetView<AuthController> {
                 ),
                 child: CustomButton(
                   text: 'Continue',
-                  isLoading: controller.isLoading.value
-                  ,
-                  onPressed: ()async {
+                  isLoading: controller.isLoading.value,
+                  onPressed: () async {
                     if (formKeyFifthStep.currentState?.validate() ?? false) {
-                  await  controller.addBusinessName();
+                      await controller.addBusinessName();
                     }
                   },
                 ),
-
               ),
             ],
           ),

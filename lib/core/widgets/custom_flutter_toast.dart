@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart'; // Required for Get.overlayContext
 import '../constants/app_colors.dart';
 
 class CustomFlutterToast {
   static OverlayEntry? _currentToast;
 
+
+
   static void showToast({
     required String message,
     ToastType type = ToastType.info,
     Duration duration = const Duration(seconds: 3),
+    int? seconds,
     BuildContext? context,
   }) {
-    // Dismiss current toast if exists
+
     _currentToast?.remove();
+    _currentToast = null;
+
+    // Get the context from GetX overlay
+    final resolvedContext = context ?? Get.overlayContext;
+    if (resolvedContext == null) return;
+
+    final overlay = Overlay.of(resolvedContext);
+    if (overlay == null) return;
 
     Color backgroundColor;
     Color textColor = Colors.white;
@@ -37,52 +49,43 @@ class CustomFlutterToast {
         break;
     }
 
-    final overlay = Overlay.of(context ?? navigatorKey.currentContext!);
-
     _currentToast = OverlayEntry(
-      builder: (context) => Positioned(
-        top: 0,
+      builder: (_) => Positioned(
+        top: 50,
         left: 16,
         right: 16,
         child: Material(
           color: Colors.transparent,
-          child: SafeArea(
-            child: _ToastAnimation(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: backgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, color: textColor, size: 20),
-                      const SizedBox(width: 8),
-                    ],
-                    Flexible(
-                      child: Text(
-                        message,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+          child: _ToastAnimation(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, color: textColor, size: 20),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      message,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -92,64 +95,81 @@ class CustomFlutterToast {
 
     overlay.insert(_currentToast!);
 
-    Future.delayed(duration, () {
+    // Use seconds if provided, otherwise use duration
+    final toastDuration = seconds != null ? Duration(seconds: seconds) : duration;
+
+    Future.delayed(toastDuration, () {
       _currentToast?.remove();
       _currentToast = null;
     });
   }
 
-  static void showSuccessToast(String message) {
-    showToast(message: message, type: ToastType.success);
+  static void showSuccessToast(String message, {int? seconds, Duration? duration}) {
+    showToast(
+      message: message,
+      type: ToastType.success,
+      seconds: seconds,
+      duration: duration ?? const Duration(seconds: 3),
+    );
   }
 
-  static void showErrorToast(String message) {
-    showToast(message: message, type: ToastType.error);
+  static void showErrorToast(String message, {int? seconds, Duration? duration}) {
+    showToast(
+      message: message,
+      type: ToastType.error,
+      seconds: seconds,
+      duration: duration ?? const Duration(seconds: 3),
+    );
   }
 
-  static void showWarningToast(String message) {
-    showToast(message: message, type: ToastType.warning);
+  static void showWarningToast(String message, {int? seconds, Duration? duration}) {
+    showToast(
+      message: message,
+      type: ToastType.warning,
+      seconds: seconds,
+      duration: duration ?? const Duration(seconds: 3),
+    );
   }
 
-  static void showInfoToast(String message) {
-    showToast(message: message, type: ToastType.info);
+  static void showInfoToast(String message, {int? seconds, Duration? duration}) {
+    showToast(
+      message: message,
+      type: ToastType.info,
+      seconds: seconds,
+      duration: duration ?? const Duration(seconds: 3),
+    );
   }
 }
 
 enum ToastType { success, error, warning, info }
 
-// Animation widget for smooth appearance and disappearance
 class _ToastAnimation extends StatefulWidget {
   final Widget child;
 
   const _ToastAnimation({required this.child});
 
   @override
-  _ToastAnimationState createState() => _ToastAnimationState();
+  State<_ToastAnimation> createState() => _ToastAnimationState();
 }
 
 class _ToastAnimationState extends State<_ToastAnimation>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late Animation<Offset> _slide;
+  late Animation<double> _fade;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
       vsync: this,
+      duration: const Duration(milliseconds: 250),
     );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    );
-
-    _slideAnimation = Tween<Offset>(
+    _slide = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
 
     _controller.forward();
   }
@@ -163,11 +183,8 @@ class _ToastAnimationState extends State<_ToastAnimation>
   @override
   Widget build(BuildContext context) {
     return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(opacity: _fadeAnimation, child: widget.child),
+      position: _slide,
+      child: FadeTransition(opacity: _fade, child: widget.child),
     );
   }
 }
-
-// Global navigator key to access context anywhere
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

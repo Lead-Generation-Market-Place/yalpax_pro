@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
 import 'package:yalpax_pro/core/widgets/image_picker.dart';
 
 import '../../../core/routes/routes.dart';
@@ -37,6 +38,7 @@ class AuthController extends GetxController {
   RxString email = ''.obs;
   RxString name = ''.obs;
   RxString profilePictureUrl = ''.obs;
+  RxString googleAccountPictureUrl = ''.obs;
 
   // Reset password variables
   final resetEmailError = RxnString();
@@ -73,6 +75,19 @@ class AuthController extends GetxController {
           .maybeSingle(); // safer than .single()
 
       if (userProfile != null) {
+        final identities = currentUser!.identities;
+
+        if (identities != null && identities.isNotEmpty) {
+          final googleIdentity = identities.firstWhere(
+            (identity) => identity.provider == 'google',
+            orElse: () => throw StateError('No Google identity found'),
+          );
+
+          final avatarUrl = googleIdentity.identityData?['avatar_url'] ?? '';
+          googleAccountPictureUrl.value = avatarUrl;
+          print(googleAccountPictureUrl);
+        }
+
         profilePictureUrl.value = userProfile['profile_picture_url'] ?? '';
         name.value = userProfile['username'] ?? '';
         // email.value = userProfile['email'] ?? '';
@@ -141,6 +156,7 @@ class AuthController extends GetxController {
         }
 
         await supabase.from('users_profiles').insert({
+          'id': user.id,
           'email': email,
           'username': finalUsername,
         });
@@ -195,20 +211,22 @@ class AuthController extends GetxController {
       }
 
       final user = response.user;
+      final authUserId = user!.id;
+      print('authUserId: $authUserId');
       final email = user?.email ?? '';
       final username = user?.userMetadata?['username']?.toString();
 
       // Check user profile in database
       final existingUser = await supabase
           .from('users_profiles')
-          .select()
+          .select('id')
           .eq('email', email)
           .maybeSingle();
 
       // Handle new users
       if (existingUser == null) {
         if (username == null || username.trim().isEmpty) {
-          Fluttertoast.showToast(msg: 'Username is required.');
+          CustomFlutterToast.showInfoToast('Username is required.', seconds: 2);
           return;
         }
 
@@ -227,6 +245,7 @@ class AuthController extends GetxController {
 
         // Create new user profile
         await supabase.from('users_profiles').insert({
+          'id': authUserId,
           'email': email,
           'username': finalUsername,
         });
@@ -236,13 +255,16 @@ class AuthController extends GetxController {
       final proServiceResponse = await supabase
           .from('pro_services')
           .select()
-          .eq('user_id', user!.id)
-          .select();
+          .eq('user_id', authUserId);
 
       // Handle service provider flow
       if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
-        Fluttertoast.showToast(msg: 'Please select the services you offer.');
-        Get.toNamed(Routes.initial);
+        CustomFlutterToast.showInfoToast(
+          'Please select the services you offer.',
+          seconds: 5,
+        );
+
+        Get.toNamed(Routes.firstStep);
         return;
       } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
         await proSignUpProces();
@@ -256,9 +278,10 @@ class AuthController extends GetxController {
           .maybeSingle();
 
       // Determine next steps based on user state
-      if (existingUser != null && existingUser['phone_number'] == null) {
+      if (existingUser != null && existingUser['phone_number'] == null ||
+          existingUser!['phone_number'] == '') {
         Get.toNamed(Routes.thirdStep);
-      } else if (serviceProvider == null) {
+      } else if (serviceProvider == null || serviceProvider.isEmpty) {
         Get.toNamed(Routes.fourthStep);
       } else {
         Get.toNamed(Routes.jobs);
@@ -280,25 +303,33 @@ class AuthController extends GetxController {
   }
 
   Future<void> signUp() async {
+    isLoading.value = true;
     try {
-      final success = await authService.signUp(
-        emailController.text,
-        passwordController.text,
-        metadata: {'username': nameController.text},
+      final success = await supabase.auth.signUp(
+        email: emailController.text,
+        password: passwordController.text,
+        data: {'username': nameController.text},
       );
 
-      if (success) {
+      if (success.user != null) {
         await authService.signOut(); // Sign out after successful signup
+        nameController.clear();
         emailController.clear();
         passwordController.clear();
-        nameController.clear();
         confirmPasswordController.clear();
+        acceptedTerms.value = false;
+
         Get.toNamed(Routes.login);
-      } else {
-        Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
+
+        CustomFlutterToast.showInfoToast(
+          'Please confirm you email, before login.',
+          seconds: 5,
+        );
       }
     } catch (e) {
       Fluttertoast.showToast(msg: 'Failed to sign up. Please try again.');
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -650,10 +681,9 @@ class AuthController extends GetxController {
             'phone_number': phoneController.text,
             'profile_picture_url': profilePictureUrl.value,
           })
-          .eq('id', authUserId)
-          .single();
+          .eq('id', authUserId);
 
-      if (userPhoneNumberResponse.isNotEmpty) {
+      if (userPhoneNumberResponse != null) {
         Fluttertoast.showToast(
           msg: 'You phone number have been added successfully.',
         );
@@ -909,7 +939,7 @@ class AuthController extends GetxController {
           .eq('email', authService.currentUser.value!.email ?? '')
           .single();
 
-      if (userPone['phone_number'] == null) {
+      if (userPone['phone_number'] == '' || userPone['phone_number'] == null) {
         Get.toNamed(Routes.thirdStep);
       }
 
@@ -933,19 +963,38 @@ class AuthController extends GetxController {
   Future<void> addBusinessName() async {
     try {
       isLoading.value = true;
-      if (businessNameController.text.isNotEmpty) {
-        final authUser = authService.currentUser.value;
 
-        final businessNameResponse = await supabase
-            .from('service_providers')
-            .insert({
-              'business_name': businessNameController.text,
-              'user_id': authService.currentUser.value!.id ?? '',
-            });
+      final businessName = businessNameController.text.trim();
+      final authUser = authService.currentUser.value;
+
+      if (authUser == null || businessName.isEmpty) {
+        print('User not logged in or business name empty.');
+        return;
       }
+
+      final existingProvider = await supabase
+          .from('service_providers')
+          .select()
+          .eq('user_id', authUser.id)
+          .maybeSingle(); // Only get one row if exists
+
+      if (existingProvider != null) {
+        // Update existing row
+        await supabase
+            .from('service_providers')
+            .update({'business_name': businessName})
+            .eq('user_id', authUser.id);
+      } else {
+        // Insert new row
+        await supabase.from('service_providers').insert({
+          'user_id': authUser.id,
+          'business_name': businessName,
+        });
+      }
+      authService.isAuthenticated.value = true;
       Get.toNamed(Routes.eightStep);
     } catch (e) {
-      print(e);
+      print('Error adding business name: $e');
     } finally {
       isLoading.value = false;
     }

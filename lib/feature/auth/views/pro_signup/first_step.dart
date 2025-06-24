@@ -40,18 +40,32 @@ class FirstStep extends GetView<AuthController> {
                   ),
                   centerTitle: true,
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      Obx(() => _buildCategoryDropdown()),
-                      const SizedBox(height: 16),
-                      Obx(() => _buildSubCategoryDropdown()),
-                      const SizedBox(height: 16),
-                      Obx(() => _buildServicesDropdown()),
-                      SizedBox(height: 80), // Space for button
-                    ]),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Obx(() => _buildCategoryDropdown()),
                   ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 16),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Obx(() => _buildSubCategoryDropdown()),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 16),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Obx(() => _buildServicesDropdown()),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: 80), // Space for button
                 ),
               ],
             ),

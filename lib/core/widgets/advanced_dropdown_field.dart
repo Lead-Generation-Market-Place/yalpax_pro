@@ -178,7 +178,6 @@ class _AdvancedDropdownFieldState<T> extends State<AdvancedDropdownField<T>> {
                       }
 
                       return ListView.builder(
-                        shrinkWrap: true,
                         itemCount: itemsToShow.length,
                         itemBuilder: (_, index) {
                           return _buildListItem(itemsToShow[index], field);
