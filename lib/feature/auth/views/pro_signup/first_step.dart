@@ -43,21 +43,23 @@ class FirstStep extends GetView<AuthController> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
+                    child: Obx(() => _buildStateDropdown()),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Obx(() => _buildCategoryDropdown()),
                   ),
                 ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 16),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Obx(() => _buildSubCategoryDropdown()),
                   ),
                 ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 16),
-                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -77,6 +79,30 @@ class FirstStep extends GetView<AuthController> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStateDropdown() {
+    return AdvancedDropdownField<Map<String, dynamic>>(
+      label: 'Select your state',
+      hint: 'Search states...',
+      items: controller.allStates,
+      selectedValue: controller.selectedState.value,
+      getLabel: (item) => item['name'] ?? '',
+      onChanged: (selectedItem) {
+        controller.selectedState.value = selectedItem;
+      },
+      validator: (value) {
+        if (value == null) {
+          return 'Please select a state';
+        }
+        return null;
+      },
+      isRequired: true,
+      enableSearch: true,
+      onSearchChanged: (query) {
+        controller.fetchStates(query);
+      },
     );
   }
 

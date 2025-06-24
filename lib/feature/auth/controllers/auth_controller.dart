@@ -682,7 +682,7 @@ class AuthController extends GetxController {
             'profile_picture_url': profilePictureUrl.value,
           })
           .eq('id', authUserId);
-
+      await serviceProviderLocation(authUserId);
       if (userPhoneNumberResponse != null) {
         Fluttertoast.showToast(
           msg: 'You phone number have been added successfully.',
@@ -992,11 +992,85 @@ class AuthController extends GetxController {
         });
       }
       authService.isAuthenticated.value = true;
-      Get.toNamed(Routes.eightStep);
+      Get.toNamed(Routes.ninthStep);
     } catch (e) {
       print('Error adding business name: $e');
     } finally {
       isLoading.value = false;
     }
   }
+
+  final RxList<Map<String, dynamic>> allStates = <Map<String, dynamic>>[].obs;
+  final Rx<Map<String, dynamic>?> selectedState = Rx<Map<String, dynamic>?>(
+    null,
+  );
+
+  Future<void> fetchStates(String query) async {
+    isLoading.value = true;
+    try {
+      final response = await supabase
+          .from('state')
+          .select('id, name, code')
+          .ilike('name', '%$query%')
+          .order('name', ascending: true)
+          .limit(20); // Optional: limit for performance
+
+      allStates.assignAll(List<Map<String, dynamic>>.from(response));
+    } catch (e) {
+      print('Error fetching states: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> serviceProviderLocation(String authUserId) async {
+  try {
+    isLoading.value = true;
+    Logger().d(selectedState);
+
+    // ✅ Step 1: Ensure the provider exists in service_providers
+    final providerExists = await supabase
+        .from('service_providers')
+        .select('provider_id')
+        .eq('provider_id', authUserId)
+        .maybeSingle();
+
+    if (providerExists == null) {
+      // You may want to provide more fields here if needed
+      await supabase.from('service_providers').insert({
+        'provider_id': authUserId,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    }
+
+    // ✅ Step 2: Check if location already exists
+    final existing = await supabase
+        .from('provider_locations')
+        .select('id')
+        .eq('provider_id', authUserId)
+        .maybeSingle();
+
+    final payload = {
+      'provider_id': authUserId,
+      'location_id': selectedState.value!['id'],
+      'is_primary': false,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+
+    if (existing != null) {
+      await supabase
+          .from('provider_locations')
+          .update(payload)
+          .eq('provider_id', authUserId);
+    } else {
+      payload['created_at'] = DateTime.now().toIso8601String();
+      await supabase.from('provider_locations').insert(payload);
+    }
+  } catch (e) {
+    print('Error updating provider_locations: $e');
+  } finally {
+    isLoading.value = false;
+  }
+}
+
 }
