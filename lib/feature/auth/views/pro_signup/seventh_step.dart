@@ -292,7 +292,7 @@ class _SeventhStepState extends State<SeventhStep> {
           hint: 'Search states...',
           items: controller.allStates,
           selectedValue: selected.isEmpty ? null : selected,
-          getLabel: (item) => item['state'] ?? '',
+          getLabel: (item) => item['name'] ?? '',
           onChanged: (selectedItem) {
             controller.selectedState.value = selectedItem;
           },

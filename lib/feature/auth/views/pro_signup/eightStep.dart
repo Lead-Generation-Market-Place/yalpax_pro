@@ -54,9 +54,9 @@ class Eightstep extends GetView<AuthController> {
               ),
               child: RichText(
                 text: TextSpan(
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.grey[800],
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[800]),
                   children: [
                     const TextSpan(text: "Pros with reviews are "),
                     TextSpan(
@@ -129,16 +129,9 @@ class Eightstep extends GetView<AuthController> {
           color: color?.withOpacity(0.2) ?? Colors.grey[200],
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(
-          icon,
-          color: color ?? Colors.grey[600],
-          size: 20,
-        ),
+        child: Icon(icon, color: color ?? Colors.grey[600], size: 20),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       trailing: Icon(
         Icons.arrow_forward_ios_rounded,
         size: 16,
@@ -210,9 +203,9 @@ class Eightstep extends GetView<AuthController> {
                 const SizedBox(height: 20),
                 Text(
                   "Reviews Help You Get More Leads",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
@@ -221,10 +214,7 @@ class Eightstep extends GetView<AuthController> {
                   child: Text(
                     "Customers are unlikely to see you in search results without at least one review. Adding reviews now will significantly improve your visibility.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      height: 1.5,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], height: 1.5),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -239,7 +229,7 @@ class Eightstep extends GetView<AuthController> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop(); // Dismiss the bottom sheet
-                    Get.toNamed(Routes.thirteenStep);
+                    Get.toNamed(Routes.ninthStep);
                   },
                   child: Text(
                     "Do It Later",

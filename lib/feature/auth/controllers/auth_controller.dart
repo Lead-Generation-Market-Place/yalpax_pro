@@ -219,7 +219,7 @@ class AuthController extends GetxController {
       // Check user profile in database
       final existingUser = await supabase
           .from('users_profiles')
-          .select('id')
+          .select()
           .eq('email', email)
           .maybeSingle();
 
@@ -278,8 +278,8 @@ class AuthController extends GetxController {
           .maybeSingle();
 
       // Determine next steps based on user state
-      if (existingUser != null && existingUser['phone_number'] == null ||
-          existingUser!['phone_number'] == '') {
+      if ( existingUser!['phone_number'] == null ||
+          existingUser['phone_number'] == '') {
         Get.toNamed(Routes.thirdStep);
       } else if (serviceProvider == null || serviceProvider.isEmpty) {
         Get.toNamed(Routes.fourthStep);
@@ -688,6 +688,7 @@ class AuthController extends GetxController {
             msg: 'You phone number have been added successfully.',
           );
         }
+        Get.toNamed(Routes.fourthStep);
       } else {
         final userPhoneNumberResponse = await supabase
             .from('users_profiles')
@@ -921,63 +922,62 @@ class AuthController extends GetxController {
   /////////////////////////////////////////////////////////////////////////////////////
   // professional Signup
 
-Future<void> proSignUpProces() async {
-  try {
-    isLoading.value = true;
+  Future<void> proSignUpProces() async {
+    try {
+      isLoading.value = true;
 
-    final authUser = authService.currentUser.value;
-    if (authUser == null) throw 'User not authenticated';
+      final authUser = authService.currentUser.value;
+      if (authUser == null) throw 'User not authenticated';
 
-    final userEmail = authUser.email;
-    if (userEmail == null) throw 'User email not found';
+      final userEmail = authUser.email;
+      if (userEmail == null) throw 'User email not found';
 
-    // Step 1: Get current user's profile by email
-    final userProfile = await supabase
-        .from('users_profiles')
-        .select('id, phone_number')
-        .eq('email', userEmail)
-        .maybeSingle();
+      // Step 1: Get current user's profile by email
+      final userProfile = await supabase
+          .from('users_profiles')
+          .select('id, phone_number')
+          .eq('email', userEmail)
+          .maybeSingle();
 
-    if (userProfile == null || userProfile['id'] == null) {
-      throw 'User profile not found';
+      if (userProfile == null || userProfile['id'] == null) {
+        throw 'User profile not found';
+      }
+
+      final profileId = userProfile['id'];
+      final phoneNumber = userProfile['phone_number'];
+
+      // Step 2: Insert selected services
+      final List<Map<String, dynamic>> rowsToInsert = selectedServices.map((
+        serviceId,
+      ) {
+        return {'user_id': profileId, 'service_id': int.tryParse(serviceId)};
+      }).toList();
+
+      if (rowsToInsert.isNotEmpty) {
+        await supabase.from('pro_services').insert(rowsToInsert);
+      }
+
+      // Step 3: Navigate based on phone number presence
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        Get.toNamed(Routes.thirdStep);
+      }
+
+      Get.snackbar(
+        'Success',
+        'Professional services added',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Logger().e('Error in proSignUpProces: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to process professional signup',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
     }
-
-    final profileId = userProfile['id'];
-    final phoneNumber = userProfile['phone_number'];
-
-    // Step 2: Insert selected services
-    final List<Map<String, dynamic>> rowsToInsert = selectedServices.map((serviceId) {
-      return {
-        'user_id': profileId,
-        'service_id': int.tryParse(serviceId),
-      };
-    }).toList();
-
-    if (rowsToInsert.isNotEmpty) {
-      await supabase.from('pro_services').insert(rowsToInsert);
-    }
-
-    // Step 3: Navigate based on phone number presence
-    if (phoneNumber == null || phoneNumber.isEmpty) {
-      Get.toNamed(Routes.thirdStep);
-    }
-
-    Get.snackbar(
-      'Success',
-      'Professional services added',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  } catch (e) {
-    Logger().e('Error in proSignUpProces: $e');
-    Get.snackbar(
-      'Error',
-      'Failed to process professional signup',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  } finally {
-    isLoading.value = false;
   }
-}
 
   Future<void> addBusinessName() async {
     try {
@@ -1034,7 +1034,7 @@ Future<void> proSignUpProces() async {
           .order('name', ascending: true)
           .limit(20);
 
-          Logger().d(response);
+      Logger().d(response);
 
       allStates.assignAll(List<Map<String, dynamic>>.from(response));
     } catch (e) {
@@ -1156,8 +1156,60 @@ Future<void> proSignUpProces() async {
   final TextEditingController suiteOrUniteController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController zipCodeController = TextEditingController();
+  final TextEditingController businessDetailsInfo = TextEditingController();
 
   var bottomSheetShown = false.obs;
 
-  void getInformations() {}
+  Future<void> saveBusinessUserInfo() async {
+    try {
+      isLoading.value = true;
+
+      final authUser = authService.currentUser.value!.id;
+
+      // Step 2: Build the data map for insertion
+      final insertData = {
+        'user_id': authUser,
+        'founded_year': int.tryParse(yearFoundedController.text),
+        'employees_count': int.tryParse(numberOfEmployeesController.text),
+        'business_type':
+            'company', // Make sure it's set (e.g., 'handyman' or 'company')
+        'introduction': businessDetailsInfo.text.trim(),
+        'created_at': DateTime.now().toUtc(),
+        'updated_at': DateTime.now().toUtc(),
+      };
+
+      // Step 3: Insert into service_providers
+      final result = await supabase
+          .from('service_providers')
+          .update(insertData)
+          .eq('user_id', authUser);
+
+      if (result == null || result['provider_id'] == null) {
+        throw 'Failed to create service provider';
+      }
+
+      final providerId = result['provider_id'];
+
+      // Optional Step 4: Save primary location if you already have a selectedState
+      if (selectedState.value != null) {
+        await supabase
+            .from('provider_locations')
+            .update({
+              'state_id': selectedState.value!['id'],
+
+              'updated_at': DateTime.now().toUtc(),
+            })
+            .eq('provider_id', providerId);
+      }
+
+      CustomFlutterToast.showSuccessToast(
+        'Business Profile saved successfully.',
+      );
+    } catch (e) {
+      print('Error adding business info into database: $e');
+      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }
