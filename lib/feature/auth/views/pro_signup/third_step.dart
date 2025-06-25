@@ -187,7 +187,6 @@ class _ThirdStepState extends State<ThirdStep> {
                   onPressed: () {
                     if (formKeyThirdStep.currentState!.validate()) {
                       controller.registerUser();
-                      Get.toNamed(Routes.fourthStep);
                     }
                   },
                 ),

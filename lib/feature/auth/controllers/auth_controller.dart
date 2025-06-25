@@ -472,7 +472,6 @@ class AuthController extends GetxController {
   ///
   ///
   final searchController = TextEditingController();
-  final zipCodeController = TextEditingController();
 
   final RxList<Map<String, dynamic>> allServices =
       <Map<String, dynamic>>[].obs; // Changed to Map<String, dynamic>
@@ -674,19 +673,36 @@ class AuthController extends GetxController {
     final smsEnabled = enableTextMessages.value;
     try {
       isLoading.value = true;
+      if (selectedState.value != null) {
+        await serviceProviderLocation(authUserId);
+        final userPhoneNumberResponse = await supabase
+            .from('users_profiles')
+            .update({
+              'phone_number': phoneController.text,
+              'profile_picture_url': profilePictureUrl.value,
+            })
+            .eq('id', authUserId);
 
-      final userPhoneNumberResponse = await supabase
-          .from('users_profiles')
-          .update({
-            'phone_number': phoneController.text,
-            'profile_picture_url': profilePictureUrl.value,
-          })
-          .eq('id', authUserId);
-      await serviceProviderLocation(authUserId);
-      if (userPhoneNumberResponse != null) {
-        Fluttertoast.showToast(
-          msg: 'You phone number have been added successfully.',
-        );
+        if (userPhoneNumberResponse != null) {
+          Fluttertoast.showToast(
+            msg: 'You phone number have been added successfully.',
+          );
+        }
+      } else {
+        final userPhoneNumberResponse = await supabase
+            .from('users_profiles')
+            .update({
+              'phone_number': phoneController.text,
+              'profile_picture_url': profilePictureUrl.value,
+            })
+            .eq('id', authUserId);
+
+        if (userPhoneNumberResponse != null) {
+          Fluttertoast.showToast(
+            msg: 'You phone number have been added successfully.',
+          );
+        }
+        Get.toNamed(Routes.fourthStep);
       }
     } catch (e) {
       print(e); // Continue to next step or API
@@ -905,60 +921,63 @@ class AuthController extends GetxController {
   /////////////////////////////////////////////////////////////////////////////////////
   // professional Signup
 
-  Future<void> proSignUpProces() async {
-    try {
-      isLoading.value = true;
+Future<void> proSignUpProces() async {
+  try {
+    isLoading.value = true;
 
-      final authUser = authService.currentUser.value;
-      if (authUser == null) throw 'User not authenticated';
+    final authUser = authService.currentUser.value;
+    if (authUser == null) throw 'User not authenticated';
 
-      // Get user_profiles.id based on the current user's email
-      final userProfileResponse = await supabase
-          .from('users_profiles')
-          .select('id')
-          .eq('email', authService.currentUser.value!.email ?? '')
-          .maybeSingle();
+    final userEmail = authUser.email;
+    if (userEmail == null) throw 'User email not found';
 
-      final profileId = userProfileResponse?['id'];
-      if (profileId == null) throw 'User profile not found';
-      // Check if the user is already a professional
+    // Step 1: Get current user's profile by email
+    final userProfile = await supabase
+        .from('users_profiles')
+        .select('id, phone_number')
+        .eq('email', userEmail)
+        .maybeSingle();
 
-      // Build list of rows to insert (for each selected service)
-      final List<Map<String, dynamic>> rowsToInsert = selectedServices.map((
-        serviceId,
-      ) {
-        return {'user_id': profileId, 'service_id': int.tryParse(serviceId)};
-      }).toList();
-
-      // Insert all rows at once
-      await supabase.from('pro_services').insert(rowsToInsert);
-
-      final userPone = await supabase
-          .from('users_profiles')
-          .select('phone_number')
-          .eq('email', authService.currentUser.value!.email ?? '')
-          .single();
-
-      if (userPone['phone_number'] == '' || userPone['phone_number'] == null) {
-        Get.toNamed(Routes.thirdStep);
-      }
-
-      Get.snackbar(
-        'Success',
-        'Professional services added',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } catch (e) {
-      Logger().e('Error in proSignUpProces: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to process professional signup',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      isLoading.value = false;
+    if (userProfile == null || userProfile['id'] == null) {
+      throw 'User profile not found';
     }
+
+    final profileId = userProfile['id'];
+    final phoneNumber = userProfile['phone_number'];
+
+    // Step 2: Insert selected services
+    final List<Map<String, dynamic>> rowsToInsert = selectedServices.map((serviceId) {
+      return {
+        'user_id': profileId,
+        'service_id': int.tryParse(serviceId),
+      };
+    }).toList();
+
+    if (rowsToInsert.isNotEmpty) {
+      await supabase.from('pro_services').insert(rowsToInsert);
+    }
+
+    // Step 3: Navigate based on phone number presence
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      Get.toNamed(Routes.thirdStep);
+    }
+
+    Get.snackbar(
+      'Success',
+      'Professional services added',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  } catch (e) {
+    Logger().e('Error in proSignUpProces: $e');
+    Get.snackbar(
+      'Error',
+      'Failed to process professional signup',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  } finally {
+    isLoading.value = false;
   }
+}
 
   Future<void> addBusinessName() async {
     try {
@@ -992,7 +1011,7 @@ class AuthController extends GetxController {
         });
       }
       authService.isAuthenticated.value = true;
-      Get.toNamed(Routes.ninthStep);
+      Get.toNamed(Routes.sixthstep);
     } catch (e) {
       print('Error adding business name: $e');
     } finally {
@@ -1010,67 +1029,135 @@ class AuthController extends GetxController {
     try {
       final response = await supabase
           .from('state')
-          .select('id, name, code')
+          .select('id, name, code') // columns in the `state` table
           .ilike('name', '%$query%')
           .order('name', ascending: true)
-          .limit(20); // Optional: limit for performance
+          .limit(20);
+
+          Logger().d(response);
 
       allStates.assignAll(List<Map<String, dynamic>>.from(response));
     } catch (e) {
-      print('Error fetching states: $e');
+      print('Error fetching states from state table: $e');
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> serviceProviderLocation(String authUserId) async {
-  try {
-    isLoading.value = true;
-    Logger().d(selectedState);
+    try {
+      isLoading.value = true;
+      Logger().d(selectedState);
 
-    // ✅ Step 1: Ensure the provider exists in service_providers
-    final providerExists = await supabase
-        .from('service_providers')
-        .select('provider_id')
-        .eq('provider_id', authUserId)
-        .maybeSingle();
+      // ✅ Step 1: Ensure the provider exists in service_providers
+      final providerExists = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('provider_id', authUserId)
+          .select();
 
-    if (providerExists == null) {
-      // You may want to provide more fields here if needed
-      await supabase.from('service_providers').insert({
-        'provider_id': authUserId,
-        'created_at': DateTime.now().toIso8601String(),
-      });
-    }
+      if (providerExists.isEmpty) {
+        // You may want to provide more fields here if needed
+        await supabase.from('service_providers').insert({
+          'provider_id': authUserId,
+          'business_name': '',
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
 
-    // ✅ Step 2: Check if location already exists
-    final existing = await supabase
-        .from('provider_locations')
-        .select('id')
-        .eq('provider_id', authUserId)
-        .maybeSingle();
-
-    final payload = {
-      'provider_id': authUserId,
-      'location_id': selectedState.value!['id'],
-      'is_primary': false,
-      'updated_at': DateTime.now().toIso8601String(),
-    };
-
-    if (existing != null) {
-      await supabase
+      // ✅ Step 2: Check if location already exists
+      final existing = await supabase
           .from('provider_locations')
-          .update(payload)
-          .eq('provider_id', authUserId);
-    } else {
-      payload['created_at'] = DateTime.now().toIso8601String();
-      await supabase.from('provider_locations').insert(payload);
-    }
-  } catch (e) {
-    print('Error updating provider_locations: $e');
-  } finally {
-    isLoading.value = false;
-  }
-}
+          .select('id')
+          .eq('provider_id', authUserId)
+          .select();
 
+      final payload = {
+        'provider_id': authUserId,
+        'state_id': selectedState.value!['id'],
+        'is_primary': true,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      if (existing.isNotEmpty) {
+        await supabase
+            .from('provider_locations')
+            .update(payload)
+            .eq('provider_id', authUserId);
+      } else {
+        payload['created_at'] = DateTime.now().toIso8601String();
+        await supabase.from('provider_locations').insert(payload);
+      }
+      Get.toNamed(Routes.fourthStep);
+    } catch (e) {
+      print('Error updating provider_locations: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchBusinessLocation() async {
+    try {
+      final authUserId = supabase.auth.currentUser!.id;
+
+      // Step 1: Get provider_id linked to the authenticated user
+      final providerResponse = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+
+      if (providerResponse == null) {
+        print('No service provider found for this user.');
+        return;
+      }
+
+      final providerId = providerResponse['provider_id'];
+
+      // Step 2: Get the provider's primary state_id and join it with the state table
+      final locationResponse = await supabase
+          .from('provider_locations')
+          .select('id, is_primary, state_id, state:id(name, code)')
+          .eq('provider_id', providerId)
+          .eq('is_primary', true)
+          .maybeSingle();
+
+      print('Fetched provider location: $locationResponse');
+
+      if (locationResponse == null || locationResponse['state'] == null) {
+        print('Primary state not set or state not found.');
+        return;
+      }
+
+      final state = locationResponse['state'];
+      final selected = {
+        'id': locationResponse['state_id'],
+        'name': state['name'],
+        'code': state['code'],
+      };
+
+      // Step 3: Set it to controller
+      selectedState.value = selected;
+
+      // Add it to dropdown if not already present
+      final exists = allStates.any((s) => s['id'] == selected['id']);
+      if (!exists) {
+        allStates.add(selected);
+      }
+    } catch (e) {
+      print('Error fetching primary state: $e');
+    }
+  }
+
+  final TextEditingController yearFoundedController = TextEditingController();
+  final TextEditingController numberOfEmployeesController =
+      TextEditingController();
+  final TextEditingController streetNameController = TextEditingController();
+  final TextEditingController suiteOrUniteController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
+  final TextEditingController zipCodeController = TextEditingController();
+
+  var bottomSheetShown = false.obs;
+
+  void getInformations() {}
 }

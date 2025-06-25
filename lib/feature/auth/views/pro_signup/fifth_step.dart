@@ -10,9 +10,9 @@ class FifthStep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) async => controller.businessNameController.clear(),
-    );
+    // WidgetsBinding.instance.addPostFrameCallback(
+    //   (_) async => controller.businessNameController.clear(),
+    // );
     final formKeyFifthStep = GlobalKey<FormState>();
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
@@ -109,7 +109,7 @@ class FifthStep extends GetView<AuthController> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 child: CustomInput(
-                  label: '',
+                  label: 'Business Name',
                   hint: 'Enter your business name',
                   autofocus: true,
                   prefixIcon: Icon(
