@@ -11,7 +11,6 @@ class Ninthstep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-
     final FocusNode _introFocusNode = FocusNode();
 
     return Scaffold(
@@ -179,9 +178,8 @@ class Ninthstep extends GetView<AuthController> {
               CustomFlutterToast.showErrorToast(
                 'Please write at least 40 characters',
               );
-            } else{
-              controller.saveBusinessUserInfo();
-
+            } else {
+              controller.registerUser();
             }
           },
         ),

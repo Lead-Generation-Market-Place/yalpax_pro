@@ -20,12 +20,13 @@ class _ThirdStepState extends State<ThirdStep> {
   @override
   void initState() {
     super.initState();
-    controller.loadUserData();
+
+   initializeData();
   }
 
   Future<void> initializeData() async {
     try {
-      controller.isLoading.value = true;
+      controller.profilePictureUrl.value;
       await controller.loadUserData();
     } catch (e) {
       Get.snackbar('Error', 'Failed to load user data: $e');
@@ -62,21 +63,32 @@ class _ThirdStepState extends State<ThirdStep> {
                       onTap: () =>
                           controller.showImagePickerBottomSheet(context),
                       child: Obx(() {
-                        // Prioritize Google account image if available
-                        final imageUrl =
-                            controller.googleAccountPictureUrl.value.isNotEmpty
-                            ? controller.googleAccountPictureUrl.value
-                            : controller.profilePictureUrl.value;
+                        final localImage = controller.selectedImageFile.value;
+                        final googleImage =
+                            controller.googleAccountPictureUrl.value;
+                        final profileImage =
+                            '${FileUrls.profilePicture}${controller.profilePictureUrl.value}';
 
-                        final hasImage = imageUrl.isNotEmpty;
+                        ImageProvider? imageProvider;
+
+                        if (localImage != null) {
+                          imageProvider = FileImage(
+                            localImage,
+                          ); // show selected image
+                        } else if (googleImage.isNotEmpty) {
+                          imageProvider = NetworkImage(googleImage);
+                        } else if (controller
+                            .profilePictureUrl
+                            .value
+                            .isNotEmpty) {
+                          imageProvider = NetworkImage(profileImage);
+                        }
 
                         return CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey,
-                          backgroundImage: hasImage
-                              ? NetworkImage(imageUrl)
-                              : null,
-                          child: !hasImage
+                          backgroundImage: imageProvider,
+                          child: imageProvider == null
                               ? const Icon(
                                   Icons.person,
                                   size: 50,
@@ -186,7 +198,7 @@ class _ThirdStepState extends State<ThirdStep> {
                   isLoading: controller.isLoading.value,
                   onPressed: () {
                     if (formKeyThirdStep.currentState!.validate()) {
-                      controller.registerUser();
+                      Get.toNamed(Routes.fourthStep);
                     }
                   },
                 ),

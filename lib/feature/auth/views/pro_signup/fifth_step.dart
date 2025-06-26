@@ -223,11 +223,11 @@ class FifthStep extends GetView<AuthController> {
                   ),
                 ),
                 child: CustomButton(
-                  text: 'Continue',
+                  text: 'Next',
                   isLoading: controller.isLoading.value,
                   onPressed: () async {
                     if (formKeyFifthStep.currentState?.validate() ?? false) {
-                      await controller.addBusinessName();
+                    Get.toNamed(Routes.sixthstep);
                     }
                   },
                 ),

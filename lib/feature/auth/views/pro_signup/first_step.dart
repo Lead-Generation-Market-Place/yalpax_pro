@@ -258,6 +258,7 @@ class FirstStep extends GetView<AuthController> {
       ),
       child: Obx(() {
         final isValid =
+            controller.selectedState.value != null &&
             controller.selectedCategories.isNotEmpty &&
             controller.selectedSubCategories.isNotEmpty &&
             controller.selectedServices.isNotEmpty;

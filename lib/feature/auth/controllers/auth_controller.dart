@@ -78,19 +78,19 @@ class AuthController extends GetxController {
         final identities = currentUser!.identities;
 
         if (identities != null && identities.isNotEmpty) {
-          final googleIdentity = identities.firstWhere(
+          final googleIdentity = identities.firstWhereOrNull(
             (identity) => identity.provider == 'google',
-            orElse: () => throw StateError('No Google identity found'),
           );
 
-          final avatarUrl = googleIdentity.identityData?['avatar_url'] ?? '';
-          googleAccountPictureUrl.value = avatarUrl;
-          print(googleAccountPictureUrl);
+          if (googleIdentity != null) {
+            final avatarUrl = googleIdentity.identityData?['avatar_url'] ?? '';
+            googleAccountPictureUrl.value = avatarUrl;
+            print(googleAccountPictureUrl.value);
+          }
         }
 
         profilePictureUrl.value = userProfile['profile_picture_url'] ?? '';
         name.value = userProfile['username'] ?? '';
-        // email.value = userProfile['email'] ?? '';
       } else {
         debugPrint('No user profile found in the database.');
       }
@@ -191,12 +191,6 @@ class AuthController extends GetxController {
   Future<void> Login() async {
     try {
       isLoading.value = true;
-      // Validate input fields
-      if (emailController.text.trim().isEmpty ||
-          passwordController.text.trim().isEmpty) {
-        Fluttertoast.showToast(msg: 'Please enter both email and password');
-        return;
-      }
 
       // Sign in with Supabase
       final response = await supabase.auth.signInWithPassword(
@@ -278,16 +272,13 @@ class AuthController extends GetxController {
           .maybeSingle();
 
       // Determine next steps based on user state
-      if ( existingUser!['phone_number'] == null ||
+      if (existingUser!['phone_number'] == null ||
           existingUser['phone_number'] == '') {
         Get.toNamed(Routes.thirdStep);
-      } else if (serviceProvider == null || serviceProvider.isEmpty) {
-        Get.toNamed(Routes.fourthStep);
       } else {
-        Get.toNamed(Routes.jobs);
-        // Update authentication state
         authService.isAuthenticated.value = true;
         authService.currentUser.value = user;
+        Get.toNamed(Routes.jobs);
       }
 
       // Clear input fields
@@ -664,47 +655,101 @@ class AuthController extends GetxController {
   //////////////////////////////////////////////////////////////////////
   ///thirdstep
 
+  final TextEditingController yearFoundedController = TextEditingController();
+  final TextEditingController numberOfEmployeesController =
+      TextEditingController();
+  final TextEditingController streetNameController = TextEditingController();
+  final TextEditingController suiteOrUniteController = TextEditingController();
+  final TextEditingController cityController = TextEditingController();
+  final TextEditingController zipCodeController = TextEditingController();
+  final TextEditingController businessDetailsInfo = TextEditingController();
+
+  var bottomSheetShown = false.obs;
+
+  //////////////////////////////
   final TextEditingController phoneController = TextEditingController();
   var enableTextMessages = true.obs;
 
   Future<void> registerUser() async {
-    final authUserId = supabase.auth.currentUser!.id;
-    final phone = phoneController.text;
-    final smsEnabled = enableTextMessages.value;
+    final authUser = authService.currentUser.value!.id;
+
+    isLoading.value = true;
     try {
-      isLoading.value = true;
-      if (selectedState.value != null) {
-        await serviceProviderLocation(authUserId);
+      if (selectedState.value != null &&
+          phoneController.text.isNotEmpty &&
+          selectedImageFile.value != null &&
+          businessNameController.text.isNotEmpty &&
+          businessDetailsInfo.text.isNotEmpty) {
+        String? profileImageFileName;
+        if (selectedImageFile.value != null) {
+          await updateProfileImage(selectedImageFile.value!);
+          profileImageFileName = profilePictureUrl.value;
+        }
         final userPhoneNumberResponse = await supabase
             .from('users_profiles')
             .update({
               'phone_number': phoneController.text,
-              'profile_picture_url': profilePictureUrl.value,
+              'profile_picture_url': profileImageFileName,
             })
-            .eq('id', authUserId);
+            .eq('id', authUser);
 
         if (userPhoneNumberResponse != null) {
           Fluttertoast.showToast(
             msg: 'You phone number have been added successfully.',
           );
         }
-        Get.toNamed(Routes.fourthStep);
-      } else {
-        final userPhoneNumberResponse = await supabase
-            .from('users_profiles')
-            .update({
-              'phone_number': phoneController.text,
-              'profile_picture_url': profilePictureUrl.value,
-            })
-            .eq('id', authUserId);
 
-        if (userPhoneNumberResponse != null) {
-          Fluttertoast.showToast(
-            msg: 'You phone number have been added successfully.',
-          );
+        /////////////////////////////////////////////////////////
+
+        final businessName = businessNameController.text.trim();
+
+        // Step 2: Build the data map for insertion
+        final insertData = {
+          'user_id': authUser,
+          'founded_year': int.tryParse(yearFoundedController.text),
+          'employees_count': int.tryParse(numberOfEmployeesController.text),
+          'business_name': businessName,
+          'business_type':
+              'company', // Make sure it's set (e.g., 'handyman' or 'company')
+          'introduction': businessDetailsInfo.text.trim(),
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+
+        // Step 3: Insert into service_providers
+        final result = await supabase
+            .from('service_providers')
+            .insert(insertData)
+            .eq('user_id', authUser)
+            .select('provider_id');
+
+        if (result == null || result[0]['provider_id'] == null) {
+          throw 'Failed to create service provider';
         }
-        Get.toNamed(Routes.fourthStep);
+
+        final locationResponse = await supabase
+            .from('locations')
+            .insert({
+              'address_line1': streetNameController.text,
+              'address_line2': suiteOrUniteController.text,
+              'city': cityController.text,
+              'state': selectedState.value!['name'],
+              'zip': zipCodeController.text,
+              'timezone': null,
+            })
+            .select('id');
+
+        if (locationResponse.isNotEmpty) {
+          await supabase.from('provider_locations').insert({
+            'state_id': locationResponse[0]['id'],
+            'provider_id': result[0]['provider_id'],
+            'is_primary': true,
+          });
+        }
       }
+
+      authService.isAuthenticated.value = true;
+      Get.toNamed(Routes.tenthStep);
     } catch (e) {
       print(e); // Continue to next step or API
     } finally {
@@ -850,12 +895,7 @@ class AuthController extends GetxController {
 
       // Update the local state
       profilePictureUrl.value = fileName;
-
-      Get.snackbar(
-        'Success',
-        'Profile picture updated successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      loadUserData();
     } catch (e) {
       Logger().e('Error updating profile image: $e');
       Get.snackbar(
@@ -867,6 +907,8 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  Rx<File?> selectedImageFile = Rx<File?>(null);
 
   void showImagePickerBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -886,9 +928,10 @@ class AuthController extends GetxController {
                     if (file != null) {
                       // TODO: Handle the picked image file
                       // You can upload it to your server or update the profile picture
-                      updateProfileImage(file);
-                      Logger().d(file);
-                      Get.snackbar('Success', 'Image captured successfully');
+                      // updateProfileImage(file);
+                      // Logger().d(file);
+
+                      selectedImageFile.value = file; // set local file
                     }
                   }
                 },
@@ -904,7 +947,9 @@ class AuthController extends GetxController {
                       Logger().d(file);
                       // TODO: Handle the picked image file
                       // You can upload it to your server or update the profile picture
-                      updateProfileImage(file);
+                      // updateProfileImage(file);
+                      selectedImageFile.value = file;
+
                       Get.snackbar('Success', 'Image selected successfully');
                     }
                   }
@@ -961,12 +1006,6 @@ class AuthController extends GetxController {
       if (phoneNumber == null || phoneNumber.isEmpty) {
         Get.toNamed(Routes.thirdStep);
       }
-
-      Get.snackbar(
-        'Success',
-        'Professional services added',
-        snackPosition: SnackPosition.BOTTOM,
-      );
     } catch (e) {
       Logger().e('Error in proSignUpProces: $e');
       Get.snackbar(
@@ -979,45 +1018,45 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> addBusinessName() async {
-    try {
-      isLoading.value = true;
+  // Future<void> addBusinessName() async {
+  //   try {
+  //     isLoading.value = true;
 
-      final businessName = businessNameController.text.trim();
-      final authUser = authService.currentUser.value;
+  //     final businessName = businessNameController.text.trim();
+  //     final authUser = authService.currentUser.value;
 
-      if (authUser == null || businessName.isEmpty) {
-        print('User not logged in or business name empty.');
-        return;
-      }
+  //     if (authUser == null || businessName.isEmpty) {
+  //       print('User not logged in or business name empty.');
+  //       return;
+  //     }
 
-      final existingProvider = await supabase
-          .from('service_providers')
-          .select()
-          .eq('user_id', authUser.id)
-          .maybeSingle(); // Only get one row if exists
+  //     final existingProvider = await supabase
+  //         .from('service_providers')
+  //         .select()
+  //         .eq('user_id', authUser.id)
+  //         .maybeSingle(); // Only get one row if exists
 
-      if (existingProvider != null) {
-        // Update existing row
-        await supabase
-            .from('service_providers')
-            .update({'business_name': businessName})
-            .eq('user_id', authUser.id);
-      } else {
-        // Insert new row
-        await supabase.from('service_providers').insert({
-          'user_id': authUser.id,
-          'business_name': businessName,
-        });
-      }
-      authService.isAuthenticated.value = true;
-      Get.toNamed(Routes.sixthstep);
-    } catch (e) {
-      print('Error adding business name: $e');
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  //     if (existingProvider != null) {
+  //       // Update existing row
+  //       await supabase
+  //           .from('service_providers')
+  //           .update({'business_name': businessName})
+  //           .eq('user_id', authUser.id);
+  //     } else {
+  //       // Insert new row
+  //       await supabase.from('service_providers').insert({
+  //         'user_id': authUser.id,
+  //         'business_name': businessName,
+  //       });
+  //     }
+  //     authService.isAuthenticated.value = true;
+  //     Get.toNamed(Routes.sixthstep);
+  //   } catch (e) {
+  //     print('Error adding business name: $e');
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
 
   final RxList<Map<String, dynamic>> allStates = <Map<String, dynamic>>[].obs;
   final Rx<Map<String, dynamic>?> selectedState = Rx<Map<String, dynamic>?>(
@@ -1052,28 +1091,29 @@ class AuthController extends GetxController {
       // ✅ Step 1: Ensure the provider exists in service_providers
       final providerExists = await supabase
           .from('service_providers')
-          .select('provider_id')
-          .eq('provider_id', authUserId)
+          .select()
+          .eq('user_id', authUserId)
           .select();
 
       if (providerExists.isEmpty) {
-        // You may want to provide more fields here if needed
-        await supabase.from('service_providers').insert({
-          'provider_id': authUserId,
-          'business_name': '',
-          'created_at': DateTime.now().toIso8601String(),
-        });
+        Logger().d('provider already exists.');
       }
+      final insertResponse = await supabase
+          .from('szw')
+          .insert({
+            'user_id': authUserId,
+            'business_name': '',
+            'created_at': DateTime.now().toIso8601String(),
+          })
+          .select('provider_id');
 
       // ✅ Step 2: Check if location already exists
       final existing = await supabase
           .from('provider_locations')
-          .select('id')
-          .eq('provider_id', authUserId)
-          .select();
+          .select()
+          .eq('provider_id', insertResponse[0]['provider_id']);
 
       final payload = {
-        'provider_id': authUserId,
         'state_id': selectedState.value!['id'],
         'is_primary': true,
         'updated_at': DateTime.now().toIso8601String(),
@@ -1083,7 +1123,7 @@ class AuthController extends GetxController {
         await supabase
             .from('provider_locations')
             .update(payload)
-            .eq('provider_id', authUserId);
+            .eq('provider_id', insertResponse[0]['provider_id']);
       } else {
         payload['created_at'] = DateTime.now().toIso8601String();
         await supabase.from('provider_locations').insert(payload);
@@ -1096,120 +1136,120 @@ class AuthController extends GetxController {
     }
   }
 
-  Future<void> fetchBusinessLocation() async {
-    try {
-      final authUserId = supabase.auth.currentUser!.id;
+  // Future<void> fetchBusinessLocation() async {
+  //   try {
+  //     final authUserId = supabase.auth.currentUser!.id;
 
-      // Step 1: Get provider_id linked to the authenticated user
-      final providerResponse = await supabase
-          .from('service_providers')
-          .select('provider_id')
-          .eq('user_id', authUserId)
-          .maybeSingle();
+  //     // Step 1: Get provider_id linked to the authenticated user
+  //     final providerResponse = await supabase
+  //         .from('service_providers')
+  //         .select('provider_id')
+  //         .eq('user_id', authUserId)
+  //         .maybeSingle();
 
-      if (providerResponse == null) {
-        print('No service provider found for this user.');
-        return;
-      }
+  //     if (providerResponse == null) {
+  //       print('No service provider found for this user.');
+  //       return;
+  //     }
 
-      final providerId = providerResponse['provider_id'];
+  //     final providerId = providerResponse['provider_id'];
 
-      // Step 2: Get the provider's primary state_id and join it with the state table
-      final locationResponse = await supabase
-          .from('provider_locations')
-          .select('id, is_primary, state_id, state:id(name, code)')
-          .eq('provider_id', providerId)
-          .eq('is_primary', true)
-          .maybeSingle();
+  //     // Step 2: Get the provider's primary state_id and join it with the state table
+  //     final locationResponse = await supabase
+  //         .from('provider_locations')
+  //         .select('id, is_primary, state_id, state:id(name, code)')
+  //         .eq('provider_id', providerId)
+  //         .eq('is_primary', true)
+  //         .maybeSingle();
 
-      print('Fetched provider location: $locationResponse');
+  //     print('Fetched provider location: $locationResponse');
 
-      if (locationResponse == null || locationResponse['state'] == null) {
-        print('Primary state not set or state not found.');
-        return;
-      }
+  //     if (locationResponse == null || locationResponse['state'] == null) {
+  //       print('Primary state not set or state not found.');
+  //       return;
+  //     }
 
-      final state = locationResponse['state'];
-      final selected = {
-        'id': locationResponse['state_id'],
-        'name': state['name'],
-        'code': state['code'],
-      };
+  //     final state = locationResponse['state'];
+  //     final selected = {
+  //       'id': locationResponse['state_id'],
+  //       'name': state['name'],
+  //       'code': state['code'],
+  //     };
 
-      // Step 3: Set it to controller
-      selectedState.value = selected;
+  //     // Step 3: Set it to controller
+  //     selectedState.value = selected;
 
-      // Add it to dropdown if not already present
-      final exists = allStates.any((s) => s['id'] == selected['id']);
-      if (!exists) {
-        allStates.add(selected);
-      }
-    } catch (e) {
-      print('Error fetching primary state: $e');
-    }
-  }
+  //     // Add it to dropdown if not already present
+  //     final exists = allStates.any((s) => s['id'] == selected['id']);
+  //     if (!exists) {
+  //       allStates.add(selected);
+  //     }
+  //   } catch (e) {
+  //     print('Error fetching primary state: $e');
+  //   }
+  // }
 
-  final TextEditingController yearFoundedController = TextEditingController();
-  final TextEditingController numberOfEmployeesController =
-      TextEditingController();
-  final TextEditingController streetNameController = TextEditingController();
-  final TextEditingController suiteOrUniteController = TextEditingController();
-  final TextEditingController cityController = TextEditingController();
-  final TextEditingController zipCodeController = TextEditingController();
-  final TextEditingController businessDetailsInfo = TextEditingController();
+  // final TextEditingController yearFoundedController = TextEditingController();
+  // final TextEditingController numberOfEmployeesController =
+  //     TextEditingController();
+  // final TextEditingController streetNameController = TextEditingController();
+  // final TextEditingController suiteOrUniteController = TextEditingController();
+  // final TextEditingController cityController = TextEditingController();
+  // final TextEditingController zipCodeController = TextEditingController();
+  // final TextEditingController businessDetailsInfo = TextEditingController();
 
-  var bottomSheetShown = false.obs;
+  // var bottomSheetShown = false.obs;
 
-  Future<void> saveBusinessUserInfo() async {
-    try {
-      isLoading.value = true;
+  // Future<void> saveBusinessUserInfo() async {
+  //   try {
+  //     isLoading.value = true;
 
-      final authUser = authService.currentUser.value!.id;
+  //     final authUser = authService.currentUser.value!.id;
 
-      // Step 2: Build the data map for insertion
-      final insertData = {
-        'user_id': authUser,
-        'founded_year': int.tryParse(yearFoundedController.text),
-        'employees_count': int.tryParse(numberOfEmployeesController.text),
-        'business_type':
-            'company', // Make sure it's set (e.g., 'handyman' or 'company')
-        'introduction': businessDetailsInfo.text.trim(),
-        'created_at': DateTime.now().toUtc(),
-        'updated_at': DateTime.now().toUtc(),
-      };
+  //     // Step 2: Build the data map for insertion
+  //     final insertData = {
+  //       'user_id': authUser,
+  //       'founded_year': int.tryParse(yearFoundedController.text),
+  //       'employees_count': int.tryParse(numberOfEmployeesController.text),
+  //       'business_type':
+  //           'company', // Make sure it's set (e.g., 'handyman' or 'company')
+  //       'introduction': businessDetailsInfo.text.trim(),
+  //       'created_at': DateTime.now().toUtc(),
+  //       'updated_at': DateTime.now().toUtc(),
+  //     };
 
-      // Step 3: Insert into service_providers
-      final result = await supabase
-          .from('service_providers')
-          .update(insertData)
-          .eq('user_id', authUser);
+  //     // Step 3: Insert into service_providers
+  //     final result = await supabase
+  //         .from('service_providers')
+  //         .update(insertData)
+  //         .eq('user_id', authUser);
 
-      if (result == null || result['provider_id'] == null) {
-        throw 'Failed to create service provider';
-      }
+  //     if (result == null || result['provider_id'] == null) {
+  //       throw 'Failed to create service provider';
+  //     }
 
-      final providerId = result['provider_id'];
+  //     final providerId = result['provider_id'];
 
-      // Optional Step 4: Save primary location if you already have a selectedState
-      if (selectedState.value != null) {
-        await supabase
-            .from('provider_locations')
-            .update({
-              'state_id': selectedState.value!['id'],
+  //     // Optional Step 4: Save primary location if you already have a selectedState
+  //     if (selectedState.value != null) {
+  //       await supabase
+  //           .from('provider_locations')
+  //           .update({
+  //             'state_id': selectedState.value!['id'],
 
-              'updated_at': DateTime.now().toUtc(),
-            })
-            .eq('provider_id', providerId);
-      }
+  //             'updated_at': DateTime.now().toUtc(),
+  //           })
+  //           .eq('provider_id', providerId);
+  //     }
 
-      CustomFlutterToast.showSuccessToast(
-        'Business Profile saved successfully.',
-      );
-    } catch (e) {
-      print('Error adding business info into database: $e');
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      isLoading.value = false;
-    }
-  }
+  //     CustomFlutterToast.showSuccessToast(
+  //       'Business Profile saved successfully.',
+  //     );
+  //   } catch (e) {
+  //     print('Error adding business info into database: $e');
+  //     Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
 }

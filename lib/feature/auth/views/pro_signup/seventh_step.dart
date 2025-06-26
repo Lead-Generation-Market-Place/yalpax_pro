@@ -21,13 +21,41 @@ class _SeventhStepState extends State<SeventhStep> {
   @override
   void initState() {
     super.initState();
-    controller.fetchBusinessLocation();
+
     // Set focus to the first field after build completes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_focusNodes.isNotEmpty) {
         FocusScope.of(context).requestFocus(_focusNodes[0]);
       }
+      
+      // Load states and ensure selected state from first step is available
+      _initializeStateData();
     });
+  }
+
+  Future<void> _initializeStateData() async {
+    // Debug: Log the selected state from first step
+    print('Seventh Step - Selected State: ${controller.selectedState.value}');
+    
+    // If we have a selected state from first step, make sure it's in allStates
+    if (controller.selectedState.value != null) {
+      final selectedState = controller.selectedState.value!;
+      final exists = controller.allStates.any((state) => state['id'] == selectedState['id']);
+      
+      if (!exists) {
+        // Add the selected state to allStates if it's not already there
+        controller.allStates.add(selectedState);
+        print('Added selected state to allStates: ${selectedState['name']}');
+      } else {
+        print('Selected state already exists in allStates: ${selectedState['name']}');
+      }
+    }
+    
+    // If no states are loaded yet, fetch some default states
+    if (controller.allStates.isEmpty) {
+      await controller.fetchStates('');
+      print('Fetched default states, count: ${controller.allStates.length}');
+    }
   }
 
   @override
@@ -151,6 +179,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   prefixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
                   label: 'Year founded',
                   hint: 'e.g. 2000',
+                  controller: controller.yearFoundedController,
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -168,6 +197,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   focusNode: _focusNodes[1],
                   prefixIcon: const Icon(Icons.people_outline, size: 20),
                   label: 'Number of employees',
+                  controller: controller.numberOfEmployeesController,
                   hint: 'e.g. 1',
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -191,6 +221,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
                   label: 'Street name',
                   hint: 'Enter street name',
+                  controller: controller.streetNameController,
               
                 ),
                 const SizedBox(height: 16),
@@ -199,6 +230,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   prefixIcon: const Icon(Icons.meeting_room_outlined, size: 20),
                   label: 'Suite or unit',
                   hint: 'Enter suite or unit',
+                  controller: controller.suiteOrUniteController,
                  
                 ),
                 const SizedBox(height: 16),
@@ -206,7 +238,9 @@ class _SeventhStepState extends State<SeventhStep> {
                   prefixIcon: const Icon(Icons.location_city_outlined, size: 20),
                   label: 'City',
                   hint: 'Fairfax',
+                  controller: controller.cityController,
                  autofocus: true,
+                 
        
                 ),
                 const SizedBox(height: 16),
@@ -218,6 +252,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   label: 'Zip code',
                   hint: 'Enter zip code',
                   keyboardType: TextInputType.number,
+                  controller: controller.zipCodeController,
                   validator: (value) {
                     if (value != null && value.isNotEmpty && value.length != 5) {
                       return 'Zip code must be 5 digits';
@@ -269,12 +304,16 @@ class _SeventhStepState extends State<SeventhStep> {
   }
 
   Widget _buildStateDropdown() {
-    final selected = controller.allStates.firstWhere(
-      (s) =>
-          controller.selectedState.value != null &&
-          s['id'] == controller.selectedState.value!['id'],
-      orElse: () => {},
-    );
+    // Get the selected state from the controller
+    final selectedState = controller.selectedState.value;
+    
+    // Find the state in allStates that matches the selected state
+    final selected = selectedState != null 
+        ? controller.allStates.firstWhere(
+            (s) => s['id'] == selectedState['id'],
+            orElse: () => selectedState, // Use the selected state if not found in allStates
+          )
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +330,7 @@ class _SeventhStepState extends State<SeventhStep> {
           label: 'Select your state',
           hint: 'Search states...',
           items: controller.allStates,
-          selectedValue: selected.isEmpty ? null : selected,
+          selectedValue: selected,
           getLabel: (item) => item['name'] ?? '',
           onChanged: (selectedItem) {
             controller.selectedState.value = selectedItem;
@@ -307,8 +346,18 @@ class _SeventhStepState extends State<SeventhStep> {
           onSearchChanged: (query) {
             controller.fetchStates(query);
           },
-
         ),
+        if (selectedState != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            "Pre-selected from your service location",
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
       ],
     );
   }
