@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/auth/views/login.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/example_screen.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password_token.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/signup_with_email.dart';
@@ -67,6 +68,7 @@ abstract class Routes {
   static const eleventhStep = '/eleventhStep';
   static const twelvthstep = '/twelvthstep';
   static const thirteenStep = '/thirteenStep';
+  static const exampleScreen = '/exampleScreen';
 }
 
 // Middleware
@@ -266,14 +268,14 @@ abstract class AppPages {
     ),
     GetPage(
       name: Routes.eleventhStep,
-      page: () => Elevenstep(),
+      page: () => ElevenStep(),
       binding: AuthBinding(),
 
       transition: Transition.fadeIn,
     ),
     GetPage(
       name: Routes.twelvthstep,
-      page: () => Twelvthstep(),
+      page: () => TwelvthStep(),
       binding: AuthBinding(),
 
       transition: Transition.fadeIn,
@@ -281,6 +283,13 @@ abstract class AppPages {
     GetPage(
       name: Routes.thirteenStep,
       page: () => Thirteenstep(),
+      binding: AuthBinding(),
+
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.exampleScreen,
+      page: () => ExampleScreen(),
       binding: AuthBinding(),
 
       transition: Transition.fadeIn,

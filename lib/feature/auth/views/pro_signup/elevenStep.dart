@@ -1,162 +1,202 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
-import 'dart:io';
-
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
-class Elevenstep extends GetView<AuthController> {
-  const Elevenstep({super.key});
+class ElevenStep extends GetView<AuthController> {
+  const ElevenStep({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Rx<File?> selectedImage = Rx<File?>(null);
-
-    Future<void> pickImage() async {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-      if (pickedFile != null) {
-        selectedImage.value = File(pickedFile.path);
-      }
-    }
-
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Business Profile"),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Get.back(),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4.0),
-          child: LinearProgressIndicator(
-            value: 0.9, // 90% progress
-            backgroundColor: Colors.grey[200],
-            color: Colors.lightBlue,
+        title: Text(
+          'Job preferences',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colors.onBackground,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: colors.background,
+        iconTheme: IconThemeData(color: colors.onBackground),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              "Customers prefer pros with a clear profile photo or logo",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Upload a clear image that represents your brand.",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-
-            // Image Upload Box
-            Obx(() {
-              return GestureDetector(
-                onTap: pickImage,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue),
-                  ),
-                  child: selectedImage.value == null
-                      ? const Icon(
-                          Icons.camera_alt,
-                          size: 40,
-                          color: Colors.blue,
-                        )
-                      : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            selectedImage.value!,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                ),
-              );
-            }),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: pickImage,
-              icon: const Icon(Icons.upload_file),
-              label: const Text("Upload image"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlue,
-                foregroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Pro tip section
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
+      body: Column(
+        children: [
+          // Enhanced progress bar
+          LinearProgressIndicator(
+            value: 0.85, // 11/13 steps (assuming 13-step process)
+            minHeight: 4,
+            backgroundColor: colors.surfaceVariant,
+            color: colors.primary,
+          ),
+          
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: const [
-                      Icon(Icons.lightbulb, color: Colors.amber),
-                      SizedBox(width: 8),
-                      Text(
-                        "New pro tip",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  // Header section
+                  Text(
+                    'Control where, when, and how you work',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text("Here's a few images Top Pros used:"),
                   const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(
-                      4,
-                      (index) => Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
+                  Text(
+                    'Your leads exactly match your availability, work areas, and other preferences.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: colors.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Example lead button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      icon: Icon(Icons.visibility_outlined, size: 18, color: colors.primary),
+                      label: Text(
+                        'See an example lead',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      onPressed: () {
+                        Get.toNamed(Routes.exampleScreen);
+                      },
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 32),
+                  
+                  // Preferences card
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      color: colors.surface,
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.shadow.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Your job preferences',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        _buildPreferenceItem(
+                          icon: Icons.access_time,
+                          text: 'Customers can book me for a job between 10am–2pm',
+                          color: colors.primary,
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        _buildPreferenceItem(
+                          icon: Icons.home_work,
+                          text: 'I work on residential and commercial properties',
+                          color: colors.primary,
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        _buildPreferenceItem(
+                          icon: Icons.build,
+                          text: 'I work on any project size',
+                          color: colors.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Spacer to push content up when keyboard appears
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            SizedBox(
+          ),
+          
+          // Bottom button with safe area
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              bottom: 16,
+              top: 8,
+            ),
+            child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colors.primary,
+                  foregroundColor: colors.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
                 onPressed: () {
-                  // TODO: Save image and go to next step
                   Get.toNamed(Routes.twelvthstep);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  "Next",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: Text(
+                  'Next',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+  
+  Widget _buildPreferenceItem({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 20, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(Get.context!).textTheme.bodyLarge,
+          ),
+        ),
+      ],
     );
   }
 }

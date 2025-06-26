@@ -274,11 +274,14 @@ class AuthController extends GetxController {
       // Determine next steps based on user state
       if (existingUser!['phone_number'] == null ||
           existingUser['phone_number'] == '') {
-        Get.toNamed(Routes.thirdStep);
+        Get.offAllNamed(Routes.thirdStep);
+      } else if (existingUser!['phone_number'] != null ||
+          existingUser['phone_number'] != '') {
+        Get.offAllNamed(Routes.tenthStep);
       } else {
         authService.isAuthenticated.value = true;
         authService.currentUser.value = user;
-        Get.toNamed(Routes.jobs);
+        Get.offAllNamed(Routes.jobs);
       }
 
       // Clear input fields
@@ -689,7 +692,7 @@ class AuthController extends GetxController {
             .from('users_profiles')
             .update({
               'phone_number': phoneController.text,
-              'profile_picture_url': profileImageFileName,
+              
             })
             .eq('id', authUser);
 
@@ -709,6 +712,7 @@ class AuthController extends GetxController {
           'founded_year': int.tryParse(yearFoundedController.text),
           'employees_count': int.tryParse(numberOfEmployeesController.text),
           'business_name': businessName,
+          'profile_picture_url': profileImageFileName,
           'business_type':
               'company', // Make sure it's set (e.g., 'handyman' or 'company')
           'introduction': businessDetailsInfo.text.trim(),
@@ -1018,46 +1022,6 @@ class AuthController extends GetxController {
     }
   }
 
-  // Future<void> addBusinessName() async {
-  //   try {
-  //     isLoading.value = true;
-
-  //     final businessName = businessNameController.text.trim();
-  //     final authUser = authService.currentUser.value;
-
-  //     if (authUser == null || businessName.isEmpty) {
-  //       print('User not logged in or business name empty.');
-  //       return;
-  //     }
-
-  //     final existingProvider = await supabase
-  //         .from('service_providers')
-  //         .select()
-  //         .eq('user_id', authUser.id)
-  //         .maybeSingle(); // Only get one row if exists
-
-  //     if (existingProvider != null) {
-  //       // Update existing row
-  //       await supabase
-  //           .from('service_providers')
-  //           .update({'business_name': businessName})
-  //           .eq('user_id', authUser.id);
-  //     } else {
-  //       // Insert new row
-  //       await supabase.from('service_providers').insert({
-  //         'user_id': authUser.id,
-  //         'business_name': businessName,
-  //       });
-  //     }
-  //     authService.isAuthenticated.value = true;
-  //     Get.toNamed(Routes.sixthstep);
-  //   } catch (e) {
-  //     print('Error adding business name: $e');
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
-
   final RxList<Map<String, dynamic>> allStates = <Map<String, dynamic>>[].obs;
   final Rx<Map<String, dynamic>?> selectedState = Rx<Map<String, dynamic>?>(
     null,
@@ -1135,121 +1099,54 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
+  /////////////////////////////////////////////////////
+  
 
-  // Future<void> fetchBusinessLocation() async {
-  //   try {
-  //     final authUserId = supabase.auth.currentUser!.id;
+  // Availability options (1 = business hours, 2 = any open time)
+  var availabilityOption = 1.obs;
+  
+  // Days data structure
+  var days = <Map<String, dynamic>>[
+    {'name': 'Sun', 'selected': false, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+    {'name': 'Mon', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+    {'name': 'Tues', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+    {'name': 'Wed', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+    {'name': 'Thurs', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+    {'name': 'Fri', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+    {'name': 'Sat', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
+  ].obs;
 
-  //     // Step 1: Get provider_id linked to the authenticated user
-  //     final providerResponse = await supabase
-  //         .from('service_providers')
-  //         .select('provider_id')
-  //         .eq('user_id', authUserId)
-  //         .maybeSingle();
+  void toggleDaySelection(int index) {
+    days[index]['selected'] = !days[index]['selected'];
+    days.refresh();
+  }
 
-  //     if (providerResponse == null) {
-  //       print('No service provider found for this user.');
-  //       return;
-  //     }
+  void toggleDayEdit(int index) {
+    days[index]['editing'] = !days[index]['editing'];
+    days.refresh();
+  }
 
-  //     final providerId = providerResponse['provider_id'];
+  void updateDayTime(int index, {required String startTime, required String endTime}) {
+    days[index]['startTime'] = startTime;
+    days[index]['endTime'] = endTime;
+    days.refresh();
+  }
 
-  //     // Step 2: Get the provider's primary state_id and join it with the state table
-  //     final locationResponse = await supabase
-  //         .from('provider_locations')
-  //         .select('id, is_primary, state_id, state:id(name, code)')
-  //         .eq('provider_id', providerId)
-  //         .eq('is_primary', true)
-  //         .maybeSingle();
+  void applyToSelectedDays() {
+    // Get the first selected day's time
+    final selectedDay = days.firstWhere((day) => day['selected'] == true);
+    final startTime = selectedDay['startTime'];
+    final endTime = selectedDay['endTime'];
+    
+    // Apply to all selected days
+    for (var i = 0; i < days.length; i++) {
+      if (days[i]['selected'] == true) {
+        days[i]['startTime'] = startTime;
+        days[i]['endTime'] = endTime;
+        days[i]['editing'] = false;
+      }
+    }
+    days.refresh();
+  }
 
-  //     print('Fetched provider location: $locationResponse');
-
-  //     if (locationResponse == null || locationResponse['state'] == null) {
-  //       print('Primary state not set or state not found.');
-  //       return;
-  //     }
-
-  //     final state = locationResponse['state'];
-  //     final selected = {
-  //       'id': locationResponse['state_id'],
-  //       'name': state['name'],
-  //       'code': state['code'],
-  //     };
-
-  //     // Step 3: Set it to controller
-  //     selectedState.value = selected;
-
-  //     // Add it to dropdown if not already present
-  //     final exists = allStates.any((s) => s['id'] == selected['id']);
-  //     if (!exists) {
-  //       allStates.add(selected);
-  //     }
-  //   } catch (e) {
-  //     print('Error fetching primary state: $e');
-  //   }
-  // }
-
-  // final TextEditingController yearFoundedController = TextEditingController();
-  // final TextEditingController numberOfEmployeesController =
-  //     TextEditingController();
-  // final TextEditingController streetNameController = TextEditingController();
-  // final TextEditingController suiteOrUniteController = TextEditingController();
-  // final TextEditingController cityController = TextEditingController();
-  // final TextEditingController zipCodeController = TextEditingController();
-  // final TextEditingController businessDetailsInfo = TextEditingController();
-
-  // var bottomSheetShown = false.obs;
-
-  // Future<void> saveBusinessUserInfo() async {
-  //   try {
-  //     isLoading.value = true;
-
-  //     final authUser = authService.currentUser.value!.id;
-
-  //     // Step 2: Build the data map for insertion
-  //     final insertData = {
-  //       'user_id': authUser,
-  //       'founded_year': int.tryParse(yearFoundedController.text),
-  //       'employees_count': int.tryParse(numberOfEmployeesController.text),
-  //       'business_type':
-  //           'company', // Make sure it's set (e.g., 'handyman' or 'company')
-  //       'introduction': businessDetailsInfo.text.trim(),
-  //       'created_at': DateTime.now().toUtc(),
-  //       'updated_at': DateTime.now().toUtc(),
-  //     };
-
-  //     // Step 3: Insert into service_providers
-  //     final result = await supabase
-  //         .from('service_providers')
-  //         .update(insertData)
-  //         .eq('user_id', authUser);
-
-  //     if (result == null || result['provider_id'] == null) {
-  //       throw 'Failed to create service provider';
-  //     }
-
-  //     final providerId = result['provider_id'];
-
-  //     // Optional Step 4: Save primary location if you already have a selectedState
-  //     if (selectedState.value != null) {
-  //       await supabase
-  //           .from('provider_locations')
-  //           .update({
-  //             'state_id': selectedState.value!['id'],
-
-  //             'updated_at': DateTime.now().toUtc(),
-  //           })
-  //           .eq('provider_id', providerId);
-  //     }
-
-  //     CustomFlutterToast.showSuccessToast(
-  //       'Business Profile saved successfully.',
-  //     );
-  //   } catch (e) {
-  //     print('Error adding business info into database: $e');
-  //     Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
-  //   } finally {
-  //     isLoading.value = false;
-  //   }
-  // }
 }
