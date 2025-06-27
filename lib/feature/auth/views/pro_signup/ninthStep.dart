@@ -173,13 +173,13 @@ class Ninthstep extends GetView<AuthController> {
         padding: const EdgeInsets.all(24),
         child: CustomButton(
           text: 'Continue',
-          onPressed: () {
+          onPressed: () async {
             if (controller.businessDetailsInfo.text.length < 40) {
               CustomFlutterToast.showErrorToast(
                 'Please write at least 40 characters',
               );
             } else {
-              controller.registerUser();
+              await controller.registerUser();
             }
           },
         ),

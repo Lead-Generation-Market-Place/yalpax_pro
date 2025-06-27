@@ -17,7 +17,7 @@ import 'package:yalpax_pro/feature/auth/views/pro_signup/seventh_step.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/sixthStep.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/tenthStep.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/third_step.dart';
-import 'package:yalpax_pro/feature/auth/views/pro_signup/thirteenStep.dart';
+
 import 'package:yalpax_pro/feature/auth/views/pro_signup/twelvthStep.dart';
 import 'package:yalpax_pro/feature/initial_page/controllers/initial_binding.dart';
 import 'package:yalpax_pro/feature/initial_page/views/initial_view.dart';
@@ -67,7 +67,7 @@ abstract class Routes {
   static const tenthStep = '/tenthStep';
   static const eleventhStep = '/eleventhStep';
   static const twelvthstep = '/twelvthstep';
-  static const thirteenStep = '/thirteenStep';
+
   static const exampleScreen = '/exampleScreen';
 }
 
@@ -120,7 +120,7 @@ abstract class AppPages {
     // Auth Pages
     GetPage(
       name: Routes.login,
-      page: () =>  LoginView(),
+      page: () => LoginView(),
       binding: AuthBinding(),
       transition: Transition.fadeIn,
     ),
@@ -280,13 +280,7 @@ abstract class AppPages {
 
       transition: Transition.fadeIn,
     ),
-    GetPage(
-      name: Routes.thirteenStep,
-      page: () => Thirteenstep(),
-      binding: AuthBinding(),
 
-      transition: Transition.fadeIn,
-    ),
     GetPage(
       name: Routes.exampleScreen,
       page: () => ExampleScreen(),

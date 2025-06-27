@@ -127,21 +127,14 @@ class AuthController extends GetxController {
           .eq('email', email)
           .maybeSingle();
 
-      final proServiceResponse = await supabase
-          .from('pro_services')
-          .select()
-          .eq('user_id', user.id);
-
-      if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
-        Fluttertoast.showToast(msg: 'Please select the services you offer.');
-
-        Get.toNamed(Routes.initial);
-        return;
-      } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
-        await proSignUpProces();
-      }
-
+      // Handle new users
       if (existingUser == null) {
+        if (username == null || username.trim().isEmpty) {
+          CustomFlutterToast.showInfoToast('Username is required.', seconds: 2);
+          return;
+        }
+        final auhtUserId = user.id;
+        // Check for username uniqueness
         final usernameExists = await supabase
             .from('users_profiles')
             .select()
@@ -149,46 +142,81 @@ class AuthController extends GetxController {
             .maybeSingle();
 
         var finalUsername = username;
-
         if (usernameExists != null) {
           final random = DateTime.now().millisecondsSinceEpoch % 10000;
           finalUsername = '${username}_$random';
         }
 
+        // Create new user profile
         await supabase.from('users_profiles').insert({
-          'id': user.id,
+          'id': auhtUserId,
           'email': email,
           'username': finalUsername,
         });
       }
 
-      final serviceProvider = await supabase
-          .from('service_providers')
-          .select('business_name')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      // Check for service provider status
+      final proServiceResponse = await supabase
+          .from('pro_services')
+          .select()
+          .eq('user_id', user.id);
 
-      if (existingUser != null && existingUser['phone_number'] == null) {
-        Get.toNamed(Routes.thirdStep);
-      } else if (serviceProvider == null) {
-        Get.toNamed(Routes.fourthStep);
-      } else if (serviceProvider.isNotEmpty) {
-        Get.toNamed(Routes.jobs);
-        authService.isAuthenticated.value = true;
-        authService.currentUser.value = user;
-      } else {
+      // Handle service provider flow
+      if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
+        CustomFlutterToast.showInfoToast(
+          'Please select the services you offer.',
+          seconds: 5,
+        );
+
+        Get.toNamed(Routes.firstStep);
+        return;
+      } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
         await proSignUpProces();
-        Get.toNamed(Routes.thirdStep);
       }
 
-      emailController.clear();
-      passwordController.clear();
+      // Check service provider profile with better error handling
+      try {
+        final providerId = (await supabase
+            .from('service_providers')
+            .select('provider_id')
+            .eq('user_id', user.id)
+            .maybeSingle())?['provider_id'];
+
+        final proBusinessHours = providerId == null
+            ? null
+            : await supabase
+                .from('provider_business_hours')
+                .select()
+                .eq('provider_id', providerId)
+                .limit(1)
+                .maybeSingle();
+
+        // Determine next steps based on user state with proper null checks
+        if (existingUser == null || 
+            existingUser['phone_number'] == null ||
+            existingUser['phone_number'].toString().trim().isEmpty) {
+          Get.offAllNamed(Routes.thirdStep);
+        } else if (providerId == null || proBusinessHours == null) {
+          Get.offAllNamed(Routes.tenthStep);
+        } else {
+          authService.isAuthenticated.value = true;
+          authService.currentUser.value = user;
+          Get.offAllNamed(Routes.jobs);
+        }
+      } catch (e) {
+        print('Error checking service provider status: $e');
+        // If there's an error checking provider status, default to tenthStep
+        Get.offAllNamed(Routes.tenthStep);
+      }
     } catch (e) {
+      print('Post-login error: $e');
       Fluttertoast.showToast(msg: 'Post-login error: $e');
+      authService.isAuthenticated.value = false;
+      authService.currentUser.value = null;
     }
   }
 
-  Future<void> Login() async {
+  Future<void> login() async {
     try {
       isLoading.value = true;
 
@@ -206,9 +234,15 @@ class AuthController extends GetxController {
 
       final user = response.user;
       final authUserId = user!.id;
-      print('authUserId: $authUserId');
-      final email = user?.email ?? '';
-      final username = user?.userMetadata?['username']?.toString();
+      final email = user.email;
+      
+      // Check if email is available
+      if (email == null) {
+        Fluttertoast.showToast(msg: 'Email not available.');
+        return;
+      }
+      
+      final username = user.userMetadata?['username']?.toString();
 
       // Check user profile in database
       final existingUser = await supabase
@@ -264,33 +298,54 @@ class AuthController extends GetxController {
         await proSignUpProces();
       }
 
-      // Check service provider profile
-      final serviceProvider = await supabase
-          .from('service_providers')
-          .select('business_name')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      // Check service provider profile with better error handling
+      try {
+        final providerId = (await supabase
+            .from('service_providers')
+            .select('provider_id')
+            .eq('user_id', user.id)
+            .maybeSingle())?['provider_id'];
 
-      // Determine next steps based on user state
-      if (existingUser!['phone_number'] == null ||
-          existingUser['phone_number'] == '') {
-        Get.offAllNamed(Routes.thirdStep);
-      } else if (existingUser!['phone_number'] != null ||
-          existingUser['phone_number'] != '') {
+        final proBusinessHours = providerId == null
+            ? null
+            : await supabase
+                .from('provider_business_hours')
+                .select()
+                .eq('provider_id', providerId)
+                .limit(1)
+                .maybeSingle();
+
+        // Determine next steps based on user state with proper null checks
+        if (existingUser == null || 
+            existingUser['phone_number'] == null ||
+            existingUser['phone_number'] == '') {
+          Get.offAllNamed(Routes.thirdStep);
+        } else if (providerId == null || proBusinessHours == null) {
+          Get.offAllNamed(Routes.tenthStep);
+        } else {
+          authService.isAuthenticated.value = true;
+          authService.currentUser.value = user;
+          Get.offAllNamed(Routes.jobs);
+        }
+
+        // Clear input fields on successful login
+        emailController.clear();
+        passwordController.clear();
+      } catch (e) {
+        print('Error checking service provider status: $e');
+        // If there's an error checking provider status, default to tenthStep
         Get.offAllNamed(Routes.tenthStep);
-      } else {
-        authService.isAuthenticated.value = true;
-        authService.currentUser.value = user;
-        Get.offAllNamed(Routes.jobs);
       }
-
-      // Clear input fields
-      emailController.clear();
-      passwordController.clear();
     } on AuthException catch (e) {
+      print('Auth error: $e');
       Fluttertoast.showToast(msg: 'Login failed: ${e.message}');
+      authService.isAuthenticated.value = false;
+      authService.currentUser.value = null;
     } catch (e) {
+      print('Login error: $e');
       Fluttertoast.showToast(msg: 'An error occurred: ${e.toString()}');
+      authService.isAuthenticated.value = false;
+      authService.currentUser.value = null;
     } finally {
       isLoading.value = false;
     }
@@ -487,7 +542,7 @@ class AuthController extends GetxController {
   void onInit() async {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
-
+    loadUserData();
     searchController.addListener(_onSearchChanged);
   }
 
@@ -680,7 +735,7 @@ class AuthController extends GetxController {
     try {
       if (selectedState.value != null &&
           phoneController.text.isNotEmpty &&
-          selectedImageFile.value != null &&
+        
           businessNameController.text.isNotEmpty &&
           businessDetailsInfo.text.isNotEmpty) {
         String? profileImageFileName;
@@ -690,10 +745,7 @@ class AuthController extends GetxController {
         }
         final userPhoneNumberResponse = await supabase
             .from('users_profiles')
-            .update({
-              'phone_number': phoneController.text,
-              
-            })
+            .update({'phone_number': phoneController.text})
             .eq('id', authUser);
 
         if (userPhoneNumberResponse != null) {
@@ -712,7 +764,7 @@ class AuthController extends GetxController {
           'founded_year': int.tryParse(yearFoundedController.text),
           'employees_count': int.tryParse(numberOfEmployeesController.text),
           'business_name': businessName,
-          'profile_picture_url': profileImageFileName,
+          'image_url': profileImageFileName,
           'business_type':
               'company', // Make sure it's set (e.g., 'handyman' or 'company')
           'introduction': businessDetailsInfo.text.trim(),
@@ -953,8 +1005,6 @@ class AuthController extends GetxController {
                       // You can upload it to your server or update the profile picture
                       // updateProfileImage(file);
                       selectedImageFile.value = file;
-
-                      Get.snackbar('Success', 'Image selected successfully');
                     }
                   }
                 },
@@ -975,7 +1025,7 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
 
-      final authUser = authService.currentUser.value;
+      final authUser = supabase.auth.currentUser;
       if (authUser == null) throw 'User not authenticated';
 
       final userEmail = authUser.email;
@@ -1100,53 +1150,135 @@ class AuthController extends GetxController {
     }
   }
   /////////////////////////////////////////////////////
-  
 
-  // Availability options (1 = business hours, 2 = any open time)
-  var availabilityOption = 1.obs;
-  
-  // Days data structure
-  var days = <Map<String, dynamic>>[
-    {'name': 'Sun', 'selected': false, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-    {'name': 'Mon', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-    {'name': 'Tues', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-    {'name': 'Wed', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-    {'name': 'Thurs', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-    {'name': 'Fri', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-    {'name': 'Sat', 'selected': true, 'editing': false, 'startTime': '12:00 AM', 'endTime': '12:00 AM (next day)'},
-  ].obs;
+  Future<Map<String, dynamic>> saveBusinessHours({
+    required String providerId,
+    required String timezone,
+    required bool availableAnyTime,
+    required Map<String, dynamic> schedule,
+  }) async {
+    try {
+      final businessHours = [];
 
-  void toggleDaySelection(int index) {
-    days[index]['selected'] = !days[index]['selected'];
-    days.refresh();
-  }
+      if (availableAnyTime) {
+        businessHours.addAll(
+          [0, 1, 2, 3, 4, 5, 6].map(
+            (dayOfWeek) => ({
+              'provider_id': providerId,
+              'day_of_week': dayOfWeek,
+              'shift_number': 1,
+              'open_time': '00:00:00',
+              'close_time': '23:59:59',
+              'availability_status': null,
+              'is_closed': false,
+              'timezone': timezone,
+              'notes': 'Available any time',
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            }),
+          ),
+        );
+      } else {
+        // Convert the schedule to database format
+        final Map<String, int> dayToNumber = {
+          'Sun': 0,
+          'Mon': 1,
+          'Tues': 2,
+          'Wed': 3,
+          'Thurs': 4,
+          'Fri': 5,
+          'Sat': 6,
+        };
 
-  void toggleDayEdit(int index) {
-    days[index]['editing'] = !days[index]['editing'];
-    days.refresh();
-  }
+        schedule.forEach((day, value) {
+          if (value['selected'] == true) {
+            final times = value['availability'].split(' - ');
+            final startTime = _convertTo24Hour(times[0]);
+            final endTime = _convertTo24Hour(times[1]);
 
-  void updateDayTime(int index, {required String startTime, required String endTime}) {
-    days[index]['startTime'] = startTime;
-    days[index]['endTime'] = endTime;
-    days.refresh();
-  }
-
-  void applyToSelectedDays() {
-    // Get the first selected day's time
-    final selectedDay = days.firstWhere((day) => day['selected'] == true);
-    final startTime = selectedDay['startTime'];
-    final endTime = selectedDay['endTime'];
-    
-    // Apply to all selected days
-    for (var i = 0; i < days.length; i++) {
-      if (days[i]['selected'] == true) {
-        days[i]['startTime'] = startTime;
-        days[i]['endTime'] = endTime;
-        days[i]['editing'] = false;
+            businessHours.add({
+              'provider_id': providerId,
+              'day_of_week': dayToNumber[day],
+              'shift_number': 1,
+              'open_time': startTime,
+              'close_time': endTime,
+              'availability_status': null,
+              'is_closed': false,
+              'timezone': timezone,
+              'notes': null,
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+          } else {
+            businessHours.add({
+              'provider_id': providerId,
+              'day_of_week': dayToNumber[day],
+              'shift_number': 1,
+              'open_time': null,
+              'close_time': null,
+              'availability_status': null,
+              'is_closed': true,
+              'timezone': timezone,
+              'notes': null,
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+          }
+        });
       }
+
+      // Delete previous availability for provider
+      final deleteResponse = await supabase
+          .from('provider_business_hours')
+          .delete()
+          .eq('provider_id', providerId);
+
+      final deleteError = deleteResponse;
+
+      if (deleteError != null) {
+        print('Delete Error: $deleteError');
+        throw Exception(deleteError.message);
+      }
+
+      // Insert new availability records
+      final insertResponse = await supabase
+          .from('provider_business_hours')
+          .insert(businessHours);
+
+      final insertError = insertResponse;
+      if (insertError != null) {
+        print('Insert Error: $insertError');
+        throw Exception(insertError.message);
+      }
+
+      return {
+        'status': 'success',
+        'message': 'Business hours saved successfully.',
+        'details': null,
+      };
+    } catch (error) {
+      print('Error in saveBusinessHours: $error');
+      return {
+        'status': 'error',
+        'message': error is Exception
+            ? error.toString()
+            : 'An unknown error occurred',
+        'details': null,
+      };
     }
-    days.refresh();
   }
 
+  String _convertTo24Hour(String time) {
+    if (time == 'midnight') return '00:00:00';
+
+    final parts = time.toLowerCase().split(' ');
+    final timeParts = parts[0].split(':');
+    var hours = int.parse(timeParts[0]);
+    final minutes = timeParts.length > 1 ? int.parse(timeParts[1]) : 0;
+
+    if (parts[1] == 'pm' && hours != 12) hours += 12;
+    if (parts[1] == 'am' && hours == 12) hours = 0;
+
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:00';
+  }
 }

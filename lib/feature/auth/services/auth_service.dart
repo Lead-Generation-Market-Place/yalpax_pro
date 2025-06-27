@@ -31,19 +31,41 @@ class AuthService extends GetxService {
     super.onClose();
   }
 
-  void initializeAuthState() {
-    final session = supabase.auth.currentSession;
-    isAuthenticated.value = session != null && !session.isExpired && isAuthenticated.value  != false;
-    currentUser.value = supabase.auth.currentUser;
+  void initializeAuthState() async {
+    try {
+      final session = supabase.auth.currentSession;
+      final prefs = Get.find<SharedPreferences>();
+      
+      // Check both session and stored auth state
+      final storedAuthState = prefs.getBool('isAuthenticated') ?? false;
+      
+      isAuthenticated.value = session != null && 
+                            !session.isExpired && 
+                            storedAuthState;
+                            
+      currentUser.value = supabase.auth.currentUser;
 
-    if (currentUser.value != null) {
-      logger.i('Current user id: ${currentUser.value!.id}');
-      logger.i('Current user email: ${currentUser.value!.email}');
+      if (currentUser.value != null) {
+        logger.i('Current user id: ${currentUser.value!.id}');
+        logger.i('Current user email: ${currentUser.value!.email}');
+        
+        // Ensure we persist the auth state
+        await prefs.setBool('isAuthenticated', true);
+      } else {
+        // Clear auth state if no current user
+        await prefs.setBool('isAuthenticated', false);
+      }
+    } catch (e) {
+      logger.e('Error initializing auth state: $e');
+      final prefs = Get.find<SharedPreferences>();
+      await prefs.setBool('isAuthenticated', false);
+      isAuthenticated.value = false;
+      currentUser.value = null;
     }
   }
 
   void _setupAuthStateListener() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) async {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
 
@@ -51,18 +73,21 @@ class AuthService extends GetxService {
         case AuthChangeEvent.signedIn:
           isAuthenticated.value = true;
           currentUser.value = session?.user;
-          _saveAuthState(session);
+          await _saveAuthState(session);
           break;
         case AuthChangeEvent.signedOut:
           isAuthenticated.value = false;
           currentUser.value = null;
-          _clearAuthState();
+          await _clearAuthState();
           break;
-
         case AuthChangeEvent.tokenRefreshed:
-          _saveAuthState(session);
+          await _saveAuthState(session);
           break;
-
+        case AuthChangeEvent.userDeleted:
+          isAuthenticated.value = false;
+          currentUser.value = null;
+          await _clearAuthState();
+          break;
         default:
           break;
       }
@@ -70,15 +95,27 @@ class AuthService extends GetxService {
   }
 
   Future<void> _saveAuthState(Session? session) async {
-    if (session != null) {
+    try {
       final prefs = Get.find<SharedPreferences>();
-      await prefs.setString(AppConstants.userTokenKey, session.accessToken);
+      if (session != null) {
+        await prefs.setString(AppConstants.userTokenKey, session.accessToken);
+        await prefs.setBool('isAuthenticated', true);
+      } else {
+        await _clearAuthState();
+      }
+    } catch (e) {
+      logger.e('Error saving auth state: $e');
     }
   }
 
   Future<void> _clearAuthState() async {
-    final prefs = Get.find<SharedPreferences>();
-    await prefs.remove(AppConstants.userTokenKey);
+    try {
+      final prefs = Get.find<SharedPreferences>();
+      await prefs.remove(AppConstants.userTokenKey);
+      await prefs.setBool('isAuthenticated', false);
+    } catch (e) {
+      logger.e('Error clearing auth state: $e');
+    }
   }
 
   Future<bool> signIn(String email, String password) async {
@@ -91,7 +128,11 @@ class AuthService extends GetxService {
         password: password,
       );
 
-      return response.session != null;
+      if (response.session != null) {
+        await _saveAuthState(response.session);
+        return true;
+      }
+      return false;
     } catch (e) {
       authError.value = e.toString();
       logger.e('Sign in error: $e');
@@ -101,12 +142,11 @@ class AuthService extends GetxService {
     }
   }
 
- 
-
   Future<void> signOut() async {
     try {
       isLoading.value = true;
       await supabase.auth.signOut();
+      await _clearAuthState();
     } catch (e) {
       authError.value = e.toString();
       logger.e('Sign out error: $e');

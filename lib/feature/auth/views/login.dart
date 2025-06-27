@@ -152,7 +152,7 @@ class LoginView extends GetView<AuthController> {
               onPressed: () {
                 final isValid = loginFormKey.currentState?.validate() ?? false;
                 if (isValid) {
-                  controller.Login();
+                  controller.login();
                 }
               },
               size: CustomButtonSize.large,

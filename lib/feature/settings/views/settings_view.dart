@@ -149,7 +149,7 @@ class SettingsView extends GetView<SettingsController> {
                       // TODO: Handle the picked image file
                       // You can upload it to your server or update the profile picture
                       controller.updateProfileImage(file);
-                      Get.snackbar('Success', 'Image selected successfully');
+       
                     }
                   }
                 },

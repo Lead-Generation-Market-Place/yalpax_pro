@@ -3,14 +3,15 @@ import 'package:get/get.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/bottom_navbar.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
+import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
 import 'package:yalpax_pro/feature/jobs/widgets/horizontal_services_list.dart';
 
 class JobsView extends GetView<jobsController> {
   JobsView({super.key});
   final TextEditingController _searchController = TextEditingController();
-  final AuthController authController = Get.put( AuthController());
-
+  final AuthController authController = Get.put(AuthController());
+  final AuthService authService = Get.put(AuthService());
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,14 +20,14 @@ class JobsView extends GetView<jobsController> {
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
-            onPressed: () async{
-            await authController.signOut();
+            onPressed: () async {
+              authService.isAuthenticated.value = false;
+              await authController.signOut();
             },
           ),
         ],
       ),
       bottomNavigationBar: BottomNavbar(),
     );
-
   }
 }
