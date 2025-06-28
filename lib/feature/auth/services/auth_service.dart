@@ -21,6 +21,7 @@ class AuthService extends GetxService {
   @override
   void onInit() {
     super.onInit();
+    checkAuthStatus();
     initializeAuthState();
     _setupAuthStateListener();
   }
@@ -113,6 +114,7 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       await prefs.remove(AppConstants.userTokenKey);
       await prefs.setBool('isAuthenticated', false);
+
     } catch (e) {
       logger.e('Error clearing auth state: $e');
     }
@@ -184,6 +186,17 @@ class AuthService extends GetxService {
       return false;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void checkAuthStatus() {
+    final user = supabase.auth.currentUser;
+    if (user != null) {
+      isAuthenticated.value = true;
+      currentUser.value = user;
+    } else {
+      isAuthenticated.value = false;
+      currentUser.value = null;
     }
   }
 }

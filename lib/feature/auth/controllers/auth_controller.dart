@@ -93,6 +93,7 @@ class AuthController extends GetxController {
         name.value = userProfile['username'] ?? '';
       } else {
         debugPrint('No user profile found in the database.');
+        signOut();
       }
     } catch (e) {
       debugPrint('Error loading user data: $e');
@@ -1281,4 +1282,26 @@ class AuthController extends GetxController {
 
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:00';
   }
+
+  Future<void> _initializeStateData() async {
+    if (allStates.isEmpty) {
+      await fetchStates('');
+    }
+    if (selectedState.value != null) {
+      final selectedStateId = selectedState.value!['id'];
+      final match = allStates.firstWhereOrNull(
+        (state) => state['id'] == selectedStateId,
+      );
+      if (match != null) {
+        selectedState.value = match;
+      } else {
+        // Add and set to the new instance
+        allStates.add(selectedState.value!);
+        selectedState.value = selectedState.value!;
+      }
+    }
+  }
+
+
+  
 }

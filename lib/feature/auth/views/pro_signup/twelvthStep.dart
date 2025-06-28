@@ -567,7 +567,7 @@ class _TwelvthStepState extends State<TwelvthStep> {
 
       if (result['status'] == 'success') {
         Fluttertoast.showToast(msg: result['message']);
-        Get.toNamed(Routes.jobs);
+        Get.offAllNamed(Routes.jobs);
       } else {
         throw Exception(result['message']);
       }
@@ -838,6 +838,7 @@ class _TwelvthStepState extends State<TwelvthStep> {
                 ],
 
                 SizedBox(height: 24),
+                
                 ElevatedButton(
                   onPressed: isLoading ? null : _saveBusinessHours,
                   style: ElevatedButton.styleFrom(
@@ -855,12 +856,8 @@ class _TwelvthStepState extends State<TwelvthStep> {
             ),
           ),
 
-          // Loading overlay
-          if (isLoading)
-            Container(
-              color: Colors.black.withOpacity(0.3),
-              child: Center(child: CircularProgressIndicator()),
-            ),
+    
+        
         ],
       ),
     );

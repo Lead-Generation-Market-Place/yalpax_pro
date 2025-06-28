@@ -5,6 +5,8 @@ import 'package:yalpax_pro/core/widgets/advanced_dropdown_field.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
+import 'package:collection/collection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SeventhStep extends StatefulWidget {
   const SeventhStep({super.key});
@@ -27,36 +29,41 @@ class _SeventhStepState extends State<SeventhStep> {
       if (_focusNodes.isNotEmpty) {
         FocusScope.of(context).requestFocus(_focusNodes[0]);
       }
-      
+
       // Load states and ensure selected state from first step is available
       _initializeStateData();
     });
   }
 
   Future<void> _initializeStateData() async {
-    // Debug: Log the selected state from first step
-    print('Seventh Step - Selected State: ${controller.selectedState.value}');
-    
-    // If we have a selected state from first step, make sure it's in allStates
-    if (controller.selectedState.value != null) {
-      final selectedState = controller.selectedState.value!;
-      final exists = controller.allStates.any((state) => state['id'] == selectedState['id']);
-      
-      if (!exists) {
-        // Add the selected state to allStates if it's not already there
-        controller.allStates.add(selectedState);
-        print('Added selected state to allStates: ${selectedState['name']}');
-      } else {
-        print('Selected state already exists in allStates: ${selectedState['name']}');
-      }
-    }
-    
-    // If no states are loaded yet, fetch some default states
+  try {
+    // First ensure states are loaded
     if (controller.allStates.isEmpty) {
       await controller.fetchStates('');
-      print('Fetched default states, count: ${controller.allStates.length}');
     }
+    
+    // Check if we have a selected state in the controller first
+    if (controller.selectedState.value != null) {
+      return; // Already have a selected state
+    }
+    
+    // Fall back to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final selectedStateId = prefs.getString('selected_state_id');
+    
+    if (selectedStateId != null && controller.allStates.isNotEmpty) {
+      final match = controller.allStates.firstWhereOrNull(
+        (state) => state['id'].toString() == selectedStateId,
+      );
+      
+      if (match != null) {
+        controller.selectedState.value = match;
+      }
+    }
+  } catch (e) {
+    print('Error initializing state data: $e');
   }
+}
 
   @override
   void dispose() {
@@ -100,17 +107,17 @@ class _SeventhStepState extends State<SeventhStep> {
                 Text(
                   "Confirm some info for your business",
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[800],
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   "Fairfax",
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -176,7 +183,10 @@ class _SeventhStepState extends State<SeventhStep> {
 
                 CustomInput(
                   focusNode: _focusNodes[0],
-                  prefixIcon: const Icon(Icons.calendar_today_outlined, size: 20),
+                  prefixIcon: const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 20,
+                  ),
                   label: 'Year founded',
                   hint: 'e.g. 2000',
                   controller: controller.yearFoundedController,
@@ -190,7 +200,6 @@ class _SeventhStepState extends State<SeventhStep> {
                     }
                     return null;
                   },
-                
                 ),
                 const SizedBox(height: 16),
                 CustomInput(
@@ -209,7 +218,6 @@ class _SeventhStepState extends State<SeventhStep> {
                     }
                     return null;
                   },
-               
                 ),
                 const SizedBox(height: 28),
 
@@ -222,7 +230,6 @@ class _SeventhStepState extends State<SeventhStep> {
                   label: 'Street name',
                   hint: 'Enter street name',
                   controller: controller.streetNameController,
-              
                 ),
                 const SizedBox(height: 16),
                 CustomInput(
@@ -231,17 +238,17 @@ class _SeventhStepState extends State<SeventhStep> {
                   label: 'Suite or unit',
                   hint: 'Enter suite or unit',
                   controller: controller.suiteOrUniteController,
-                 
                 ),
                 const SizedBox(height: 16),
                 CustomInput(
-                  prefixIcon: const Icon(Icons.location_city_outlined, size: 20),
+                  prefixIcon: const Icon(
+                    Icons.location_city_outlined,
+                    size: 20,
+                  ),
                   label: 'City',
                   hint: 'Fairfax',
                   controller: controller.cityController,
-                 autofocus: true,
-                 
-       
+                  autofocus: true,
                 ),
                 const SizedBox(height: 16),
                 _buildStateDropdown(),
@@ -254,7 +261,9 @@ class _SeventhStepState extends State<SeventhStep> {
                   keyboardType: TextInputType.number,
                   controller: controller.zipCodeController,
                   validator: (value) {
-                    if (value != null && value.isNotEmpty && value.length != 5) {
+                    if (value != null &&
+                        value.isNotEmpty &&
+                        value.length != 5) {
                       return 'Zip code must be 5 digits';
                     }
                     return null;
@@ -303,62 +312,32 @@ class _SeventhStepState extends State<SeventhStep> {
     );
   }
 
-  Widget _buildStateDropdown() {
-    // Get the selected state from the controller
-    final selectedState = controller.selectedState.value;
-    
-    // Find the state in allStates that matches the selected state
-    final selected = selectedState != null 
-        ? controller.allStates.firstWhere(
-            (s) => s['id'] == selectedState['id'],
-            orElse: () => selectedState, // Use the selected state if not found in allStates
-          )
-        : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "State",
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 8),
-        AdvancedDropdownField<Map<String, dynamic>>(
-          label: 'Select your state',
-          hint: 'Search states...',
-          items: controller.allStates,
-          selectedValue: selected,
-          getLabel: (item) => item['name'] ?? '',
-          onChanged: (selectedItem) {
-            controller.selectedState.value = selectedItem;
-          },
-          validator: (value) {
-            if (value == null) {
-              return 'Please select a state';
-            }
-            return null;
-          },
-          isRequired: true,
-          enableSearch: true,
-          onSearchChanged: (query) {
-            controller.fetchStates(query);
-          },
-        ),
-        if (selectedState != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            "Pre-selected from your service location",
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ],
+   Widget _buildStateDropdown() {
+    return AdvancedDropdownField<Map<String, dynamic>>(
+      label: 'Select your state',
+      hint: 'Search states...',
+      items: controller.allStates,
+      selectedValue: controller.selectedState.value,
+      getLabel: (item) => item['name'] ?? '',
+      onChanged: (selectedItem) async {
+        controller.selectedState.value = selectedItem;
+        if (selectedItem != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('selected_state_id', selectedItem['id'].toString());
+        }
+      },
+      validator: (value) {
+        if (value == null) {
+          return 'Please select a state';
+        }
+        return null;
+      },
+      isRequired: true,
+      enableSearch: true,
+      onSearchChanged: (query) {
+        controller.fetchStates(query);
+      },
     );
   }
+
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
@@ -11,10 +12,12 @@ class FirstStep extends GetView<AuthController> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       controller.selectedServices.clear();
       controller.selectedCategories.clear();
       controller.selectedSubCategories.clear();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('selected_state_id');
     });
     return Scaffold(
       body: SafeArea(
@@ -89,8 +92,15 @@ class FirstStep extends GetView<AuthController> {
       items: controller.allStates,
       selectedValue: controller.selectedState.value,
       getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedItem) {
+      onChanged: (selectedItem) async {
         controller.selectedState.value = selectedItem;
+        if (selectedItem != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'selected_state_id',
+            selectedItem['id'].toString(),
+          );
+        }
       },
       validator: (value) {
         if (value == null) {

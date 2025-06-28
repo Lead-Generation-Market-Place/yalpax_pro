@@ -21,7 +21,7 @@ class _ThirdStepState extends State<ThirdStep> {
   void initState() {
     super.initState();
 
-  //  initializeData();
+   initializeData();
   }
 
   Future<void> initializeData() async {
@@ -57,58 +57,84 @@ class _ThirdStepState extends State<ThirdStep> {
               ),
               const SizedBox(height: 24),
               Center(
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      onTap: () =>
-                          controller.showImagePickerBottomSheet(context),
-                      child: Obx(() {
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Obx(() {
                         final localImage = controller.selectedImageFile.value;
-                        final googleImage =
-                            controller.googleAccountPictureUrl.value;
-                        final profileImage =
-                            '${FileUrls.profilePicture}${controller.profilePictureUrl.value}';
+                        final googleImage = controller.googleAccountPictureUrl.value;
+                        final profileImage = '${FileUrls.profilePicture}${controller.profilePictureUrl.value}';
 
                         ImageProvider? imageProvider;
-
                         if (localImage != null) {
-                          imageProvider = FileImage(
-                            localImage,
-                          ); // show selected image
+                          imageProvider = FileImage(localImage);
                         } else if (googleImage.isNotEmpty) {
                           imageProvider = NetworkImage(googleImage);
-                        } else if (controller
-                            .profilePictureUrl
-                            .value
-                            .isNotEmpty) {
+                        } else if (controller.profilePictureUrl.value.isNotEmpty) {
                           imageProvider = NetworkImage(profileImage);
                         }
 
                         return CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.grey,
+                          radius: 48,
+                          backgroundColor: Colors.grey[200],
                           backgroundImage: imageProvider,
                           child: imageProvider == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.white,
+                              ? Text(
+                                  controller.name.value.isNotEmpty
+                                      ? controller.name.value[0].toUpperCase()
+                                      : '',
+                                  style: const TextStyle(
+                                    fontSize: 36,
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 )
                               : null,
                         );
                       }),
-                    ),
-                    const SizedBox(height: 8),
-                    Obx(
-                      () => Text(
-                        controller.name.value,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => controller.showImagePickerBottomSheet(context),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.blueGrey,
+                          textStyle: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        child: const Text('Change photo'),
+                      ),
+                      const SizedBox(height: 8),
+                      Obx(
+                        () => Text(
+                          controller.name.value,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      // Optionally, add business/company name or role here
+                      // Text(
+                      //   'Business Owner',
+                      //   style: TextStyle(
+                      //     fontSize: 14,
+                      //     color: Colors.grey[600],
+                      //   ),
+                      // ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
