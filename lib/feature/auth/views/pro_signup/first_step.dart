@@ -16,6 +16,8 @@ class FirstStep extends GetView<AuthController> {
       controller.selectedServices.clear();
       controller.selectedCategories.clear();
       controller.selectedSubCategories.clear();
+      controller.fetchStates('');
+      controller.fetchCategories('');
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('selected_state_id');
     });
@@ -46,13 +48,13 @@ class FirstStep extends GetView<AuthController> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Obx(() => _buildStateDropdown()),
+                    child:  _buildStateDropdown(),
                   ),
                 ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Obx(() => _buildCategoryDropdown()),
+                    child: _buildCategoryDropdown(),
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
@@ -85,10 +87,11 @@ class FirstStep extends GetView<AuthController> {
     );
   }
 
-  Widget _buildStateDropdown() {
+ Widget _buildStateDropdown() {
+  return Obx(() {
     return AdvancedDropdownField<Map<String, dynamic>>(
       label: 'Select your state',
-      hint: 'Search states...',
+      hint: 'Select your state',
       items: controller.allStates,
       selectedValue: controller.selectedState.value,
       getLabel: (item) => item['name'] ?? '',
@@ -109,50 +112,53 @@ class FirstStep extends GetView<AuthController> {
         return null;
       },
       isRequired: true,
-      enableSearch: true,
-      onSearchChanged: (query) {
-        controller.fetchStates(query);
-      },
+      enableSearch: false, // explicitly disable search if the widget supports this prop
     );
-  }
+  });
+}
+
 
   Widget _buildCategoryDropdown() {
-    final selectedCategory = controller.allCategories.firstWhere(
-      (s) =>
-          s['id'] != null &&
-          controller.selectedCategories.contains(s['id'].toString()),
-      orElse: () => {},
-    );
+    return Obx(() {
+      if (controller.filteredCategories.isEmpty) {
+        return CircularProgressIndicator(); // or SizedBox.shrink()
+      }
+      final selectedCategory = controller.allCategories.firstWhere(
+        (s) =>
+            s['id'] != null &&
+            controller.selectedCategories.contains(s['id'].toString()),
+        orElse: () => {},
+      );
 
-    return AdvancedDropdownField<Map<String, dynamic>>(
-      label: 'Select a category',
-      hint: 'Search categories...',
-      items: controller.filteredCategories,
-      selectedValue: selectedCategory.isEmpty ? null : selectedCategory,
-      getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedCategory) {
-        if (selectedCategory != null && selectedCategory['id'] != null) {
-          controller.toggleCategories(selectedCategory['id'].toString());
-          controller.selectedSubCategories.clear();
-          controller.selectedServices.clear();
-        } else {
-          controller.selectedCategories.clear();
-          controller.selectedSubCategories.clear();
-          controller.allSubCategories.clear();
-          controller.selectedServices.clear();
-          controller.allServices.clear();
-        }
-      },
-      validator: (value) {
-        if (value == null || controller.selectedCategories.isEmpty) {
-          return 'Please select a category';
-        }
-        return null;
-      },
-      isRequired: true,
-      enableSearch: true,
-      onSearchChanged: controller.fetchCategories,
-    );
+      return AdvancedDropdownField<Map<String, dynamic>>(
+        label: 'Select a category',
+        hint: 'Search categories...',
+        items: controller.filteredCategories,
+        selectedValue: selectedCategory.isEmpty ? null : selectedCategory,
+        getLabel: (item) => item['name'] ?? '',
+        onChanged: (selectedCategory) {
+          if (selectedCategory != null && selectedCategory['id'] != null) {
+            controller.toggleCategories(selectedCategory['id'].toString());
+            controller.selectedSubCategories.clear();
+            controller.selectedServices.clear();
+          } else {
+            controller.selectedCategories.clear();
+            controller.selectedSubCategories.clear();
+            controller.allSubCategories.clear();
+            controller.selectedServices.clear();
+            controller.allServices.clear();
+          }
+        },
+        validator: (value) {
+          if (value == null || controller.selectedCategories.isEmpty) {
+            return 'Please select a category';
+          }
+          return null;
+        },
+        isRequired: true,
+        enableSearch: false,
+      );
+    });
   }
 
   Widget _buildSubCategoryDropdown() {

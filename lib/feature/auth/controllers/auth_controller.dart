@@ -186,14 +186,14 @@ class AuthController extends GetxController {
         final proBusinessHours = providerId == null
             ? null
             : await supabase
-                .from('provider_business_hours')
-                .select()
-                .eq('provider_id', providerId)
-                .limit(1)
-                .maybeSingle();
+                  .from('provider_business_hours')
+                  .select()
+                  .eq('provider_id', providerId)
+                  .limit(1)
+                  .maybeSingle();
 
         // Determine next steps based on user state with proper null checks
-        if (existingUser == null || 
+        if (existingUser == null ||
             existingUser['phone_number'] == null ||
             existingUser['phone_number'].toString().trim().isEmpty) {
           Get.offAllNamed(Routes.thirdStep);
@@ -236,13 +236,13 @@ class AuthController extends GetxController {
       final user = response.user;
       final authUserId = user!.id;
       final email = user.email;
-      
+
       // Check if email is available
       if (email == null) {
         Fluttertoast.showToast(msg: 'Email not available.');
         return;
       }
-      
+
       final username = user.userMetadata?['username']?.toString();
 
       // Check user profile in database
@@ -310,14 +310,14 @@ class AuthController extends GetxController {
         final proBusinessHours = providerId == null
             ? null
             : await supabase
-                .from('provider_business_hours')
-                .select()
-                .eq('provider_id', providerId)
-                .limit(1)
-                .maybeSingle();
+                  .from('provider_business_hours')
+                  .select()
+                  .eq('provider_id', providerId)
+                  .limit(1)
+                  .maybeSingle();
 
         // Determine next steps based on user state with proper null checks
-        if (existingUser == null || 
+        if (existingUser == null ||
             existingUser['phone_number'] == null ||
             existingUser['phone_number'] == '') {
           Get.offAllNamed(Routes.thirdStep);
@@ -543,7 +543,6 @@ class AuthController extends GetxController {
   void onInit() async {
     super.onInit();
     // Initial fetch of popular services or all services if search is empty
-    loadUserData();
     searchController.addListener(_onSearchChanged);
   }
 
@@ -589,24 +588,12 @@ class AuthController extends GetxController {
   Future<void> fetchCategories(String query) async {
     isLoading.value = true;
     try {
-      if (query.isEmpty) {
-        final response = await supabase
-            .from('categories')
-            .select('id, name')
-            .order('name', ascending: true)
-            .limit(20);
-        allCategories.assignAll(List<Map<String, dynamic>>.from(response));
-        filteredCategories.assignAll(allCategories);
-      } else {
-        final response = await supabase
-            .from('categories') // Ensure we're querying categories table
-            .select('id, name')
-            .ilike('name', '%$query%')
-            .order('name', ascending: true);
-        filteredCategories.assignAll(
-          List<Map<String, dynamic>>.from(response),
-        ); // Assign to filteredCategories
-      }
+      final response = await supabase
+          .from('categories')
+          .select('id, name')
+          .order('name', ascending: true);
+      allCategories.assignAll(List<Map<String, dynamic>>.from(response));
+      filteredCategories.assignAll(allCategories);
     } catch (e) {
       print('Error fetching categories: $e');
     } finally {
@@ -736,7 +723,6 @@ class AuthController extends GetxController {
     try {
       if (selectedState.value != null &&
           phoneController.text.isNotEmpty &&
-        
           businessNameController.text.isNotEmpty &&
           businessDetailsInfo.text.isNotEmpty) {
         String? profileImageFileName;
@@ -1084,11 +1070,7 @@ class AuthController extends GetxController {
       final response = await supabase
           .from('state')
           .select('id, name, code') // columns in the `state` table
-          .ilike('name', '%$query%')
-          .order('name', ascending: true)
-          .limit(20);
-
-      Logger().d(response);
+          .order('name', ascending: true);
 
       allStates.assignAll(List<Map<String, dynamic>>.from(response));
     } catch (e) {
@@ -1301,7 +1283,4 @@ class AuthController extends GetxController {
       }
     }
   }
-
-
-  
 }

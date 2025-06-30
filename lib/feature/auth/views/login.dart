@@ -5,9 +5,12 @@ import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
+import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 
 class LoginView extends GetView<AuthController> {
   LoginView({super.key});
+
+  final AuthService authService = Get.find<AuthService>();
 
   final _formKey = GlobalKey<FormState>();
   final _emailFocusNode = FocusNode();
@@ -47,37 +50,37 @@ class LoginView extends GetView<AuthController> {
                 const SizedBox(height: 40),
                 // Email Field
                 CustomInput(
-              label: 'Email',
-              hint: 'Enter your email',
-              controller: controller.emailController,
-              keyboardType: TextInputType.emailAddress,
-              prefixIcon: const Icon(Icons.email_outlined),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Email is required';
-                } else if (!GetUtils.isEmail(value)) {
-                  return 'Please enter a valid email';
-                }
-                return null;
-              },
-            ),
+                  label: 'Email',
+                  hint: 'Enter your email',
+                  controller: controller.emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email is required';
+                    } else if (!GetUtils.isEmail(value)) {
+                      return 'Please enter a valid email';
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 20),
                 // Password Field
-               CustomInput(
-              label: 'Password',
-              hint: 'Enter your password',
-              controller: controller.passwordController,
-              type: CustomInputType.password,
-              prefixIcon: const Icon(Icons.lock_outline),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Password is required';
-                } else if (value.length < 6) {
-                  return 'Password must be at least 6 characters';
-                }
-                return null;
-              },
-            ),
+                CustomInput(
+                  label: 'Password',
+                  hint: 'Enter your password',
+                  controller: controller.passwordController,
+                  type: CustomInputType.password,
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password is required';
+                    } else if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
                 const SizedBox(height: 8),
                 // Forgot Password
                 Align(
@@ -139,7 +142,7 @@ class LoginView extends GetView<AuthController> {
                     const SizedBox(width: 4),
                     TextButton(
                       onPressed: () {
-                        Get.toNamed(Routes.signup_with_email);
+                        Get.toNamed(Routes.firstStep);
                       },
                       child: Text(
                         'SIGN UP',
@@ -154,7 +157,7 @@ class LoginView extends GetView<AuthController> {
                 ),
                 const SizedBox(height: 10),
                 // Language Selector
-               _buildSocialLogin(),
+                _buildSocialLogin(),
                 const SizedBox(height: 10),
                 Center(
                   child: DropdownButton<String>(
@@ -216,8 +219,6 @@ class LoginView extends GetView<AuthController> {
     );
   }
 
-
-
   Widget _buildSocialLogin() {
     return Column(
       children: [
@@ -255,11 +256,13 @@ class LoginView extends GetView<AuthController> {
                     );
                     return;
                   }
+                  authService.isAuthenticated.value = true;
+                  Get.offAllNamed(Routes.jobs);
 
-                  await controller.handlePostLogin(
-                    user: res.user,
-                    usernameFromOAuth: res.user?.userMetadata?['name'],
-                  );
+                  // await controller.handlePostLogin(
+                  //   user: res.user,
+                  //   usernameFromOAuth: res.user?.userMetadata?['name'],
+                  // );
                 }
               },
             ),
@@ -311,8 +314,6 @@ class LoginView extends GetView<AuthController> {
     );
   }
 }
-
-
 
 // import 'package:flutter/material.dart';
 // import 'package:get/get.dart';
