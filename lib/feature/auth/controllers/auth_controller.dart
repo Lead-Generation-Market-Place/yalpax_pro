@@ -1265,22 +1265,27 @@ class AuthController extends GetxController {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:00';
   }
 
-  Future<void> _initializeStateData() async {
-    if (allStates.isEmpty) {
-      await fetchStates('');
+
+
+  /// Checks if the current user's profile is complete (e.g., phone_number is present)
+  Future<bool> isProfileComplete() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return false;
+
+    final userProfile = await supabase
+        .from('users_profiles')
+        .select('phone_number')
+        .eq('id', user.id);
+
+    // Check for required fields, e.g. phone_number
+    if (userProfile[0]['phone_number'] == '' ||
+        userProfile[0]['phone_number'].toString().isEmpty ||
+        userProfile[0]['phone_number'] == null) {
+      return false;
     }
-    if (selectedState.value != null) {
-      final selectedStateId = selectedState.value!['id'];
-      final match = allStates.firstWhereOrNull(
-        (state) => state['id'] == selectedStateId,
-      );
-      if (match != null) {
-        selectedState.value = match;
-      } else {
-        // Add and set to the new instance
-        allStates.add(selectedState.value!);
-        selectedState.value = selectedState.value!;
-      }
-    }
+
+    // Add more checks for other required fields if needed
+
+    return true;
   }
 }

@@ -6,21 +6,20 @@ import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/advanced_dropdown_field.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
+import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
 
 class FirstStep extends GetView<AuthController> {
-  const FirstStep({super.key});
+  FirstStep({super.key});
+  final jobsController jobs_controller = Get.find<jobsController>();
 
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      controller.selectedServices.clear();
-      controller.selectedCategories.clear();
-      controller.selectedSubCategories.clear();
+  
       controller.fetchStates('');
       controller.fetchCategories('');
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('selected_state_id');
     });
+
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -33,7 +32,12 @@ class FirstStep extends GetView<AuthController> {
                   pinned: true,
                   leading: IconButton(
                     icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-                    onPressed: () => Get.back(),
+                    onPressed: () => {
+                      if (jobs_controller.isStep.value == false)
+                        {Get.toNamed(Routes.initial)}
+                      else
+                        {Get.back()},
+                    },
                   ),
                   title: Text(
                     'Add Services you offer',
@@ -48,7 +52,7 @@ class FirstStep extends GetView<AuthController> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child:  _buildStateDropdown(),
+                    child: _buildStateDropdown(),
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -87,36 +91,38 @@ class FirstStep extends GetView<AuthController> {
     );
   }
 
- Widget _buildStateDropdown() {
-  return Obx(() {
-    return AdvancedDropdownField<Map<String, dynamic>>(
-      label: 'Select your state',
-      hint: 'Select your state',
-      items: controller.allStates,
-      selectedValue: controller.selectedState.value,
-      getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedItem) async {
-        controller.selectedState.value = selectedItem;
-        if (selectedItem != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(
-            'selected_state_id',
-            selectedItem['id'].toString(),
-          );
-        }
-      },
-      validator: (value) {
-        if (value == null) {
-          return 'Please select a state';
-        }
-        return null;
-      },
-      isRequired: true,
-      enableSearch: false, // explicitly disable search if the widget supports this prop
-    );
-  });
-}
 
+
+  Widget _buildStateDropdown() {
+    return Obx(() {
+      return AdvancedDropdownField<Map<String, dynamic>>(
+        label: 'Select your state',
+        hint: 'Select your state',
+        items: controller.allStates,
+        selectedValue: controller.selectedState.value,
+        getLabel: (item) => item['name'] ?? '',
+        onChanged: (selectedItem) async {
+          controller.selectedState.value = selectedItem;
+          if (selectedItem != null) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(
+              'selected_state_id',
+              selectedItem['id'].toString(),
+            );
+          }
+        },
+        validator: (value) {
+          if (value == null) {
+            return 'Please select a state';
+          }
+          return null;
+        },
+        isRequired: true,
+        enableSearch:
+            false, // explicitly disable search if the widget supports this prop
+      );
+    });
+  }
 
   Widget _buildCategoryDropdown() {
     return Obx(() {
@@ -136,9 +142,15 @@ class FirstStep extends GetView<AuthController> {
         items: controller.filteredCategories,
         selectedValue: selectedCategory.isEmpty ? null : selectedCategory,
         getLabel: (item) => item['name'] ?? '',
-        onChanged: (selectedCategory) {
+        onChanged: (selectedCategory) async {
           if (selectedCategory != null && selectedCategory['id'] != null) {
             controller.toggleCategories(selectedCategory['id'].toString());
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(
+              'selected_state_id',
+              selectedCategory['id'].toString(),
+            );
+
             controller.selectedSubCategories.clear();
             controller.selectedServices.clear();
           } else {
@@ -173,9 +185,14 @@ class FirstStep extends GetView<AuthController> {
       items: controller.filteredSubCategories,
       selectedValue: selectedSubCategory.isEmpty ? null : selectedSubCategory,
       getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedSubCategory) {
+      onChanged: (selectedSubCategory)async {
         if (selectedSubCategory != null) {
           controller.toggleSubCategories(selectedSubCategory['id'].toString());
+              final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(
+              'selected_state_id',
+              selectedSubCategory['id'].toString(),
+            );
         } else {
           controller.selectedSubCategories.clear();
           controller.selectedServices.clear();
@@ -223,12 +240,17 @@ class FirstStep extends GetView<AuthController> {
       items: controller.filteredServices,
       selectedValues: selectedServices,
       getLabel: (item) => item['name'] ?? '',
-      onMultiChanged: (selectedServices) {
+      onMultiChanged: (selectedServices) async{
         controller.selectedServices.clear();
         for (var service in selectedServices) {
           if (service['id'] != null) {
             controller.selectedServices.add(service['id'].toString());
           }
+          final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+              'selected_service_ids',
+              selectedServices.map((s) => s['id'].toString()).toList().toString(),
+            );
         }
       },
       validator: (values) {
@@ -281,7 +303,15 @@ class FirstStep extends GetView<AuthController> {
 
         return CustomButton(
           text: 'Next',
-          onPressed: isValid ? () => Get.toNamed(Routes.secondStep) : null,
+          onPressed: isValid
+              ? () {
+                  if (jobs_controller.isStep.value) {
+                    Get.toNamed(Routes.thirdStep);
+                  } else {
+                    Get.toNamed(Routes.secondStep);
+                  }
+                }
+              : null,
           enabled: isValid,
           isFullWidth: true,
         );
@@ -289,3 +319,4 @@ class FirstStep extends GetView<AuthController> {
     );
   }
 }
+

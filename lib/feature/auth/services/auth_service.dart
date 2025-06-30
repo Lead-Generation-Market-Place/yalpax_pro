@@ -35,38 +35,35 @@ class AuthService extends GetxService {
   void initializeAuthState() async {
     try {
       final session = supabase.auth.currentSession;
-      final prefs = Get.find<SharedPreferences>();
-      
+  
+
       // Check both session and stored auth state
-      final storedAuthState = prefs.getBool('isAuthenticated') ?? false;
-      
-      isAuthenticated.value = session != null && 
-                            !session.isExpired && 
-                            storedAuthState;
-                            
+      isAuthenticated.value = session != null && !session.isExpired;
+      currentUser.value = session?.user;
+
       currentUser.value = supabase.auth.currentUser;
 
       if (currentUser.value != null) {
         logger.i('Current user id: ${currentUser.value!.id}');
         logger.i('Current user email: ${currentUser.value!.email}');
-        
-        // Ensure we persist the auth state
-        await prefs.setBool('isAuthenticated', true);
+
+      
       } else {
         // Clear auth state if no current user
-        await prefs.setBool('isAuthenticated', false);
+
       }
     } catch (e) {
       logger.e('Error initializing auth state: $e');
-      final prefs = Get.find<SharedPreferences>();
-      await prefs.setBool('isAuthenticated', false);
+    
       isAuthenticated.value = false;
       currentUser.value = null;
     }
   }
 
   void _setupAuthStateListener() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) async {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen((
+      data,
+    ) async {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
 
@@ -114,7 +111,6 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       await prefs.remove(AppConstants.userTokenKey);
       await prefs.setBool('isAuthenticated', false);
-
     } catch (e) {
       logger.e('Error clearing auth state: $e');
     }

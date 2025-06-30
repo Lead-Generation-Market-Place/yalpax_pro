@@ -83,7 +83,7 @@ class _SeventhStepState extends State<SeventhStep> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Get.back(),
+          onPressed: () => Get.close(1),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4.0),
@@ -195,8 +195,13 @@ class _SeventhStepState extends State<SeventhStep> {
                     if (value == null || value.isEmpty) {
                       return 'Please enter founding year';
                     }
-                    if (int.tryParse(value) == null) {
+                    final year = int.tryParse(value);
+                    if (year == null) {
                       return 'Please enter a valid year';
+                    }
+                    final currentYear = DateTime.now().year;
+                    if (year < 1900 || year > currentYear) {
+                      return 'Please enter a year between 1800 and $currentYear';
                     }
                     return null;
                   },

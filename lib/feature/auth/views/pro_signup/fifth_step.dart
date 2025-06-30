@@ -227,7 +227,7 @@ class FifthStep extends GetView<AuthController> {
                   isLoading: controller.isLoading.value,
                   onPressed: () async {
                     if (formKeyFifthStep.currentState?.validate() ?? false) {
-                    Get.toNamed(Routes.sixthstep);
+                    Get.toNamed(Routes.seventhStep);
                     }
                   },
                 ),

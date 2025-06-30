@@ -54,4 +54,6 @@ class SplashController extends GetxController {
       isInitialized.value = true;
     }
   }
+
+  
 }
