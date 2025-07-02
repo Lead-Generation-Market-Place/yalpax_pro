@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/bottom_navbar.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
-import 'package:yalpax_pro/feature/jobs/widgets/horizontal_services_list.dart';
 
 class JobsView extends StatefulWidget {
   const JobsView({super.key});
@@ -18,16 +16,20 @@ class JobsView extends StatefulWidget {
 
 class _JobsViewState extends State<JobsView> {
   final TextEditingController _searchController = TextEditingController();
-  late final AuthController authController;
-  late final AuthService authService;
-  late final JobsController controller;
 
+  final AuthController authController = Get.put<AuthController>(
+    AuthController(),
+    permanent: true,
+  );
+  final AuthService authService = Get.put<AuthService>(
+    AuthService(),
+    permanent: true,
+  );
+  
+ final JobsController jobsController = Get.find<JobsController>();
   @override
   void initState() {
     super.initState();
-    authService = Get.find<AuthService>();
-    authController = Get.put(AuthController());
-    controller = Get.find<JobsController>();
 
     // Check auth state and redirect if not authenticated
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -59,14 +61,17 @@ class _JobsViewState extends State<JobsView> {
             // Add space before the black label
             const SizedBox(height: 12),
             // Black label with Finish Setup button
-            Container(
+            Obx(() {
+              return jobsController.isCount.value == 1 ||
+                      jobsController.isCount.value == 2
+                  ? Container(
               width: double.infinity,
               color: const Color.fromARGB(255, 52, 51, 51),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                 Text(
                     'Complete Your Profile',
                     style: TextStyle(
                       color: Colors.white,
@@ -75,19 +80,21 @@ class _JobsViewState extends State<JobsView> {
                     ),
                   ),
                   CustomButton(
-                    text: 'Finish Setup',
-                    onPressed: () async{
-                     await authController.signOut();
-                    },
-                    type: CustomButtonType.secondary,
-                    size: CustomButtonSize.small,
-                    height: 36,
-                    width: 120,
-                  ),
+                          text: 'Finish Setup',
+                          onPressed: () async {
+                            Get.toNamed(Routes.finishSetup);
+                          },
+                          type: CustomButtonType.secondary,
+                          size: CustomButtonSize.small,
+                          height: 36,
+                          width: 120,
+                        )
+                      ,
                 ],
               ),
-            ),
+            ):SizedBox.shrink();
             // Main content
+          }),
             Expanded(
               child: Obx(() {
                 if (!authService.isAuthenticated.value) {

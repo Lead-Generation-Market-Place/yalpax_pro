@@ -4,6 +4,7 @@ import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/auth/views/login.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/example_screen.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/finish_setup.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/reviews.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/thirteenStep.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
@@ -71,6 +72,7 @@ abstract class Routes {
   static const eleventhStep = '/eleventhStep';
   static const twelvthstep = '/twelvthstep';
   static const thirTheen = '/thirtheen';
+  static const finishSetup = '/finishSetup';
 
   static const exampleScreen = '/exampleScreen';
   static const reviews = '/reviews';
@@ -305,7 +307,12 @@ abstract class AppPages {
       name: Routes.thirTheen,
       page: () => Thirteenstep(),
       binding: AuthBinding(),
-
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.finishSetup,
+      page: () => FinishSetup(),
+      binding: AuthBinding(),
       transition: Transition.fadeIn,
     ),
   ];
