@@ -1,8 +1,11 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import 'package:yalpax_pro/feature/auth/views/login.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/example_screen.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/reviews.dart';
+import 'package:yalpax_pro/feature/auth/views/pro_signup/thirteenStep.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password.dart';
 import 'package:yalpax_pro/feature/auth/views/reset_password_token.dart';
 import 'package:yalpax_pro/feature/auth/views/pro_signup/signup_with_email.dart';
@@ -67,8 +70,10 @@ abstract class Routes {
   static const tenthStep = '/tenthStep';
   static const eleventhStep = '/eleventhStep';
   static const twelvthstep = '/twelvthstep';
+  static const thirTheen = '/thirtheen';
 
   static const exampleScreen = '/exampleScreen';
+  static const reviews = '/reviews';
 }
 
 // Middleware
@@ -106,6 +111,7 @@ abstract class AppPages {
       page: () => const SplashView(),
       binding: BindingsBuilder(() {
         Get.put(SplashController());
+        Get.put(AuthController());
       }),
       transition: Transition.fade,
     ),
@@ -284,6 +290,20 @@ abstract class AppPages {
     GetPage(
       name: Routes.exampleScreen,
       page: () => ExampleScreen(),
+      binding: AuthBinding(),
+
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.reviews,
+      page: () => Reviews(),
+      binding: AuthBinding(),
+
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.thirTheen,
+      page: () => Thirteenstep(),
       binding: AuthBinding(),
 
       transition: Transition.fadeIn,

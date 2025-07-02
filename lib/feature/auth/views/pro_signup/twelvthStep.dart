@@ -551,7 +551,7 @@ class _TwelvthStepState extends State<TwelvthStep> {
           .eq('user_id', user)
           .single();
 
-      if (providerResponse == null) {
+      if (providerResponse.isEmpty) {
         throw Exception('Provider not found');
       }
 
@@ -567,7 +567,7 @@ class _TwelvthStepState extends State<TwelvthStep> {
 
       if (result['status'] == 'success') {
         Fluttertoast.showToast(msg: result['message']);
-        Get.offAllNamed(Routes.jobs);
+        Get.offAllNamed(Routes.thirTheen);
       } else {
         throw Exception(result['message']);
       }

@@ -10,88 +10,103 @@ import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
 
 class FirstStep extends GetView<AuthController> {
   FirstStep({super.key});
-  final jobsController jobs_controller = Get.find<jobsController>();
+
+  final JobsController jobsController = Get.put<JobsController>(
+    JobsController(),
+    permanent: true,
+  );
 
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-  
       controller.fetchStates('');
       controller.fetchCategories('');
     });
 
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  backgroundColor: AppColors.surface,
-                  elevation: 0,
-                  pinned: true,
-                  leading: IconButton(
-                    icon: Icon(Icons.arrow_back, color: AppColors.textPrimary),
-                    onPressed: () => {
-                      if (jobs_controller.isStep.value == false)
-                        {Get.toNamed(Routes.initial)}
-                      else
-                        {Get.back()},
-                    },
+    return WillPopScope(
+      onWillPop: () async {
+        if (controller.isStep.value) {
+          Get.back(closeOverlays: true);
+        } else {
+          Get.offAllNamed(Routes.initial);
+        }
+        return false;
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              CustomScrollView(
+                slivers: [
+                  SliverAppBar(
+                    backgroundColor: AppColors.surface,
+                    elevation: 0,
+                    pinned: true,
+                    leading: IconButton(
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: AppColors.textPrimary,
+                      ),
+                      onPressed: () {
+                        if (controller.isStep.value) {
+                          Get.back(closeOverlays: true);
+                        } else {
+                          Get.offAllNamed(Routes.initial);
+                        }
+                      },
+                    ),
+
+                    title: Text(
+                      'Add Services you offer',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    centerTitle: true,
                   ),
-                  title: Text(
-                    'Add Services you offer',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: _buildStateDropdown(),
                     ),
                   ),
-                  centerTitle: true,
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: _buildStateDropdown(),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: _buildCategoryDropdown(),
+                    ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: _buildCategoryDropdown(),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Obx(() => _buildSubCategoryDropdown()),
+                    ),
                   ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Obx(() => _buildSubCategoryDropdown()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Obx(() => _buildServicesDropdown()),
+                    ),
                   ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Obx(() => _buildServicesDropdown()),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 80), // Space for button
                   ),
-                ),
-                const SliverToBoxAdapter(
-                  child: SizedBox(height: 80), // Space for button
-                ),
-              ],
-            ),
-            Align(
-              // Use Align instead of Positioned for more reliable positioning
-              alignment: Alignment.bottomCenter,
-              child: _buildNextButton(),
-            ),
-          ],
+                ],
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: _buildNextButton(),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-
-
 
   Widget _buildStateDropdown() {
     return Obx(() {
@@ -185,14 +200,14 @@ class FirstStep extends GetView<AuthController> {
       items: controller.filteredSubCategories,
       selectedValue: selectedSubCategory.isEmpty ? null : selectedSubCategory,
       getLabel: (item) => item['name'] ?? '',
-      onChanged: (selectedSubCategory)async {
+      onChanged: (selectedSubCategory) async {
         if (selectedSubCategory != null) {
           controller.toggleSubCategories(selectedSubCategory['id'].toString());
-              final prefs = await SharedPreferences.getInstance();
-            await prefs.setString(
-              'selected_state_id',
-              selectedSubCategory['id'].toString(),
-            );
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'selected_state_id',
+            selectedSubCategory['id'].toString(),
+          );
         } else {
           controller.selectedSubCategories.clear();
           controller.selectedServices.clear();
@@ -240,17 +255,17 @@ class FirstStep extends GetView<AuthController> {
       items: controller.filteredServices,
       selectedValues: selectedServices,
       getLabel: (item) => item['name'] ?? '',
-      onMultiChanged: (selectedServices) async{
-        controller.selectedServices.clear();
-        for (var service in selectedServices) {
-          if (service['id'] != null) {
-            controller.selectedServices.add(service['id'].toString());
-          }
-          final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(
-              'selected_service_ids',
-              selectedServices.map((s) => s['id'].toString()).toList().toString(),
-            );
+      onMultiChanged: (selectedServices) async {
+        // Update the controller's selectedServices list
+        if (selectedServices.isNotEmpty) {
+          controller.selectedServices
+              .clear(); // Clear existing selections first
+          controller.selectedServices.addAll(
+            selectedServices
+                .where((service) => service['id'] != null)
+                .map((service) => service['id'].toString()),
+          );
+          await controller.saveSelectedServices(); // Save the updated services
         }
       },
       validator: (values) {
@@ -305,11 +320,9 @@ class FirstStep extends GetView<AuthController> {
           text: 'Next',
           onPressed: isValid
               ? () {
-                  if (jobs_controller.isStep.value) {
-                    Get.toNamed(Routes.thirdStep);
-                  } else {
-                    Get.toNamed(Routes.secondStep);
-                  }
+                  jobsController.isStep.value == true
+                      ? Get.toNamed(Routes.thirdStep)
+                      : Get.offAllNamed(Routes.secondStep);
                 }
               : null,
           enabled: isValid,
@@ -319,4 +332,3 @@ class FirstStep extends GetView<AuthController> {
     );
   }
 }
-

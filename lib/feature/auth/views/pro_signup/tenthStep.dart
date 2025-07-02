@@ -16,7 +16,7 @@ class TenthStep extends GetView<AuthController> {
         elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.only(bottom: 40,right: 20,left: 20),
+        padding: const EdgeInsets.only(bottom: 40, right: 20, left: 20),
         child: Column(
           children: [
             const SizedBox(height: 200), // Placeholder for illustration
@@ -90,10 +90,13 @@ class TenthStep extends GetView<AuthController> {
             const Spacer(), // Push the button to the bottom
             SizedBox(
               width: double.infinity,
-              child: CustomButton(
-                text: 'Next',
-                onPressed: () => Get.toNamed(Routes.eleventhStep),
-              ),
+              child: Obx(() {
+                return CustomButton(
+                  isLoading: controller.isLoading.value,
+                  text: 'Next',
+                  onPressed: () => Get.toNamed(Routes.eleventhStep),
+                );
+              }),
             ),
           ],
         ),

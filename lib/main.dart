@@ -150,36 +150,50 @@ class MyApp extends StatelessWidget {
 class _ErrorScreen extends StatelessWidget {
   final FlutterErrorDetails details;
 
-  const _ErrorScreen({required this.details});
+  const _ErrorScreen({required this.details, super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: SingleChildScrollView( // For very small screens
+          padding: const EdgeInsets.all(24.0),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 24,
+            runSpacing: 24,
             children: [
               Icon(
                 Icons.error_outline,
                 color: Get.theme.colorScheme.error,
-                size: 48,
+                size: 64,
               ),
-              const SizedBox(height: 16),
-              Text('Something went wrong'.tr, style: Get.textTheme.titleMedium),
-              const SizedBox(height: 8),
-              if (kDebugMode)
-                Text(
-                  details.exception.toString(),
-                  style: Get.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Something went wrong'.tr,
+                      style: Get.textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    if (kDebugMode)
+                      Text(
+                        details.exception.toString(),
+                        style: Get.textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => Get.offAllNamed(Routes.jobs),
+                      child: Text('Restart App'.tr),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => Get.offAllNamed(Routes.jobs),
-                child: Text('Restart App'.tr),
-              ),
+              )
             ],
           ),
         ),
@@ -187,6 +201,8 @@ class _ErrorScreen extends StatelessWidget {
     );
   }
 }
+
+
 
 // Unknown Route Screen Widget
 class _UnknownRouteScreen extends StatelessWidget {

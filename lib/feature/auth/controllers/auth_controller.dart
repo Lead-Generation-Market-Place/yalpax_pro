@@ -13,19 +13,20 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
 import 'package:yalpax_pro/core/widgets/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/routes/routes.dart';
 import '../services/auth_service.dart';
 
 class AuthController extends GetxController {
-  final authService = Get.find<AuthService>();
+  final authService = Get.put(AuthService());
 
   // Text Controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-
+  var isStep = false.obs;
   // Observable variables
   final acceptedTerms = false.obs;
   final obscurePassword = true.obs;
@@ -281,62 +282,62 @@ class AuthController extends GetxController {
       }
 
       // Check for service provider status
-      final proServiceResponse = await supabase
-          .from('pro_services')
-          .select()
-          .eq('user_id', authUserId);
+      // final proServiceResponse = await supabase
+      //     .from('pro_services')
+      //     .select()
+      //     .eq('user_id', authUserId);
 
-      // Handle service provider flow
-      if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
-        CustomFlutterToast.showInfoToast(
-          'Please select the services you offer.',
-          seconds: 5,
-        );
+      // // Handle service provider flow
+      // if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
+      //   CustomFlutterToast.showInfoToast(
+      //     'Please select the services you offer.',
+      //     seconds: 5,
+      //   );
+     
+      //   Get.toNamed(Routes.firstStep);
+      //   return;
+      // } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
+      //   await proSignUpProces();
+      // }
 
-        Get.toNamed(Routes.firstStep);
-        return;
-      } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
-        await proSignUpProces();
-      }
+      // // Check service provider profile with better error handling
+      // try {
+      //   final providerId = (await supabase
+      //       .from('service_providers')
+      //       .select('provider_id')
+      //       .eq('user_id', user.id)
+      //       .maybeSingle())?['provider_id'];
 
-      // Check service provider profile with better error handling
-      try {
-        final providerId = (await supabase
-            .from('service_providers')
-            .select('provider_id')
-            .eq('user_id', user.id)
-            .maybeSingle())?['provider_id'];
+      //   final proBusinessHours = providerId == null
+      //       ? null
+      //       : await supabase
+      //             .from('provider_business_hours')
+      //             .select()
+      //             .eq('provider_id', providerId)
+      //             .limit(1)
+      //             .maybeSingle();
 
-        final proBusinessHours = providerId == null
-            ? null
-            : await supabase
-                  .from('provider_business_hours')
-                  .select()
-                  .eq('provider_id', providerId)
-                  .limit(1)
-                  .maybeSingle();
-
-        // Determine next steps based on user state with proper null checks
-        if (existingUser == null ||
-            existingUser['phone_number'] == null ||
-            existingUser['phone_number'] == '') {
-          Get.offAllNamed(Routes.thirdStep);
-        } else if (providerId == null || proBusinessHours == null) {
-          Get.offAllNamed(Routes.tenthStep);
-        } else {
+      //   // Determine next steps based on user state with proper null checks
+      //   if (existingUser == null ||
+      //       existingUser['phone_number'] == null ||
+      //       existingUser['phone_number'] == '') {
+      //     Get.offAllNamed(Routes.thirdStep);
+      //   } else if (providerId == null || proBusinessHours == null) {
+      //     Get.offAllNamed(Routes.tenthStep);
+      //   } else {
+      //   }
           authService.isAuthenticated.value = true;
           authService.currentUser.value = user;
           Get.offAllNamed(Routes.jobs);
-        }
 
         // Clear input fields on successful login
         emailController.clear();
         passwordController.clear();
-      } catch (e) {
-        print('Error checking service provider status: $e');
-        // If there's an error checking provider status, default to tenthStep
-        Get.offAllNamed(Routes.tenthStep);
-      }
+      // } catch (e) {
+      //   print('Error checking service provider status: $e');
+      //   // If there's an error checking provider status, default to tenthStep
+      //   Get.offAllNamed(Routes.tenthStep);
+      // }
     } on AuthException catch (e) {
       print('Auth error: $e');
       Fluttertoast.showToast(msg: 'Login failed: ${e.message}');
@@ -540,10 +541,10 @@ class AuthController extends GetxController {
   final SupabaseClient supabase = Supabase.instance.client;
 
   @override
-  void onInit() async {
+  void onInit() {
     super.onInit();
-    // Initial fetch of popular services or all services if search is empty
     searchController.addListener(_onSearchChanged);
+    restoreSelectedServices();
   }
 
   final RxList<Map<String, dynamic>> subCategoryServices =
@@ -675,12 +676,34 @@ class AuthController extends GetxController {
   final selectedCategories = <String>[].obs;
   final selectedSubCategories = <String>[].obs;
 
+  Future<void> restoreSelectedServices() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedServices = prefs.getString('selected_service_ids');
+      if (savedServices != null && savedServices.isNotEmpty) {
+        selectedServices.assignAll(savedServices.split(','));
+      }
+    } catch (e) {
+      print('Error restoring selected services: $e');
+    }
+  }
+
+  Future<void> saveSelectedServices() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('selected_service_ids', selectedServices.join(','));
+    } catch (e) {
+      print('Error saving selected services: $e');
+    }
+  }
+
   void toggleServices(String serviceId) {
     if (selectedServices.contains(serviceId)) {
       selectedServices.remove(serviceId);
     } else {
       selectedServices.add(serviceId);
     }
+    saveSelectedServices();
   }
 
   void selectAllServices() {
@@ -1239,6 +1262,7 @@ class AuthController extends GetxController {
         'message': 'Business hours saved successfully.',
         'details': null,
       };
+      
     } catch (error) {
       print('Error in saveBusinessHours: $error');
       return {
@@ -1264,8 +1288,6 @@ class AuthController extends GetxController {
 
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:00';
   }
-
-
 
   /// Checks if the current user's profile is complete (e.g., phone_number is present)
   Future<bool> isProfileComplete() async {

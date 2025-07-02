@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/constants/file_urls.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
@@ -20,8 +21,7 @@ class _ThirdStepState extends State<ThirdStep> {
   @override
   void initState() {
     super.initState();
-
-   initializeData();
+    initializeData();
   }
 
   Future<void> initializeData() async {
@@ -37,199 +37,341 @@ class _ThirdStepState extends State<ThirdStep> {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = controller.profilePictureUrl.value;
-
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        leading: const BackButton(color: Colors.black),
+        leading: BackButton(color: AppColors.textPrimary),
         elevation: 0,
         backgroundColor: Colors.transparent,
+        title: Text(
+          'Profile Setup',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Form(
-          key: formKeyThirdStep,
-          child: ListView(
-            children: [
-              const Text(
-                'Create your free account.',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 24),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Obx(() {
-                        final localImage = controller.selectedImageFile.value;
-                        final googleImage = controller.googleAccountPictureUrl.value;
-                        final profileImage = '${FileUrls.profilePicture}${controller.profilePictureUrl.value}';
-
-                        ImageProvider? imageProvider;
-                        if (localImage != null) {
-                          imageProvider = FileImage(localImage);
-                        } else if (googleImage.isNotEmpty) {
-                          imageProvider = NetworkImage(googleImage);
-                        } else if (controller.profilePictureUrl.value.isNotEmpty) {
-                          imageProvider = NetworkImage(profileImage);
-                        }
-
-                        return CircleAvatar(
-                          radius: 48,
-                          backgroundColor: Colors.grey[200],
-                          backgroundImage: imageProvider,
-                          child: imageProvider == null
-                              ? Text(
-                                  controller.name.value.isNotEmpty
-                                      ? controller.name.value[0].toUpperCase()
-                                      : '',
-                                  style: const TextStyle(
-                                    fontSize: 36,
-                                    color: Colors.black54,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                )
-                              : null,
-                        );
-                      }),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () => controller.showImagePickerBottomSheet(context),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.blueGrey,
-                          textStyle: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        child: const Text('Change photo'),
-                      ),
-                      const SizedBox(height: 8),
-                      Obx(
-                        () => Text(
-                          controller.name.value,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 18,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ),
-                      // Optionally, add business/company name or role here
-                      // Text(
-                      //   'Business Owner',
-                      //   style: TextStyle(
-                      //     fontSize: 14,
-                      //     color: Colors.grey[600],
-                      //   ),
-                      // ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Obx(() {
-                return CustomInput(
-                  initialValue: controller.email.value,
-                  enabled: false,
-                  label: 'Email',
-                  hint: 'Enter your email',
-                  prefixIcon: const Icon(Icons.email),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Email is required';
-                    }
-                    return null;
-                  },
-                );
-              }),
-              const SizedBox(height: 16),
-              CustomInput(
-                label: 'Phone Number',
-                keyboardType: TextInputType.phone,
-                autofocus: true,
-                prefixIcon: const Icon(Icons.phone_android_outlined),
-                hint: '  (+1) 555-555-555',
-                controller: controller.phoneController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Phone number is required.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Form(
+              key: formKeyThirdStep,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Obx(
-                    () => Checkbox(
-                      value: controller.enableTextMessages.value,
-                      onChanged: (val) =>
-                          controller.enableTextMessages.value = val ?? false,
+                  const SizedBox(height: 20),
+                  Text(
+                    'Complete Your Profile',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  const Expanded(
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your details to create your professional profile',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Profile Card
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Profile Image Section
+                        Center(
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              Obx(() {
+                                final localImage = controller.selectedImageFile.value;
+                                final googleImage = controller.googleAccountPictureUrl.value;
+                                final profileImage = '${FileUrls.profilePicture}${controller.profilePictureUrl.value}';
+
+                                ImageProvider? imageProvider;
+                                if (localImage != null) {
+                                  imageProvider = FileImage(localImage);
+                                } else if (googleImage.isNotEmpty) {
+                                  imageProvider = NetworkImage(googleImage);
+                                } else if (controller.profilePictureUrl.value.isNotEmpty) {
+                                  imageProvider = NetworkImage(profileImage);
+                                }
+
+                                return Container(
+                                  width: 160,
+                                  height: 160,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.grey[100],
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 4,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                    image: imageProvider != null
+                                        ? DecorationImage(
+                                            image: imageProvider,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
+                                  ),
+                                  child: imageProvider == null
+                                      ? Center(
+                                          child: Text(
+                                            controller.name.value.isNotEmpty
+                                                ? controller.name.value[0].toUpperCase()
+                                                : '',
+                                            style: TextStyle(
+                                              fontSize: 60,
+                                              color: AppColors.textSecondary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                );
+                              }),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(right: 8, bottom: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryBlue,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 3),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: GestureDetector(
+                                  onTap: () => controller.showImagePickerBottomSheet(context),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 28,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Obx(
+                          () => Text(
+                            controller.name.value,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Contact Information Section
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Contact Information',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Obx(() {
+                          return CustomInput(
+                            initialValue: controller.email.value,
+                            enabled: false,
+                            label: 'Email Address',
+                            hint: 'Enter your email',
+                            prefixIcon: Icon(Icons.email, color: AppColors.primaryBlue),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Email is required';
+                              }
+                              return null;
+                            },
+                          );
+                        }),
+                        const SizedBox(height: 16),
+                        CustomInput(
+                          label: 'Phone Number',
+                          keyboardType: TextInputType.phone,
+                          autofocus: true,
+                          prefixIcon: Icon(Icons.phone_android, color: AppColors.primaryBlue),
+                          hint: '(+1) 555-555-555',
+                          controller: controller.phoneController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Phone number is required.';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Notifications Section
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notifications',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Obx(
+                              () => Switch(
+                                value: controller.enableTextMessages.value,
+                                onChanged: (val) =>
+                                    controller.enableTextMessages.value = val,
+                                activeColor: AppColors.primaryBlue,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Enable SMS Notifications',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Receive updates and notifications via text message',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Terms Section
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Text.rich(
                       TextSpan(
-                        text: 'Enable text messages\n',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        text: 'By continuing, you agree to our ',
+                        style: TextStyle(color: AppColors.textSecondary),
                         children: [
                           TextSpan(
-                            text:
-                                'By leaving this box checked and tapping Continue, you authorize us to send you automated text messages. ',
-                            style: TextStyle(fontWeight: FontWeight.normal),
+                            text: 'Terms of Use',
+                            style: TextStyle(
+                              color: AppColors.primaryBlue,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
+                          const TextSpan(text: ' and '),
                           TextSpan(
-                            text: 'Terms apply.',
-                            style: TextStyle(color: Colors.blue),
+                            text: 'Privacy Policy',
+                            style: TextStyle(
+                              color: AppColors.primaryBlue,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
+                  const SizedBox(height: 32),
+                  // Continue Button
+                  Obx(
+                    () => CustomButton(
+                      text: 'Continue',
+                      isLoading: controller.isLoading.value,
+                      onPressed: () {
+                        if (formKeyThirdStep.currentState!.validate()) {
+                          Get.toNamed(Routes.fourthStep);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 32),
                 ],
               ),
-              const SizedBox(height: 12),
-              const Text.rich(
-                TextSpan(
-                  text: 'By tapping Continue, I agree to the ',
-                  children: [
-                    TextSpan(
-                      text: 'Terms of Use',
-                      style: TextStyle(color: Colors.blue),
-                    ),
-                    TextSpan(text: ' and '),
-                    TextSpan(
-                      text: 'Privacy Policy',
-                      style: TextStyle(color: Colors.blue),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Obx(
-                () => CustomButton(
-                  text: 'Continue',
-                  isLoading: controller.isLoading.value,
-                  onPressed: () {
-                    if (formKeyThirdStep.currentState!.validate()) {
-                      Get.toNamed(Routes.fourthStep);
-                    }
-                  },
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

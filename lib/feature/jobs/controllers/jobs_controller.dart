@@ -1,35 +1,60 @@
-import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:logger/web.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
-import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
-import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 
-class jobsController extends GetxController {
-  final AuthController authController = Get.put(AuthController());
-  final AuthService authService = Get.put(AuthService());
-  var isStep = false.obs;
+class JobsController extends GetxController {
+  var isStep  = false.obs;
+  @override
+  void onInit() {
+    super.onInit();
+    checkStatus();
+  }
 
-  Future<void> checkAuthAndNavigate() async {
+  Future<void> checkStatus() async {
+    final currentUser = Supabase.instance.client.auth.currentUser!.id;
+    if (currentUser == null) {
+      debugPrint('Splash: No user found, navigating to initial');
+      await Get.offAllNamed(Routes.initial);
+      return;
+    }
+
+    // User is authenticated, check for pro services
     try {
-      final user = authController.supabase.auth.currentUser;
+      final proServiceResponse = await Supabase.instance.client
+          .from('pro_services')
+          .select()
+          .eq('user_id', currentUser)
+          .limit(1)
+          .maybeSingle();
 
-      if (user == null) {
-        Get.offAllNamed(Routes.login);
+      if (proServiceResponse == null) {
+        debugPrint('No service found for user');
+        isStep.value = true;
+        await Get.offAllNamed(Routes.firstStep);
         return;
       }
 
-      final complete = await authController.isProfileComplete();
-      if (complete) {
-        Get.offAllNamed(Routes.jobs);
-      } else {
-        isStep.value = true; // Set isStep to true here
-        Get.offAllNamed(Routes.firstStep);
+      // Check for phone number
+      final userProfile = await Supabase.instance.client
+          .from('users_profiles')
+          .select()
+          .eq('id', currentUser)
+          .maybeSingle();
+
+      if (userProfile == null ||
+          userProfile['phone_number'] == null ||
+          userProfile['phone_number'].toString().trim().isEmpty) {
+        debugPrint('No phone number found for user');
+        await Get.offAllNamed(Routes.thirdStep);
+        return;
       }
+
+      // If all checks pass, navigate to jobs
     } catch (e) {
-      print(e);
+      debugPrint('Error checking status: $e');
+      await Get.offAllNamed(Routes.initial);
     }
   }
 }

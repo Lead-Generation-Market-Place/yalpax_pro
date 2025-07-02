@@ -294,7 +294,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   text: 'Next',
                   onPressed: () {
                     if (_formKey.currentState?.validate() ?? false) {
-                      Get.toNamed(Routes.eightStep);
+                      Get.toNamed(Routes.ninthStep);
                     }
                   },
                 ),

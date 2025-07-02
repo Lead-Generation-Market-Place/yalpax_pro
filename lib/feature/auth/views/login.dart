@@ -100,15 +100,17 @@ class LoginView extends GetView<AuthController> {
                 ),
                 const SizedBox(height: 24),
                 // Sign In Button
-                CustomButton(
-                  text: 'SIGN IN',
-                  isLoading: controller.isLoading.value,
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      await controller.login();
-                    }
-                  },
-                  isFullWidth: true,
+                Obx(
+                  () => CustomButton(
+                    text: 'SIGN IN',
+                    isLoading: controller.isLoading.value,
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        await controller.login();
+                      }
+                    },
+                    isFullWidth: true,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Divider

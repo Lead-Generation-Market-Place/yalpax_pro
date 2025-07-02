@@ -21,7 +21,6 @@ class AuthService extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    checkAuthStatus();
     initializeAuthState();
     _setupAuthStateListener();
   }
@@ -32,40 +31,49 @@ class AuthService extends GetxService {
     super.onClose();
   }
 
-  void initializeAuthState() async {
+  Future<void> initializeAuthState() async {
     try {
       final session = supabase.auth.currentSession;
-  
+      final user = supabase.auth.currentUser;
 
-      // Check both session and stored auth state
-      isAuthenticated.value = session != null && !session.isExpired;
-      currentUser.value = session?.user;
-
-      currentUser.value = supabase.auth.currentUser;
+      // Update auth state based on both session and current user
+      final bool isValid = session != null && !session.isExpired && user != null;
+      
+      isAuthenticated.value = isValid;
+      currentUser.value = isValid ? user : null;
 
       if (currentUser.value != null) {
         logger.i('Current user id: ${currentUser.value!.id}');
         logger.i('Current user email: ${currentUser.value!.email}');
-
-      
+        
+        // Also verify the stored auth state
+        final prefs = Get.find<SharedPreferences>();
+        final storedToken = prefs.getString(AppConstants.userTokenKey);
+        final storedAuthState = prefs.getBool('isAuthenticated') ?? false;
+        
+        if (!storedAuthState || storedToken == null) {
+          await _saveAuthState(session); // Ensure preferences are in sync
+        }
       } else {
-        // Clear auth state if no current user
-
+        logger.i('No authenticated user found');
+        isAuthenticated.value = false;
+        await _clearAuthState();
       }
     } catch (e) {
       logger.e('Error initializing auth state: $e');
-    
       isAuthenticated.value = false;
       currentUser.value = null;
+      await _clearAuthState();
+      rethrow;
     }
   }
 
   void _setupAuthStateListener() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen((
-      data,
-    ) async {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) async {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
+
+      logger.i('Auth state changed: $event');
 
       switch (event) {
         case AuthChangeEvent.signedIn:
@@ -79,7 +87,15 @@ class AuthService extends GetxService {
           await _clearAuthState();
           break;
         case AuthChangeEvent.tokenRefreshed:
-          await _saveAuthState(session);
+          if (session != null && !session.isExpired) {
+            isAuthenticated.value = true;
+            currentUser.value = session.user;
+            await _saveAuthState(session);
+          } else {
+            isAuthenticated.value = false;
+            currentUser.value = null;
+            await _clearAuthState();
+          }
           break;
         case AuthChangeEvent.userDeleted:
           isAuthenticated.value = false;
@@ -98,6 +114,7 @@ class AuthService extends GetxService {
       if (session != null) {
         await prefs.setString(AppConstants.userTokenKey, session.accessToken);
         await prefs.setBool('isAuthenticated', true);
+        logger.i('Auth state saved successfully');
       } else {
         await _clearAuthState();
       }
@@ -111,6 +128,7 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       await prefs.remove(AppConstants.userTokenKey);
       await prefs.setBool('isAuthenticated', false);
+      logger.i('Auth state cleared successfully');
     } catch (e) {
       logger.e('Error clearing auth state: $e');
     }

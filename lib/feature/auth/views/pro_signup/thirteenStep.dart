@@ -5,8 +5,8 @@ import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
-class Eightstep extends GetView<AuthController> {
-  const Eightstep({super.key});
+class Thirteenstep extends GetView<AuthController> {
+  const Thirteenstep({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +30,7 @@ class Eightstep extends GetView<AuthController> {
           ),
         ),
    
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded,),
-          onPressed: () => Get.back(),
-        ),
+       
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4.0),
           child: LinearProgressIndicator(
