@@ -181,6 +181,38 @@ class _SeventhStepState extends State<SeventhStep> {
                 _buildSectionTitle("Business Details"),
                 const SizedBox(height: 16),
 
+                // Business Type Dropdown
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: 'Business Type',
+                    prefixIcon: const Icon(Icons.business, size: 20),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  ),
+                  value: controller.businessType.value,
+                  hint: const Text('Select business type'),
+                  items: controller.businessTypes.map((String type) {
+                    return DropdownMenuItem<String>(
+                      value: type,
+                      child: Text(type[0].toUpperCase() + type.substring(1)),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      controller.businessType.value = newValue;
+                    }
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please select a business type';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
                 CustomInput(
                   focusNode: _focusNodes[0],
                   prefixIcon: const Icon(
@@ -207,6 +239,7 @@ class _SeventhStepState extends State<SeventhStep> {
                   },
                 ),
                 const SizedBox(height: 16),
+                if (controller.businessType.value == 'company')
                 CustomInput(
                   focusNode: _focusNodes[1],
                   prefixIcon: const Icon(Icons.people_outline, size: 20),
@@ -215,15 +248,19 @@ class _SeventhStepState extends State<SeventhStep> {
                   hint: 'e.g. 1',
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter employee count';
-                    }
-                    if (int.tryParse(value) == null) {
-                      return 'Please enter a valid number';
+                    if (controller.businessType.value == 'company') {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter employee count';
+                      }
+                      if (int.tryParse(value) == null) {
+                        return 'Please enter a valid number';
+                      }
                     }
                     return null;
                   },
                 ),
+                if (controller.businessType.value == 'company')
+                const SizedBox(height: 28),
                 const SizedBox(height: 28),
 
                 // Location Section

@@ -7,26 +7,36 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
 import 'package:yalpax_pro/core/widgets/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
 
 import '../../../core/routes/routes.dart';
 import '../services/auth_service.dart';
 
 class AuthController extends GetxController {
   final authService = Get.put(AuthService());
-
+  final JobsController jobsController = Get.put(
+    JobsController(),
+    permanent: true,
+  );
   // Text Controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   var isStep = false.obs;
+  // Business type related
+  final businessType = Rx<String?>(null);
+  final businessTypes = ['company', 'handyman'].obs;
   // Observable variables
   final acceptedTerms = false.obs;
   final obscurePassword = true.obs;
@@ -169,47 +179,34 @@ class AuthController extends GetxController {
           'Please select the services you offer.',
           seconds: 5,
         );
-
+        jobsController.isStep.value = true;
         Get.toNamed(Routes.firstStep);
         return;
       } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
         await proSignUpProces();
+      } else {
+        authService.isAuthenticated.value = true;
+        authService.currentUser.value = user;
+        Get.offAllNamed(Routes.jobs);
       }
 
-      // Check service provider profile with better error handling
-      try {
-        final providerId = (await supabase
-            .from('service_providers')
-            .select('provider_id')
-            .eq('user_id', user.id)
-            .maybeSingle())?['provider_id'];
-
-        final proBusinessHours = providerId == null
-            ? null
-            : await supabase
-                  .from('provider_business_hours')
-                  .select()
-                  .eq('provider_id', providerId)
-                  .limit(1)
-                  .maybeSingle();
-
-        // Determine next steps based on user state with proper null checks
-        if (existingUser == null ||
-            existingUser['phone_number'] == null ||
-            existingUser['phone_number'].toString().trim().isEmpty) {
-          Get.offAllNamed(Routes.thirdStep);
-        } else if (providerId == null || proBusinessHours == null) {
-          Get.offAllNamed(Routes.tenthStep);
-        } else {
-          authService.isAuthenticated.value = true;
-          authService.currentUser.value = user;
-          Get.offAllNamed(Routes.jobs);
-        }
-      } catch (e) {
-        print('Error checking service provider status: $e');
-        // If there's an error checking provider status, default to tenthStep
-        Get.offAllNamed(Routes.tenthStep);
-      }
+      // // Check service provider profile with better error handling
+      // try {
+      //   // Determine next steps based on user state with proper null checks
+      //   if (existingUser == null ||
+      //       existingUser['phone_number'] == null ||
+      //       existingUser['phone_number'].toString().trim().isEmpty) {
+      //     Get.offAllNamed(Routes.thirdStep);
+      //   } else {
+      //     authService.isAuthenticated.value = true;
+      //     authService.currentUser.value = user;
+      //     Get.offAllNamed(Routes.jobs);
+      //   }
+      // } catch (e) {
+      //   print('Error checking service provider status: $e');
+      //   // If there's an error checking provider status, default to tenthStep
+      //   Get.offAllNamed(Routes.tenthStep);
+      // }
     } catch (e) {
       print('Post-login error: $e');
       Fluttertoast.showToast(msg: 'Post-login error: $e');
@@ -281,7 +278,6 @@ class AuthController extends GetxController {
         });
       }
 
-    
       final proServiceResponse = await supabase
           .from('pro_services')
           .select()
@@ -293,48 +289,37 @@ class AuthController extends GetxController {
           'Please select the services you offer.',
           seconds: 5,
         );
-     
+        jobsController.isStep.value = true;
         Get.toNamed(Routes.firstStep);
         return;
       } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
         await proSignUpProces();
+      } else {
+        authService.isAuthenticated.value = true;
+        authService.currentUser.value = user;
+        Get.offAllNamed(Routes.jobs);
       }
 
       // Check service provider profile with better error handling
-      try {
-        final providerId = (await supabase
-            .from('service_providers')
-            .select('provider_id')
-            .eq('user_id', user.id)
-            .maybeSingle())?['provider_id'];
-
-        final proBusinessHours = providerId == null
-            ? null
-            : await supabase
-                  .from('provider_business_hours')
-                  .select()
-                  .eq('provider_id', providerId)
-                  .limit(1)
-                  .maybeSingle();
-
-        // Determine next steps based on user state with proper null checks
-        if (existingUser == null ||
-            existingUser['phone_number'] == null ||
-            existingUser['phone_number'] == '') {
-          Get.offAllNamed(Routes.thirdStep);
-        } else {
-          authService.isAuthenticated.value = true;
-          authService.currentUser.value = user;
-          Get.offAllNamed(Routes.jobs);
-        }
-        // Clear input fields on successful login
-        emailController.clear();
-        passwordController.clear();
-      } catch (e) {
-        print('Error checking service provider status: $e');
-        // If there's an error checking provider status, default to tenthStep
-        Get.offAllNamed(Routes.tenthStep);
-      }
+      // try {
+      //   // Determine next steps based on user state with proper null checks
+      //   if (existingUser == null ||
+      //       existingUser['phone_number'] == null ||
+      //       existingUser['phone_number'] == '') {
+      //     Get.offAllNamed(Routes.thirdStep);
+      //   } else {
+      //     authService.isAuthenticated.value = true;
+      //     authService.currentUser.value = user;
+      //     Get.offAllNamed(Routes.jobs);
+      //   }
+      //   // Clear input fields on successful login
+      //   emailController.clear();
+      //   passwordController.clear();
+      // } catch (e) {
+      //   print('Error checking service provider status: $e');
+      //   // If there's an error checking provider status, default to tenthStep
+      //   Get.offAllNamed(Routes.tenthStep);
+      // }
     } on AuthException catch (e) {
       print('Auth error: $e');
       Fluttertoast.showToast(msg: 'Login failed: ${e.message}');
@@ -749,7 +734,10 @@ class AuthController extends GetxController {
         if (selectedImageFile.value != null) {
           await updateProfileImage(selectedImageFile.value!);
           profileImageFileName = profilePictureUrl.value;
+        } else {
+          profileImageFileName = '';
         }
+
         final userPhoneNumberResponse = await supabase
             .from('users_profiles')
             .update({'phone_number': phoneController.text})
@@ -766,14 +754,19 @@ class AuthController extends GetxController {
         final businessName = businessNameController.text.trim();
 
         // Step 2: Build the data map for insertion
+        final employeesCountText = numberOfEmployeesController.text;
+        final employeesCount = employeesCountText.isNotEmpty
+            ? int.tryParse(employeesCountText)
+            : null;
+
         final insertData = {
           'user_id': authUser,
           'founded_year': int.tryParse(yearFoundedController.text),
-          'employees_count': int.tryParse(numberOfEmployeesController.text),
+          'employees_count': employeesCount,
           'business_name': businessName,
           'image_url': profileImageFileName,
-          'business_type':
-              'company', // Make sure it's set (e.g., 'handyman' or 'company')
+          'business_type': businessType.value
+              ?.toLowerCase(), // Ensure lowercase value
           'introduction': businessDetailsInfo.text.trim(),
           'created_at': DateTime.now().toIso8601String(),
           'updated_at': DateTime.now().toIso8601String(),
@@ -812,7 +805,7 @@ class AuthController extends GetxController {
       }
 
       authService.isAuthenticated.value = true;
-      Get.toNamed(Routes.tenthStep);
+      Get.offAllNamed(Routes.tenthStep);
     } catch (e) {
       print(e); // Continue to next step or API
     } finally {
@@ -968,6 +961,30 @@ class AuthController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> uploadImageFromUrl(String imageUrl) async {
+    try {
+      final response = await http.get(Uri.parse(imageUrl));
+      if (response.statusCode != 200) {
+        throw Exception('Failed to download image from URL');
+      }
+      // Save image temporarily to local file system
+      final tempDir = await getTemporaryDirectory();
+      final filePath = path.join(tempDir.path, 'google_profile.jpg');
+      final file = File(filePath);
+      await file.writeAsBytes(response.bodyBytes);
+
+      // Reuse your existing upload logic
+      await updateProfileImage(file);
+    } catch (e) {
+      Logger().e('Error uploading image from URL: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to upload image from Google',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 
@@ -1259,7 +1276,6 @@ class AuthController extends GetxController {
         'message': 'Business hours saved successfully.',
         'details': null,
       };
-      
     } catch (error) {
       print('Error in saveBusinessHours: $error');
       return {

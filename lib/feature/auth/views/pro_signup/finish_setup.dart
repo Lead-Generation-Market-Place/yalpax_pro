@@ -83,7 +83,7 @@ class _FinishSetupContentState extends State<_FinishSetupContent> {
                   text: 'Fill out your business profile.',
                   isCompleted: jobsController.isCount.value >= 1,
                   showArrow: jobsController.isCount.value < 1,
-                  route: Routes.fourthStep,
+                  route: Routes.thirdStep,
                   isEnabled: true,
                 ),
                 _buildTaskItem(
@@ -96,7 +96,7 @@ class _FinishSetupContentState extends State<_FinishSetupContent> {
                 ),
                 _buildTaskItem(
                   icon: Icons.account_balance_wallet,
-                  text: 'Set your budget.',
+                  text: 'Send Reviews for your customers.',
                   isCompleted: jobsController.isCount.value >= 3,
                   showArrow: jobsController.isCount.value < 3,
                   route: Routes.thirTheen,

@@ -200,4 +200,6 @@ class CustomButton extends StatelessWidget {
         return 48;
     }
   }
+
+  static styleFrom({required Color backgroundColor, required Color foregroundColor, required int elevation, required BorderSide side}) {}
 }

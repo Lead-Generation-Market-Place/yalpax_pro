@@ -9,14 +9,17 @@ class JobsController extends GetxController {
   var isStep = false.obs;
   var isCount = 0.obs;
   var isLoading = false.obs;
-  
+  var isNavigating = false.obs;
+
   @override
   void onInit() async {
     super.onInit();
     isLoading.value = true;
     try {
       await checkStep();
-      await checkStatus();
+      if (!isNavigating.value) {
+        await checkStatus();
+      }
     } catch (e) {
       debugPrint('Error in onInit: $e');
     } finally {
@@ -24,22 +27,38 @@ class JobsController extends GetxController {
     }
   }
 
+  // New method for direct navigation
+  Future<void> navigateToJobs() async {
+    isNavigating.value = true;
+    await Get.offAllNamed(Routes.jobs);
+    isNavigating.value = false;
+  }
+
   Future<void> checkStatus() async {
+    if (isNavigating.value) return;
+    
     final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser == null) {
-      debugPrint('Splash: No user found, navigating to initial');
-      await Get.offAllNamed(Routes.initial);
-      return;
-    }
 
     // User is authenticated, check for pro services
     try {
+      final userExists = await supabase
+          .from('users_profiles')
+          .select()
+          .eq('id', currentUser!.id)
+          .maybeSingle()
+          .limit(1);
+
+      if (userExists == null) {
+        Get.offAllNamed(Routes.login);
+        return;
+      } 
+
       final proServiceResponse = await supabase
           .from('pro_services')
           .select()
           .eq('user_id', currentUser.id)
-          .limit(1)
-          .maybeSingle();
+          .maybeSingle()
+          .limit(1);
 
       if (proServiceResponse == null) {
         debugPrint('No service found for user');
@@ -56,23 +75,25 @@ class JobsController extends GetxController {
           .maybeSingle();
 
       if (userProfile == null ||
-          userProfile['phone_number'] == null ||
+          userProfile['phone_number'] == null || 
           userProfile['phone_number'].toString().trim().isEmpty) {
         debugPrint('No phone number found for user');
         await Get.offAllNamed(Routes.thirdStep);
         return;
       }
 
-      // If all checks pass, navigate to jobs
+      // If all checks pass, no navigation needed
     } catch (e) {
       debugPrint('Error checking status: $e');
-      await Get.offAllNamed(Routes.initial);
+      if (!isNavigating.value) {
+        await Get.offAllNamed(Routes.initial);
+      }
     }
   }
 
   Future<int> checkStep() async {
     if (isLoading.value) return isCount.value;
-    
+
     isLoading.value = true;
     final currentUser = Supabase.instance.client.auth.currentUser;
     try {

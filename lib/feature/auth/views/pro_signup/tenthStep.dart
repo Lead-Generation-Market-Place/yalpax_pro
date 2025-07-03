@@ -11,7 +11,7 @@ class TenthStep extends GetView<AuthController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const BackButton(color: Colors.black),
+ 
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),

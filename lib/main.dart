@@ -18,56 +18,57 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final supabase = Supabase.instance.client;
 
 Future<void> _initializeApp() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('Initializing app...');
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('Initializing app...');
 
-  // System UI settings
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+    // System UI settings
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
 
-  // Initialize Supabase
-  debugPrint('Initializing Supabase...');
-  await Supabase.initialize(
-    url: AppConstants.supabaseUrl,
-    anonKey: AppConstants.supabaseAnonKey,
-    debug: kDebugMode,
-  );
+    // Initialize Supabase first
+    debugPrint('Initializing Supabase...');
+    await Supabase.initialize(
+      url: AppConstants.supabaseUrl,
+      anonKey: AppConstants.supabaseAnonKey,
+      debug: kDebugMode,
+    ).timeout(const Duration(seconds: 10), onTimeout: () {
+      throw TimeoutException('Supabase initialization timed out');
+    });
+    debugPrint('Supabase initialized successfully');
 
-  // Shared Preferences
-  debugPrint('Initializing SharedPreferences...');
-  final prefs = await SharedPreferences.getInstance();
-  await Get.putAsync(() => Future.value(prefs));
+    // Shared Preferences
+    debugPrint('Initializing SharedPreferences...');
+    final prefs = await SharedPreferences.getInstance();
+    await Get.putAsync(() => Future.value(prefs), permanent: true);
 
-  // Check if onboarding is completed
-  final hasCompletedOnboarding =
-      prefs.getBool(AppConstants.onboardingCompleteKey) ?? false;
-  debugPrint(
-    'Onboarding status: ${hasCompletedOnboarding ? 'Completed' : 'Not completed'}',
-  );
+    // Initialize core services first
+    debugPrint('Setting up core dependencies...');
+    final serviceBindings = ServiceBindings();
+    await serviceBindings.dependencies();
 
-  debugPrint('SharedPreferences initialized');
+    // Theme Controller - after core services
+    debugPrint('Initializing theme controller...');
+    final themeController = Get.put(ThemeController(), permanent: true);
+    await themeController.initTheme();
 
-  // Dependency injection
-  debugPrint('Setting up dependencies...');
-  await ServiceBindings().dependencies();
-
-  // Theme Controller
-  debugPrint('Initializing theme controller...');
-  final themeController = Get.put(ThemeController(), permanent: true);
-  await themeController.initTheme();
-  debugPrint('App initialization complete');
-  
+    debugPrint('App initialization complete');
+  } catch (e, stackTrace) {
+    debugPrint('Error during initialization: $e');
+    debugPrint('Stack trace: $stackTrace');
+    rethrow; // Rethrow to be caught by runZonedGuarded
+  }
 }
 
 void main() {

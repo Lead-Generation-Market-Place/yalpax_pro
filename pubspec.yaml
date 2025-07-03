@@ -50,6 +50,8 @@ dependencies:
   flutter_animate: ^4.5.2
   device_info_plus: ^11.5.0
   http: ^1.4.0
+  path_provider: ^2.1.5
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

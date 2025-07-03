@@ -226,81 +226,165 @@ class _ReviewsState extends State<Reviews> {
   }
 
   Widget _buildEmailInputList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...List.generate(_emailControllers.length, (index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _emailControllers[index],
-                    decoration: InputDecoration(
-                      hintText: 'Enter customer email address',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Customer Emails',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryBlue900,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...List.generate(_emailControllers.length, (index) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.neutral200),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
+                      child: TextField(
+                        controller: _emailControllers[index],
+                        decoration: InputDecoration(
+                          hintText: 'Enter customer email address',
+                          hintStyle: TextStyle(color: AppColors.neutral400),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: AppColors.neutral400,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 80,
-                  child: CustomButton(
-                    text: 'Send',
-                    onPressed: () {
-                      _handleSendEmail(_emailControllers[index].text, index);
-                    },
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 100,
+                    child: CustomButton(
+                      text: _sendingIndex == index ? 'Sending...' : 'Send',
+                      onPressed: _sendingIndex == index
+                          ? null
+                          : () => _handleSendEmail(_emailControllers[index].text, index),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            );
+          }),
+          TextButton.icon(
+            onPressed: _addEmailField,
+            icon: Icon(Icons.add_circle_outline, color: AppColors.secondaryBlue),
+            label: Text(
+              'Add another email',
+              style: TextStyle(
+                color: AppColors.secondaryBlue,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          );
-        }),
-        TextButton(
-          onPressed: _addEmailField,
-          child: Text(
-            '+ Add another email address',
-            style: TextStyle(color: AppColors.secondaryBlue),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildGoogleImportButton() {
-    return OutlinedButton(
-      onPressed: () {},
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        side: BorderSide(color: AppColors.neutral300),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/images/google.png', width: 20, height: 20),
-          const SizedBox(width: 8),
-          const Text('Add reviews from Google'),
-        ],
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: OutlinedButton.icon(
+        onPressed: () {
+          Get.toNamed(Routes.reviews);
+        },
+        icon: Image.asset('assets/images/google.png', width: 24, height: 24),
+        label: const Text('Import Reviews from Google'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          side: BorderSide(color: AppColors.neutral300),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildShareableLink() {
     if (_userId == null) return const SizedBox.shrink();
-    return Center(
-      child: TextButton(
-        onPressed: _copyToClipboard,
-        child: Text(
-          _copied ? 'Copied to clipboard' : 'Copy shareable link',
-          style: TextStyle(color: AppColors.primaryBlue),
-        ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlue.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.1)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Share Review Link',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryBlue,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.neutral200),
+                  ),
+                  child: Text(
+                    _reviewLink,
+                    style: TextStyle(color: AppColors.neutral600),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              TextButton.icon(
+                onPressed: _copyToClipboard,
+                icon: Icon(
+                  _copied ? Icons.check : Icons.copy,
+                  color: AppColors.primaryBlue,
+                ),
+                label: Text(
+                  _copied ? 'Copied!' : 'Copy',
+                  style: TextStyle(color: AppColors.primaryBlue),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -309,22 +393,52 @@ class _ReviewsState extends State<Reviews> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.neutral200),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryBlue.withOpacity(0.05),
+            AppColors.secondaryBlue.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryBlue.withOpacity(0.1)),
       ),
       child: Column(
         children: [
-          Icon(Icons.star, color: AppColors.secondaryBlue, size: 48),
-          const SizedBox(height: 12),
-          const Text(
-            'Build Trust',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondaryBlue.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(Icons.star, color: AppColors.secondaryBlue, size: 48),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 20),
           Text(
-            'More verified reviews help you earn more jobs.',
-            style: TextStyle(color: AppColors.neutral500),
+            'Build Trust & Credibility',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryBlue900,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'More verified reviews help you earn trust and win more jobs.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.neutral600,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -333,50 +447,82 @@ class _ReviewsState extends State<Reviews> {
 
   Widget _buildEmailPreview() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
         ],
         border: Border.all(color: AppColors.neutral200),
       ),
       child: Column(
         children: [
-          Text(
-            'Email Preview',
-            style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.neutral100,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              'Email Preview',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.neutral600,
+              ),
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
           Text(
             _businessName,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: AppColors.primaryBlue,
             ),
           ),
           Text(
             'Review Request',
-            style: TextStyle(fontSize: 15, color: AppColors.neutral600),
+            style: TextStyle(
+              fontSize: 18,
+              color: AppColors.neutral600,
+              letterSpacing: 0.5,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
           _buildUserAvatar(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
           _buildEmailContent(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           _buildRatingStars(),
-          const SizedBox(height: 12),
-          _buildSubmitReviewButton(),
-          const SizedBox(height: 8),
-          Text(
-            'Requested by: ${_username ?? ''}',
-            style: TextStyle(fontSize: 12, color: AppColors.neutral400),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: _buildSubmitReviewButton(),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_outline,
+                size: 16,
+                color: AppColors.neutral400,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Requested by: ${_username ?? ''}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.neutral400,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -403,18 +549,35 @@ class _ReviewsState extends State<Reviews> {
   }
 
   Widget _buildEmailContent() {
-    return Column(
-      children: [
-        Text(
-          'Thank you for being a valued client...',
-          style: TextStyle(fontSize: 12, color: AppColors.neutral600),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'If you could take a moment to write a brief review...',
-          style: TextStyle(fontSize: 12, color: AppColors.neutral600),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppColors.neutral50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Thank you for being a valued client of $_businessName',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.neutral800,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'We would greatly appreciate if you could take a moment to share your experience with our services.',
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.neutral600,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
@@ -423,13 +586,26 @@ class _ReviewsState extends State<Reviews> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
         5,
-        (index) => Icon(Icons.star, color: AppColors.warning),
+        (index) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Icon(
+            Icons.star,
+            color: AppColors.warning,
+            size: 32,
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildSubmitReviewButton() {
-    return CustomButton(text: 'Submit Review', onPressed: () {});
+    return Container(
+      height: 48,
+      child: CustomButton(
+        text: 'Write Your Review',
+        onPressed: () {},
+      ),
+    );
   }
 
   Widget _buildBottomNavigationBar() {
