@@ -132,7 +132,7 @@ class Thirteenstep extends GetView<AuthController> {
               padding: const EdgeInsets.only(bottom: 24),
               child: CustomButton(
                 text: 'Continue',
-                onPressed: () => Get.toNamed(Routes.ninthStep),
+                onPressed: () => Get.toNamed(Routes.jobs),
               ),
             ),
           ],
@@ -267,7 +267,7 @@ class Thirteenstep extends GetView<AuthController> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                  Get.toNamed(Routes.ninthStep);
+                  Get.toNamed(Routes.jobs);
                 },
                 child: Text(
                   "I'll do this later",

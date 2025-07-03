@@ -6,13 +6,32 @@ import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
 
 
 class FinishSetup extends GetView<AuthController> {
-  FinishSetup({Key? key}) : super(key: key);
-
-  final JobsController jobsController = Get.put<JobsController>(JobsController(), permanent: true);
+  const FinishSetup({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    return _FinishSetupContent();
+  }
+}
+
+class _FinishSetupContent extends StatefulWidget {
+  @override
+  State<_FinishSetupContent> createState() => _FinishSetupContentState();
+}
+
+class _FinishSetupContentState extends State<_FinishSetupContent> {
+  final JobsController jobsController = Get.find<JobsController>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       jobsController.checkStep();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -64,21 +83,24 @@ class FinishSetup extends GetView<AuthController> {
                   text: 'Fill out your business profile.',
                   isCompleted: jobsController.isCount.value >= 1,
                   showArrow: jobsController.isCount.value < 1,
-                  route: Routes.fourthStep
+                  route: Routes.fourthStep,
+                  isEnabled: true,
                 ),
                 _buildTaskItem(
                   icon: Icons.tune,
                   text: 'Set your job preferences.',
                   isCompleted: jobsController.isCount.value >= 2,
                   showArrow: jobsController.isCount.value < 2,
-                    route: Routes.tenthStep
+                  route: Routes.tenthStep,
+                  isEnabled: jobsController.isCount.value >= 1,
                 ),
                 _buildTaskItem(
                   icon: Icons.account_balance_wallet,
                   text: 'Set your budget.',
                   isCompleted: jobsController.isCount.value >= 3,
                   showArrow: jobsController.isCount.value < 3,
-                  route: Routes.thirTheen
+                  route: Routes.thirTheen,
+                  isEnabled: jobsController.isCount.value >= 2,
                 ),
                 const SizedBox(height: 40),
                 _buildInfoSection(),
@@ -97,39 +119,43 @@ class FinishSetup extends GetView<AuthController> {
   required String text,
   bool isCompleted = false,
   bool showArrow = false,
-  String? route,  // <-- Add route param
+  String? route,
+  bool isEnabled = true,
 }) {
   return InkWell(
-    onTap: showArrow && route != null
+    onTap: (showArrow && route != null && isEnabled)
         ? () => Get.toNamed(route)
         : null,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: isCompleted ? Colors.green : Colors.blue,
-            size: 24,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-                fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+    child: Opacity(
+      opacity: isEnabled ? 1.0 : 0.5,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isCompleted ? Colors.green : (isEnabled ? Colors.blue : Colors.grey),
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isEnabled ? Colors.black87 : Colors.grey,
+                  fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             ),
-          ),
-          if (showArrow)
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.blue,
-              size: 16,
-            ),
-        ],
+            if (showArrow)
+              Icon(
+                Icons.arrow_forward_ios,
+                color: isEnabled ? Colors.blue : Colors.grey,
+                size: 16,
+              ),
+          ],
+        ),
       ),
     ),
   );

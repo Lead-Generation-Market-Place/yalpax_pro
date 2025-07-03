@@ -1,24 +1,31 @@
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
-import 'package:yalpax_pro/main.dart';
 
 class JobsController extends GetxController {
   final supabase = Supabase.instance.client;
-  final currentUser = Supabase.instance.client.auth.currentUser!.id;
+
   var isStep = false.obs;
   var isCount = 0.obs;
   var isLoading = false.obs;
+  
   @override
-  void onInit() async{
+  void onInit() async {
     super.onInit();
-  await  checkStep();
-    checkStatus();
+    isLoading.value = true;
+    try {
+      await checkStep();
+      await checkStatus();
+    } catch (e) {
+      debugPrint('Error in onInit: $e');
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   Future<void> checkStatus() async {
+    final currentUser = Supabase.instance.client.auth.currentUser;
     if (currentUser == null) {
       debugPrint('Splash: No user found, navigating to initial');
       await Get.offAllNamed(Routes.initial);
@@ -30,7 +37,7 @@ class JobsController extends GetxController {
       final proServiceResponse = await supabase
           .from('pro_services')
           .select()
-          .eq('user_id', currentUser)
+          .eq('user_id', currentUser.id)
           .limit(1)
           .maybeSingle();
 
@@ -45,7 +52,7 @@ class JobsController extends GetxController {
       final userProfile = await supabase
           .from('users_profiles')
           .select()
-          .eq('id', currentUser)
+          .eq('id', currentUser.id)
           .maybeSingle();
 
       if (userProfile == null ||
@@ -64,58 +71,75 @@ class JobsController extends GetxController {
   }
 
   Future<int> checkStep() async {
-  try {
-    final userProfile = await supabase
-        .from('users_profiles')
-        .select()
-        .eq('id', currentUser)
-        .maybeSingle();
+    if (isLoading.value) return isCount.value;
+    
+    isLoading.value = true;
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    try {
+      final userProfile = await supabase
+          .from('users_profiles')
+          .select()
+          .eq('id', currentUser!.id)
+          .maybeSingle();
 
-    if (userProfile == null) {
-      debugPrint('No user profile found');
+      if (userProfile == null) {
+        debugPrint('No user profile found');
+        isCount.value = 0;
+        return isCount.value;
+      }
+
+      final phoneNumber = userProfile!['phone_number']?.toString().trim();
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        debugPrint('No phone number found for user');
+        isCount.value = 0;
+        return isCount.value;
+      }
+
+      // User has profile and phone - increment count
       isCount.value = 1;
+
+      final jobPreferences = await supabase
+          .from('service_providers')
+          .select()
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+      if (jobPreferences == null) {
+        debugPrint('No job preferences found');
+        return isCount.value;
+      }
+
+      final proBusinessHours = await supabase
+          .from('provider_business_hours')
+          .select()
+          .eq('provider_id', jobPreferences['provider_id']);
+
+      if (proBusinessHours == null || proBusinessHours.isEmpty) {
+        debugPrint('No business hours found');
+        return isCount.value;
+      }
+
+      // User has job preferences and business hours - increment count
+      isCount.value = 2;
+
+      final providerReviews = await supabase
+          .from('reviews')
+          .select()
+          .eq('providerUser_id', currentUser.id);
+
+      if (providerReviews == null || providerReviews.isEmpty) {
+        debugPrint('No Reviews');
+        return isCount.value;
+      }
+
+      // User has everything complete - increment count
+      isCount.value = 3;
       return isCount.value;
-    }
-
-    final phoneNumber = userProfile!['phone_number']?.toString().trim();
-    if (phoneNumber == null || phoneNumber.isEmpty) {
-      debugPrint('No phone number found for user');
-      isCount.value = 1;
+    } catch (e) {
+      debugPrint('checkStep error: $e');
       return isCount.value;
+    } finally {
+      isLoading.value = false;
     }
-
-    final jobPreferences = await supabase
-        .from('service_providers')
-        .select()
-        .eq('user_id', currentUser)
-        .maybeSingle().limit(1);
-
-    if (jobPreferences == null) {
-      debugPrint('No job preferences found');
-      isCount.value = 2;  // Or another count if you want
-      return isCount.value;
-    }
-
-    final proBusinessHours = await supabase
-        .from('provider_business_hours')
-        .select()
-        .eq('provider_id', jobPreferences['provider_id']);
-
-    if (proBusinessHours == null || proBusinessHours.isEmpty) {
-      debugPrint('No business hours found');
-      isCount.value = 2;  // Set as needed
-      return isCount.value;
-    }
-
-
-    return isCount.value;
-
-  } catch (e) {
-    debugPrint('checkStep error: $e');
-    return isCount.value;
-  } finally {
-    isLoading.value = false;
   }
-}
-
 }

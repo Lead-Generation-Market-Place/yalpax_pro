@@ -26,15 +26,19 @@ class _JobsViewState extends State<JobsView> {
     permanent: true,
   );
   
- final JobsController jobsController = Get.find<JobsController>();
+  final JobsController jobsController = Get.find<JobsController>();
+
   @override
   void initState() {
     super.initState();
 
     // Check auth state and redirect if not authenticated
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!authService.isAuthenticated.value) {
         Get.offAllNamed(Routes.initial);
+      } else {
+        // Refresh the step count when returning to this screen
+        await jobsController.checkStep();
       }
     });
 
@@ -44,6 +48,13 @@ class _JobsViewState extends State<JobsView> {
         Get.offAllNamed(Routes.initial);
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh step count when returning to this screen
+    jobsController.checkStep();
   }
 
   @override
@@ -62,39 +73,44 @@ class _JobsViewState extends State<JobsView> {
             const SizedBox(height: 12),
             // Black label with Finish Setup button
             Obx(() {
-              return jobsController.isCount.value == 1 ||
-                      jobsController.isCount.value == 2
+              if (jobsController.isLoading.value) {
+                return const SizedBox.shrink();
+              }
+              
+              return jobsController.isCount.value < 3
                   ? Container(
-              width: double.infinity,
-              color: const Color.fromARGB(255, 52, 51, 51),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                 Text(
-                    'Complete Your Profile',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  CustomButton(
-                          text: 'Finish Setup',
-                          onPressed: () async {
-                            Get.toNamed(Routes.finishSetup);
-                          },
-                          type: CustomButtonType.secondary,
-                          size: CustomButtonSize.small,
-                          height: 36,
-                          width: 120,
-                        )
-                      ,
-                ],
-              ),
-            ):SizedBox.shrink();
+                      width: double.infinity,
+                      color: const Color.fromARGB(255, 52, 51, 51),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Complete Your Profile',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          CustomButton(
+                            text: 'Finish Setup',
+                            onPressed: () async {
+                              await Get.toNamed(Routes.finishSetup);
+                              // Refresh step count when returning from finish setup
+                              jobsController.checkStep();
+                            },
+                            type: CustomButtonType.secondary,
+                            size: CustomButtonSize.small,
+                            height: 36,
+                            width: 120,
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink();
+            }),
             // Main content
-          }),
             Expanded(
               child: Obx(() {
                 if (!authService.isAuthenticated.value) {

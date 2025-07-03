@@ -12,7 +12,11 @@ class SecondStep extends GetView<AuthController> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: const BackButton(),
+       leading: IconButton(
+    icon: const Icon(Icons.arrow_back, color: Colors.black),
+ onPressed: () => Get.offAllNamed(Routes.initial),
+
+  ),
         actions: [
           TextButton(
             onPressed: () => Get.toNamed(Routes.login),

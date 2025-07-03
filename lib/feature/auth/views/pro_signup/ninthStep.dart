@@ -171,13 +171,15 @@ class Ninthstep extends GetView<AuthController> {
           ],
         ),
         padding: const EdgeInsets.all(24),
-        child: CustomButton(
-          text: 'Continue',
-          isLoading: controller.isLoading.value,
-          onPressed: () async {
-            await controller.registerUser();
-          },
-        ),
+        child: Obx(() {
+          return CustomButton(
+            text: 'Continue',
+            isLoading: controller.isLoading.value,
+            onPressed: () async {
+              await controller.registerUser();
+            },
+          );
+        }),
       ),
     );
   }
