@@ -2,10 +2,10 @@ import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
+import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
 class JobsController extends GetxController {
   final supabase = Supabase.instance.client;
-
   var isStep = false.obs;
   var isCount = 0.obs;
   var isLoading = false.obs;
@@ -36,7 +36,7 @@ class JobsController extends GetxController {
 
   Future<void> checkStatus() async {
     if (isNavigating.value) return;
-    
+
     final currentUser = Supabase.instance.client.auth.currentUser;
 
     // User is authenticated, check for pro services
@@ -51,7 +51,7 @@ class JobsController extends GetxController {
       if (userExists == null) {
         Get.offAllNamed(Routes.login);
         return;
-      } 
+      }
 
       final proServiceResponse = await supabase
           .from('pro_services')
@@ -63,7 +63,8 @@ class JobsController extends GetxController {
       if (proServiceResponse == null) {
         debugPrint('No service found for user');
         isStep.value = true;
-        await Get.offAllNamed(Routes.firstStep);
+
+        await Get.offAllNamed(Routes.login);
         return;
       }
 
@@ -75,7 +76,7 @@ class JobsController extends GetxController {
           .maybeSingle();
 
       if (userProfile == null ||
-          userProfile['phone_number'] == null || 
+          userProfile['phone_number'] == null ||
           userProfile['phone_number'].toString().trim().isEmpty) {
         debugPrint('No phone number found for user');
         await Get.offAllNamed(Routes.thirdStep);

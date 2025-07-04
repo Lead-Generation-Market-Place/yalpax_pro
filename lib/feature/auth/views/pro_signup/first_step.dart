@@ -19,6 +19,13 @@ class FirstStep extends GetView<AuthController> {
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Clear all selections when component initializes
+      controller.selectedServices.clear();
+      controller.selectedSubCategories.clear();
+      controller.selectedCategories.clear();
+      controller.selectedState.value = null;
+      
+      // Then fetch initial data
       controller.fetchStates('');
       controller.fetchCategories('');
     });

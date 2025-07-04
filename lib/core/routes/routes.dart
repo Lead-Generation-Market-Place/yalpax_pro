@@ -150,7 +150,7 @@ abstract class AppPages {
 
     GetPage(
       name: Routes.profile,
-      page: () => ServicesView(),
+      page: () => ProfileView(),
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,
     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
@@ -274,7 +275,47 @@ class LoginView extends GetView<AuthController> {
             ),
             _buildSocialButton(
               icon: 'assets/icon/linkedin.png',
-              onPressed: () => controller.signInWithApple(),
+
+              onPressed: () async {
+                try {
+                  await Supabase.instance.client.auth.signInWithOAuth(
+                    OAuthProvider.linkedinOidc,
+                    redirectTo: 'yalpaxpro://login-callback',
+                    authScreenLaunchMode: LaunchMode.externalApplication,
+                  );
+
+                  // After redirection, get current user (this code might need to be triggered after app resumes)
+                  final user = Supabase.instance.client.auth.currentUser;
+
+                  if (user != null && user.email != null) {
+                    final name =
+                        user.userMetadata?['name'] ??
+                        user.userMetadata?['full_name'] ??
+                        user.userMetadata?['preferred_username'] ??
+                        user.userMetadata?['given_name'];
+
+                    if (name == null || name.trim().isEmpty) {
+                      Get.snackbar(
+                        'Error',
+                        'Username not found in LinkedIn profile.',
+                      );
+                      return;
+                    }
+
+                    await controller.handlePostLogin(
+                      user: user,
+                      usernameFromOAuth: name,
+                    );
+                  } else {
+                    Get.snackbar(
+                      'Error',
+                      'LinkedIn login failed or was cancelled.',
+                    );
+                  }
+                } catch (e) {
+                  Get.snackbar('Error', e.toString());
+                }
+              },
             ),
           ],
         ),

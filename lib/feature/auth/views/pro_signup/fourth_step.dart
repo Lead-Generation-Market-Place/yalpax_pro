@@ -8,106 +8,142 @@ class FourthStep extends GetView<AuthController> {
   const FourthStep({super.key});
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    body: SafeArea(
-      child: Center(
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Get.back(),
+        ),
+      ),
+      body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: ListView(
-
+          child: Column(
             children: [
-              const SizedBox(height: 32),
-
-              // Stepper / Progress
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.blue,
-                        child: Text(
-                          '1',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
+              Expanded(
+                child: ListView(
+                  children: [
+                    const SizedBox(height: 20),
+                    
+                    // Header
+                    const Text(
+                      'Set Up Your Profile',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Build a winning business profile.',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Padding(
-                    padding: EdgeInsets.only(left: 36),
-                    child: Text(
-                      'Your profile is free, but it takes time to make it great. It’s worth it — this is how you’ll get hired.',
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
                     ),
-                  ),
-                  SizedBox(height: 24),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Color(0xFFEAECEE),
-                        child: Text(
-                          '2',
-                          style: TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Complete these steps to start getting clients',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
                       ),
-                      SizedBox(width: 12),
-                      Text(
-                        'Add your preferences',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.black54,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Progress Steps
+                    _buildProgressStep(
+                      number: '1',
+                      isActive: true,
+                      title: 'Build a winning business profile',
+                      description: 'Your profile is free, but it takes time to make it great. It\'s worth it - this is how you\'ll get hired.',
+                    ),
+                    const SizedBox(height: 24),
+                    _buildProgressStep(
+                      number: '2',
+                      isActive: false,
+                      title: 'Add your preferences',
+                      description: 'Help us understand your work style and preferences.',
+                    ),
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 32),
-
-              // Next button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Get.toNamed(Routes.fifthStep);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.lightBlue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+              // Bottom Button Section
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
                     ),
-                  ),
-                  child: const Text(
-                    'Next',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  ],
+                ),
+                child: CustomButton(
+                  onPressed: () => Get.toNamed(Routes.fifthStep),
+                  text: 'Continue',
+                  height: 54,
                 ),
               ),
             ],
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-
+  Widget _buildProgressStep({
+    required String number,
+    required bool isActive,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Number Circle
+        CircleAvatar(
+          radius: 14,
+          backgroundColor: isActive ? Colors.blue : const Color(0xFFEAECEE),
+          child: Text(
+            number,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.grey,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        
+        // Content
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  color: isActive ? Colors.black87 : Colors.black54,
+                ),
+              ),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

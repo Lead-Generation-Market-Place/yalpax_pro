@@ -149,10 +149,12 @@ class _ReviewsState extends State<Reviews> {
     setState(() {
       _sendingIndex = index;
     });
-    final fullImageUrl =
-        _businessImageUrl != null && !_businessImageUrl!.startsWith('http')
-        ? 'https://hdwfpfxyzubfksctezkz.supabase.co/storage/v1/object/public/userprofilepicture//$_businessImageUrl'
-        : _businessImageUrl ?? 'https://example.com/default.jpg';
+
+    // Use the image URL directly from the database
+    final imageUrl =
+        'https://hdwfpfxyzubfksctezkz.supabase.co/storage/v1/object/public/userprofilepicture//$_businessImageUrl' ??
+        'https://example.com/default.jpg';
+
     try {
       final response = await supabase.functions.invoke(
         'swift-function',
@@ -160,7 +162,7 @@ class _ReviewsState extends State<Reviews> {
           'recipientEmail': email,
           'userName': _username ?? 'Unnamed',
           'reviewLink': _reviewLink,
-          'imageUrl': fullImageUrl,
+          'imageUrl': imageUrl,
         },
       );
 
@@ -287,7 +289,10 @@ class _ReviewsState extends State<Reviews> {
                       text: _sendingIndex == index ? 'Sending...' : 'Send',
                       onPressed: _sendingIndex == index
                           ? null
-                          : () => _handleSendEmail(_emailControllers[index].text, index),
+                          : () => _handleSendEmail(
+                              _emailControllers[index].text,
+                              index,
+                            ),
                     ),
                   ),
                 ],
@@ -296,7 +301,10 @@ class _ReviewsState extends State<Reviews> {
           }),
           TextButton.icon(
             onPressed: _addEmailField,
-            icon: Icon(Icons.add_circle_outline, color: AppColors.secondaryBlue),
+            icon: Icon(
+              Icons.add_circle_outline,
+              color: AppColors.secondaryBlue,
+            ),
             label: Text(
               'Add another email',
               style: TextStyle(
@@ -323,9 +331,7 @@ class _ReviewsState extends State<Reviews> {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
           side: BorderSide(color: AppColors.neutral300),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
     );
@@ -357,7 +363,10 @@ class _ReviewsState extends State<Reviews> {
             children: [
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(4),
@@ -501,26 +510,16 @@ class _ReviewsState extends State<Reviews> {
           const SizedBox(height: 20),
           _buildRatingStars(),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: _buildSubmitReviewButton(),
-          ),
+          SizedBox(width: double.infinity, child: _buildSubmitReviewButton()),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.person_outline,
-                size: 16,
-                color: AppColors.neutral400,
-              ),
+              Icon(Icons.person_outline, size: 16, color: AppColors.neutral400),
               const SizedBox(width: 4),
               Text(
                 'Requested by: ${_username ?? ''}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.neutral400,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.neutral400),
               ),
             ],
           ),
@@ -588,11 +587,7 @@ class _ReviewsState extends State<Reviews> {
         5,
         (index) => Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Icon(
-            Icons.star,
-            color: AppColors.warning,
-            size: 32,
-          ),
+          child: Icon(Icons.star, color: AppColors.warning, size: 32),
         ),
       ),
     );
@@ -601,10 +596,7 @@ class _ReviewsState extends State<Reviews> {
   Widget _buildSubmitReviewButton() {
     return Container(
       height: 48,
-      child: CustomButton(
-        text: 'Write Your Review',
-        onPressed: () {},
-      ),
+      child: CustomButton(text: 'Write Your Review', onPressed: () {}),
     );
   }
 
@@ -626,11 +618,7 @@ class _ReviewsState extends State<Reviews> {
           CustomButton(
             text: 'Skip Now',
             onPressed: () {
-              _isPending
-                  ? null
-                  : () {
-                      Get.offAllNamed(Routes.jobs);
-                    };
+              Get.offAllNamed(Routes.jobs);
             },
           ),
         ],

@@ -13,19 +13,19 @@ class BottomNavController extends GetxController {
     indicatorPosition.value = index * 1.0;
     switch (index) {
       case 0:
-        Get.offAllNamed(Routes.jobs);
+        Get.toNamed(Routes.jobs);
         break;
       case 1:
-        Get.offAllNamed(Routes.messages);
+        Get.toNamed(Routes.messages);
         break;
       case 2:
-        Get.offAllNamed(Routes.services);
+        Get.toNamed(Routes.services);
         break;
       case 3:
-        Get.offAllNamed(Routes.notification);
+        Get.toNamed(Routes.notification);
         break;
       case 4:
-        Get.offAllNamed(Routes.profile);
+        Get.toNamed(Routes.profile);
         break;
     }
   }

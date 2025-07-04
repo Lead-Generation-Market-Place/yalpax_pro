@@ -53,12 +53,7 @@ Future<void> _initializeApp() async {
     final prefs = await SharedPreferences.getInstance();
     await Get.putAsync(() => Future.value(prefs), permanent: true);
 
-    // Initialize core services first
-    debugPrint('Setting up core dependencies...');
-    final serviceBindings = ServiceBindings();
-    await serviceBindings.dependencies();
-
-    // Theme Controller - after core services
+    // Theme Controller - initialize before other services
     debugPrint('Initializing theme controller...');
     final themeController = Get.put(ThemeController(), permanent: true);
     await themeController.initTheme();
@@ -67,14 +62,13 @@ Future<void> _initializeApp() async {
   } catch (e, stackTrace) {
     debugPrint('Error during initialization: $e');
     debugPrint('Stack trace: $stackTrace');
-    rethrow; // Rethrow to be caught by runZonedGuarded
+    rethrow;
   }
 }
 
 void main() {
   runZonedGuarded(
     () async {
-
       await _initializeApp();
       debugPrint('Starting app...');
       runApp(const MyApp());
@@ -82,7 +76,6 @@ void main() {
     (error, stackTrace) {
       debugPrint('Unhandled Error: $error');
       debugPrint('StackTrace: $stackTrace');
-      // Optionally report to an external service like Sentry, Firebase Crashlytics
     },
   );
 }
@@ -98,6 +91,7 @@ class MyApp extends StatelessWidget {
       title: AppConstants.appName,
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
+      initialBinding: ServiceBindings(),
 
       // Localization
       translations: LocalizationService(),
@@ -157,7 +151,7 @@ class _ErrorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: SingleChildScrollView( // For very small screens
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Wrap(
             alignment: WrapAlignment.center,
@@ -202,8 +196,6 @@ class _ErrorScreen extends StatelessWidget {
     );
   }
 }
-
-
 
 // Unknown Route Screen Widget
 class _UnknownRouteScreen extends StatelessWidget {

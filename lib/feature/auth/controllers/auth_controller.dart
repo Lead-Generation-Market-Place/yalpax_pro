@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app_links/app_links.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +15,7 @@ import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
 import 'package:yalpax_pro/core/widgets/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,10 +26,7 @@ import '../services/auth_service.dart';
 
 class AuthController extends GetxController {
   final authService = Get.put(AuthService());
-  final JobsController jobsController = Get.put(
-    JobsController(),
-    permanent: true,
-  );
+  late final JobsController jobsController;
   // Text Controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
@@ -64,6 +63,11 @@ class AuthController extends GetxController {
   User? get currentUser => authService.currentUser.value;
 
   String? get authError => authService.authError.value;
+
+  AuthController() {
+    // Initialize JobsController lazily
+    jobsController = Get.find<JobsController>();
+  }
 
   @override
   void onClose() {
@@ -370,8 +374,18 @@ class AuthController extends GetxController {
     await authService.signOut();
     authService.isAuthenticated.value = false;
     authService.currentUser.value = null;
-
+    await clearAllPreferences();
     Get.offAllNamed(Routes.login);
+  }
+
+  Future<void> clearAllPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      debugPrint('Successfully cleared all SharedPreferences');
+    } catch (e) {
+      debugPrint('Error clearing SharedPreferences: $e');
+    }
   }
 
   Future<void> resetPassword(String email) async {
@@ -1323,4 +1337,27 @@ class AuthController extends GetxController {
 
     return true;
   }
+
+  final appLinks = AppLinks();
+  void listenForDeepLinks() {
+    appLinks.uriLinkStream.listen((Uri? uri) {
+      if (uri != null) {
+        Supabase.instance.client.auth.getSessionFromUrl(uri);
+      }
+    });
+  }
+
+  // Future<void> signInWithLinkedIn() async {
+  //   await supabase.auth.signInWithOAuth(
+  //     OAuthProvider.linkedinOidc,
+  //     redirectTo: 'yalpaxpro://login-callback',
+  //     authScreenLaunchMode: LaunchMode.externalApplication,
+  //   );
+  // }
+
+
+  // LinkedIn sign-in
+  // static Future<AuthResponse> signInWithLinkedIn() async {
+   
+  // }
 }

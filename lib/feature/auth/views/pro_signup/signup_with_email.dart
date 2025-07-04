@@ -138,9 +138,9 @@ class SignupWithEmail extends GetView<AuthController> {
             onChanged: (value) {
               if (value.isEmpty) {
                 controller.passwordError.value = 'Password is required';
-              } else if (value.length < 6) {
+              } else if (value.length < 8) {
                 controller.passwordError.value =
-                    'Password must be at least 6 characters';
+                    'Password must be at least 8 characters';
               } else {
                 controller.passwordError.value = null;
               }

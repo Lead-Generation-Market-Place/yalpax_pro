@@ -4,6 +4,7 @@ import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/constants/file_urls.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
+import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
 import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 
@@ -24,20 +25,9 @@ class _ThirdStepState extends State<ThirdStep> {
     initializeData();
   }
 
-  bool hasUploadedGoogleImage = false;
-
   Future<void> initializeData() async {
     try {
-      controller.profilePictureUrl.value;
       await controller.loadUserData();
-      if (controller.googleAccountPictureUrl.value.isNotEmpty &&
-          controller.profilePictureUrl.value.isEmpty &&
-          !hasUploadedGoogleImage) {
-        hasUploadedGoogleImage = true;
-        await controller.uploadImageFromUrl(
-          controller.googleAccountPictureUrl.value,
-        );
-      }
     } catch (e) {
       Get.snackbar('Error', 'Failed to load user data: $e');
     } finally {
@@ -112,25 +102,8 @@ class _ThirdStepState extends State<ThirdStep> {
                             alignment: Alignment.bottomRight,
                             children: [
                               Obx(() {
-                                final localImage =
-                                    controller.selectedImageFile.value;
-                                final googleImage =
-                                    controller.googleAccountPictureUrl.value;
-                                final profileImage =
-                                    '${FileUrls.profilePicture}${controller.profilePictureUrl.value}';
-
-                                ImageProvider? imageProvider;
-                                if (localImage != null) {
-                                  imageProvider = FileImage(localImage);
-                                } else if (googleImage.isNotEmpty) {
-                                  imageProvider = NetworkImage(googleImage);
-                                } else if (controller
-                                    .profilePictureUrl
-                                    .value
-                                    .isNotEmpty) {
-                                  imageProvider = NetworkImage(profileImage);
-                                }
-
+                                final localImage = controller.selectedImageFile.value;
+                                
                                 return Container(
                                   width: 160,
                                   height: 160,
@@ -148,26 +121,33 @@ class _ThirdStepState extends State<ThirdStep> {
                                         offset: const Offset(0, 3),
                                       ),
                                     ],
-                                    image: imageProvider != null
+                                    image: localImage != null
                                         ? DecorationImage(
-                                            image: imageProvider,
+                                            image: FileImage(localImage),
                                             fit: BoxFit.cover,
                                           )
                                         : null,
                                   ),
-                                  child: imageProvider == null
-                                      ? Center(
-                                          child: Text(
-                                            controller.name.value.isNotEmpty
-                                                ? controller.name.value[0]
-                                                      .toUpperCase()
-                                                : '',
-                                            style: TextStyle(
-                                              fontSize: 60,
+                                  child: localImage == null
+                                      ? Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.add_a_photo_outlined,
+                                              size: 48,
                                               color: AppColors.textSecondary,
-                                              fontWeight: FontWeight.w600,
                                             ),
-                                          ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Upload Photo',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: AppColors.textSecondary,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            
+                                          ],
                                         )
                                       : null,
                                 );
@@ -194,8 +174,7 @@ class _ThirdStepState extends State<ThirdStep> {
                                   ],
                                 ),
                                 child: GestureDetector(
-                                  onTap: () => controller
-                                      .showImagePickerBottomSheet(context),
+                                  onTap: () => controller.showImagePickerBottomSheet(context),
                                   child: const Icon(
                                     Icons.camera_alt,
                                     color: Colors.white,
@@ -395,22 +374,9 @@ class _ThirdStepState extends State<ThirdStep> {
                       text: 'Continue',
                       isLoading: controller.isLoading.value,
                       onPressed: () {
-                        final hasLocalImage =
-                            controller.selectedImageFile.value != null;
-                        final hasGoogleImage =
-                            controller.googleAccountPictureUrl.value.isNotEmpty;
-                        final hasProfileImage =
-                            controller.profilePictureUrl.value.isNotEmpty;
-
-                        if (!hasLocalImage &&
-                            !hasGoogleImage &&
-                            !hasProfileImage) {
-                          Get.snackbar(
-                            'Profile Picture Required',
-                            'Please upload or select a profile picture to continue.',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.redAccent,
-                            colorText: Colors.white,
+                        if (controller.selectedImageFile.value == null) {
+                          CustomFlutterToast.showErrorToast(
+                            'Please upload your business profile picture by clicking the camera icon.',
                           );
                           return;
                         }

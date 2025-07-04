@@ -9,17 +9,18 @@ class ServiceBindings extends Bindings {
   @override
   Future<void> dependencies() async {
     try {
-      // Core Controllers - Initialize immediately
+      // Core Controllers
       Get.put(ThemeController(), permanent: true);
-      Get.put(SplashController(), permanent: true);
       
-      // Feature Controllers - Initialize immediately for critical features
-      Get.put(AuthController(), permanent: true);
+      // Initialize JobsController first since it no longer depends on AuthController
       Get.put(JobsController(), permanent: true);
-
-      // Less critical controllers can be lazy loaded
-      // Add your lazy loaded controllers here with fenix: true
       
+      // Then initialize AuthController which depends on JobsController
+      Get.put(AuthController(), permanent: true);
+      
+      // Finally initialize SplashController which depends on auth
+      Get.put(SplashController(), permanent: true);
+
       debugPrint('All core services initialized successfully');
     } catch (e) {
       debugPrint('Error initializing services: $e');

@@ -391,7 +391,7 @@ class _JobsViewState extends State<JobsView> {
                               CustomButton(
                                 text: 'Update Profile',
                                 onPressed: () {
-                                  Get.toNamed(Routes.firstStep);
+                                  // Get.toNamed(Routes.firstStep);
                                 },
                                 type: CustomButtonType.primary,
                                 size: CustomButtonSize.small,
