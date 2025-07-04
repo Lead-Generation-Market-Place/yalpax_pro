@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
@@ -12,11 +13,10 @@ class SecondStep extends GetView<AuthController> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-       leading: IconButton(
-    icon: const Icon(Icons.arrow_back, color: Colors.black),
- onPressed: () => Get.offAllNamed(Routes.initial),
-
-  ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Get.offAllNamed(Routes.initial),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.toNamed(Routes.login),
@@ -40,7 +40,10 @@ class SecondStep extends GetView<AuthController> {
                     const SizedBox(height: 16),
                     const Text(
                       "New customers are waiting.",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -91,18 +94,12 @@ class SecondStep extends GetView<AuthController> {
                       text: "Terms of Use",
                       style: TextStyle(fontSize: 12, color: Colors.blue),
                     ),
-                    TextSpan(
-                      text: " and ",
-                      style: TextStyle(fontSize: 12),
-                    ),
+                    TextSpan(text: " and ", style: TextStyle(fontSize: 12)),
                     TextSpan(
                       text: "Privacy Policy",
                       style: TextStyle(fontSize: 12, color: Colors.blue),
                     ),
-                    TextSpan(
-                      text: ".",
-                      style: TextStyle(fontSize: 12),
-                    ),
+                    TextSpan(text: ".", style: TextStyle(fontSize: 12)),
                   ],
                 ),
                 textAlign: TextAlign.center,
@@ -160,7 +157,46 @@ class SecondStep extends GetView<AuthController> {
               ),
               _buildSocialButton(
                 icon: 'assets/icon/linkedin.png',
-                onPressed: () => controller.signInWithApple(),
+                onPressed: () async {
+                  try {
+                    await Supabase.instance.client.auth.signInWithOAuth(
+                      OAuthProvider.linkedinOidc,
+                      redirectTo: 'yalpaxpro://login-callback',
+                      authScreenLaunchMode: LaunchMode.externalApplication,
+                    );
+
+                    // After redirection, get current user (this code might need to be triggered after app resumes)
+                    final user = Supabase.instance.client.auth.currentUser;
+
+                    if (user != null && user.email != null) {
+                      final name =
+                          user.userMetadata?['name'] ??
+                          user.userMetadata?['full_name'] ??
+                          user.userMetadata?['preferred_username'] ??
+                          user.userMetadata?['given_name'];
+
+                      if (name == null || name.trim().isEmpty) {
+                        Get.snackbar(
+                          'Error',
+                          'Username not found in LinkedIn profile.',
+                        );
+                        return;
+                      }
+
+                      await controller.handlePostLogin(
+                        user: user,
+                        usernameFromOAuth: name,
+                      );
+                    } else {
+                      Get.snackbar(
+                        'Error',
+                        'LinkedIn login failed or was cancelled.',
+                      );
+                    }
+                  } catch (e) {
+                    Get.snackbar('Error', e.toString());
+                  }
+                },
               ),
             ],
           ),
