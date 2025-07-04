@@ -127,6 +127,8 @@ class AuthService extends GetxService {
     try {
       final prefs = Get.find<SharedPreferences>();
       await prefs.remove(AppConstants.userTokenKey);
+      await prefs.remove('selected_service_ids');
+      
       await prefs.setBool('isAuthenticated', false);
       logger.i('Auth state cleared successfully');
     } catch (e) {

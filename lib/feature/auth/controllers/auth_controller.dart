@@ -375,6 +375,7 @@ class AuthController extends GetxController {
     authService.isAuthenticated.value = false;
     authService.currentUser.value = null;
     await clearAllPreferences();
+    selectedServices.clear();
     Get.offAllNamed(Routes.login);
   }
 
@@ -1355,9 +1356,8 @@ class AuthController extends GetxController {
   //   );
   // }
 
-
   // LinkedIn sign-in
   // static Future<AuthResponse> signInWithLinkedIn() async {
-   
+
   // }
 }
