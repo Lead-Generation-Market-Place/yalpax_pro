@@ -25,7 +25,7 @@ class _JobsViewState extends State<JobsView> {
     AuthService(),
     permanent: true,
   );
-  
+
   final JobsController jobsController = Get.find<JobsController>();
 
   @override
@@ -38,7 +38,11 @@ class _JobsViewState extends State<JobsView> {
         Get.offAllNamed(Routes.initial);
       } else {
         // Refresh the step count when returning to this screen
-        await jobsController.checkStep();
+        final res = await jobsController.checkStep();
+        if (res == 0 && authController.isLinkedIn.value == true) {
+          jobsController.isStep.value = true;
+          Get.offAllNamed(Routes.firstStep);
+        }
       }
     });
 
@@ -76,12 +80,15 @@ class _JobsViewState extends State<JobsView> {
               if (jobsController.isLoading.value) {
                 return const SizedBox.shrink();
               }
-              
+
               return jobsController.isCount.value < 3
                   ? Container(
                       width: double.infinity,
                       color: const Color.fromARGB(255, 52, 51, 51),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [

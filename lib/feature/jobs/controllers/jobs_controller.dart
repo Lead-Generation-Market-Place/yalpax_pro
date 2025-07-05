@@ -10,16 +10,19 @@ class JobsController extends GetxController {
   var isCount = 0.obs;
   var isLoading = false.obs;
   var isNavigating = false.obs;
+  late final AuthController authController = Get.put(
+    AuthController(),
+    permanent: true,
+  );
 
   @override
   void onInit() async {
     super.onInit();
+
     isLoading.value = true;
     try {
+      await checkStatus();
       await checkStep();
-      if (!isNavigating.value) {
-        await checkStatus();
-      }
     } catch (e) {
       debugPrint('Error in onInit: $e');
     } finally {
@@ -51,8 +54,7 @@ class JobsController extends GetxController {
       if (userExists == null) {
         Get.offAllNamed(Routes.login);
         return;
-      }
-
+      } 
       final proServiceResponse = await supabase
           .from('pro_services')
           .select()
@@ -104,16 +106,16 @@ class JobsController extends GetxController {
           .eq('id', currentUser!.id)
           .maybeSingle();
 
-      if (userProfile == null) {
+      if (userProfile == null ) {
         debugPrint('No user profile found');
         isCount.value = 0;
         return isCount.value;
-      }
+      } 
 
       final phoneNumber = userProfile!['phone_number']?.toString().trim();
       if (phoneNumber == null || phoneNumber.isEmpty) {
         debugPrint('No phone number found for user');
-        isCount.value = 0;
+        isCount.value = 1;
         return isCount.value;
       }
 

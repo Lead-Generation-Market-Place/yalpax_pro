@@ -16,6 +16,7 @@ class AuthService extends GetxService {
   final isLoading = false.obs;
   final currentUser = Rxn<User>();
   final authError = RxnString();
+  final isHandlingOAuth = false.obs;
 
   // Stream subscription for auth state changes
   StreamSubscription<AuthState>? _authStateSubscription;
@@ -88,28 +89,28 @@ class AuthService extends GetxService {
               currentUser.value = session.user;
               isAuthenticated.value = true;
 
-              // Handle OAuth callback navigation
-              if (Get.currentRoute.contains('/login-callback')) {
-                // Get the auth controller
-                final authController = Get.find<AuthController>();
+              // Handle OAuth callback navigation only if not already handling
+              if (!isHandlingOAuth.value && (Get.currentRoute.contains('login-callback') || Get.currentRoute.contains('code='))) {
+                isHandlingOAuth.value = true;
+                try {
+                  final authController = Get.find<AuthController>();
+                  final user = session.user;
+                  final name =
+                      user.userMetadata?['name'] ??
+                      user.userMetadata?['full_name'] ??
+                      user.userMetadata?['preferred_username'] ??
+                      user.userMetadata?['given_name'];
 
-                // Get user metadata
-                final user = session.user;
-                final name =
-                    user.userMetadata?['name'] ??
-                    user.userMetadata?['full_name'] ??
-                    user.userMetadata?['preferred_username'] ??
-                    user.userMetadata?['given_name'];
-
-                if (name != null && name.toString().trim().isNotEmpty) {
-                  // Handle post-login flow
-                  await authController.handlePostLogin(
-                    user: user,
-                    usernameFromOAuth: name.toString(),
-                  );
-                } else {
-                  // Fallback to jobs route if no metadata
-                  await Get.offAllNamed(Routes.jobs);
+                  if (name != null && name.toString().trim().isNotEmpty) {
+                    await authController.handlePostLogin(
+                      user: user,
+                      usernameFromOAuth: name.toString(),
+                    );
+                  } else {
+                    await Get.offAllNamed(Routes.jobs);
+                  }
+                } finally {
+                  isHandlingOAuth.value = false;
                 }
               }
             }
@@ -152,35 +153,14 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       if (session != null) {
         await prefs.setString(AppConstants.userTokenKey, session.accessToken);
-        // Handle OAuth callback navigation
-        if (Get.currentRoute.contains('login-callback') || Get.currentRoute.contains('code=')) {
-          // Get the auth controller
-          final authController = Get.find<AuthController>();
-
-          // Get user metadata
-          final user = session.user;
-          final name =
-              user.userMetadata?['name'] ??
-              user.userMetadata?['full_name'] ??
-              user.userMetadata?['preferred_username'] ??
-              user.userMetadata?['given_name'];
-
-          if (name != null && name.toString().trim().isNotEmpty) {
-            // Handle post-login flow
-            await authController.handlePostLogin(
-              user: user,
-              usernameFromOAuth: name.toString(),
-            );
-            await prefs.setBool('isAuthenticated', true);
-            logger.i('Auth state saved successfully');
-          }
-        }
+        await prefs.setBool('isAuthenticated', true);
+        logger.i('Auth state saved successfully');
       } else {
         await _clearAuthState();
       }
     } catch (e) {
       logger.e('Error saving auth state: $e');
-      rethrow; // Propagate the error to handle it in the caller
+      rethrow;
     }
   }
 
@@ -189,15 +169,12 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       await prefs.remove(AppConstants.userTokenKey);
       await prefs.remove('selected_service_ids');
-
       await prefs.setBool('isAuthenticated', false);
       logger.i('Auth state cleared successfully');
     } catch (e) {
       logger.e('Error clearing auth state: $e');
     }
   }
-
- 
 
   Future<void> signOut() async {
     try {
@@ -243,6 +220,4 @@ class AuthService extends GetxService {
       isLoading.value = false;
     }
   }
-
-
 }

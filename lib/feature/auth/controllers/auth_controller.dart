@@ -49,7 +49,7 @@ class AuthController extends GetxController {
   RxString name = ''.obs;
   RxString profilePictureUrl = ''.obs;
   RxString googleAccountPictureUrl = ''.obs;
-
+  var isLinkedIn = false.obs;
   // Reset password variables
   final resetEmailError = RxnString();
   final resetTokenError = RxnString();

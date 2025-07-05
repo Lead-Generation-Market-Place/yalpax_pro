@@ -171,17 +171,18 @@ class LoginView extends GetView<AuthController> {
                     underline: const SizedBox(),
                     items: LocalizationService.languages
                         .map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(
-                          value,
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              value,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
                         LocalizationService.changeLocale(newValue);
@@ -286,14 +287,19 @@ class LoginView extends GetView<AuthController> {
                   // Start loading state
                   controller.isLoading.value = true;
 
-                  final response = await Supabase.instance.client.auth.signInWithOAuth(
-                    OAuthProvider.linkedinOidc,
-                    redirectTo: 'yalpaxpro://login-callback',
-                    // Use inAppWebView to better handle the flow
-                    authScreenLaunchMode: LaunchMode.inAppBrowserView,
-                    // Add scopes to get user profile data
-                    scopes: 'openid profile email',
-                  );
+                  final response = await Supabase.instance.client.auth
+                      .signInWithOAuth(
+                        OAuthProvider.linkedinOidc,
+                        redirectTo: 'yalpaxpro://login-callback',
+                        // Use inAppWebView to better handle the flow
+                        authScreenLaunchMode: LaunchMode.inAppBrowserView,
+                        // Add scopes to get user profile data
+                        scopes: 'openid profile email',
+                      );
+
+                  if (response) {
+                    controller.isLinkedIn.value = true;
+                  }
 
                   if (!response) {
                     Get.snackbar(
