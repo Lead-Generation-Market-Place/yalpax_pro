@@ -10,7 +10,7 @@ class ServiceBindings extends Bindings {
   Future<void> dependencies() async {
     try {
       // Core Controllers
-      Get.put(ThemeController(), permanent: true);
+ 
       
       // Initialize JobsController first since it no longer depends on AuthController
       Get.put(JobsController(), permanent: true);

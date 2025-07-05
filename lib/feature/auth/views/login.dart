@@ -7,6 +7,7 @@ import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/custom_input.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
 import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
+import 'package:yalpax_pro/core/localization/localization.dart';
 
 class LoginView extends GetView<AuthController> {
   LoginView({super.key});
@@ -39,7 +40,7 @@ class LoginView extends GetView<AuthController> {
                 const SizedBox(height: 32),
                 // Title
                 Text(
-                  'SIGN IN TO YALPAX PRO',
+                  'SIGN IN TO YALPAX PRO'.tr,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -51,16 +52,16 @@ class LoginView extends GetView<AuthController> {
                 const SizedBox(height: 40),
                 // Email Field
                 CustomInput(
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: 'email'.tr,
+                  hint: 'Enter your email'.tr,
                   controller: controller.emailController,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Email is required';
+                      return 'Email is required'.tr;
                     } else if (!GetUtils.isEmail(value)) {
-                      return 'Please enter a valid email';
+                      return 'Please enter a valid email'.tr;
                     }
                     return null;
                   },
@@ -68,16 +69,16 @@ class LoginView extends GetView<AuthController> {
                 const SizedBox(height: 20),
                 // Password Field
                 CustomInput(
-                  label: 'Password',
-                  hint: 'Enter your password',
+                  label: 'password'.tr,
+                  hint: 'Enter your password'.tr,
                   controller: controller.passwordController,
                   type: CustomInputType.password,
                   prefixIcon: const Icon(Icons.lock_outline),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Password is required';
-                    } else if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'Password is required'.tr;
+                    } else if (value.length < 8) {
+                      return 'Password must be at least 8 characters'.tr;
                     }
                     return null;
                   },
@@ -91,7 +92,7 @@ class LoginView extends GetView<AuthController> {
                       Get.toNamed(Routes.resetPassword);
                     },
                     child: Text(
-                      'Forgot password?',
+                      'forgot_password'.tr,
                       style: TextStyle(
                         color: AppColors.primaryBlue,
                         fontSize: 14,
@@ -103,7 +104,7 @@ class LoginView extends GetView<AuthController> {
                 // Sign In Button
                 Obx(
                   () => CustomButton(
-                    text: 'SIGN IN',
+                    text: 'SIGN IN'.tr,
                     isLoading: controller.isLoading.value,
                     onPressed: () async {
                       if (_formKey.currentState!.validate()) {
@@ -121,7 +122,7 @@ class LoginView extends GetView<AuthController> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
-                        'OR',
+                        'OR'.tr,
                         style: TextStyle(
                           color: AppColors.neutral400,
                           fontSize: 14,
@@ -137,7 +138,7 @@ class LoginView extends GetView<AuthController> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Don\'t have an account?',
+                      'Don\'t have an account?'.tr,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -146,10 +147,10 @@ class LoginView extends GetView<AuthController> {
                     const SizedBox(width: 4),
                     TextButton(
                       onPressed: () {
-                        Get.toNamed(Routes.firstStep);
+                        Get.toNamed(Routes.secondStep);
                       },
                       child: Text(
-                        'SIGN UP',
+                        'SIGN UP'.tr,
                         style: TextStyle(
                           color: AppColors.primaryBlue,
                           fontWeight: FontWeight.w600,
@@ -165,22 +166,27 @@ class LoginView extends GetView<AuthController> {
                 const SizedBox(height: 10),
                 Center(
                   child: DropdownButton<String>(
-                    value: 'en_US',
+                    value: LocalizationService.getCurrentLanguage(),
                     icon: const Icon(Icons.arrow_drop_down),
                     underline: const SizedBox(),
-                    items: [
-                      DropdownMenuItem(
-                        value: 'en_US',
+                    items: LocalizationService.languages
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
                         child: Text(
-                          'English (United States)',
+                          value,
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 14,
                           ),
                         ),
-                      ),
-                    ],
-                    onChanged: (String? newValue) {},
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        LocalizationService.changeLocale(newValue);
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -193,7 +199,7 @@ class LoginView extends GetView<AuthController> {
                         // Open privacy policy
                       },
                       child: Text(
-                        'Privacy',
+                        'Privacy'.tr,
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -206,7 +212,7 @@ class LoginView extends GetView<AuthController> {
                         // Open terms
                       },
                       child: Text(
-                        'Terms',
+                        'Terms'.tr,
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -256,7 +262,7 @@ class LoginView extends GetView<AuthController> {
                   if (name == null || name.trim().isEmpty) {
                     Get.snackbar(
                       'Error',
-                      'Username not found in Google profile.',
+                      'Username not found in Google profile.'.tr,
                     );
                     return;
                   }
@@ -275,45 +281,37 @@ class LoginView extends GetView<AuthController> {
             ),
             _buildSocialButton(
               icon: 'assets/icon/linkedin.png',
-
               onPressed: () async {
                 try {
-                  await Supabase.instance.client.auth.signInWithOAuth(
+                  // Start loading state
+                  controller.isLoading.value = true;
+
+                  final response = await Supabase.instance.client.auth.signInWithOAuth(
                     OAuthProvider.linkedinOidc,
                     redirectTo: 'yalpaxpro://login-callback',
-                    authScreenLaunchMode: LaunchMode.externalApplication,
+                    // Use inAppWebView to better handle the flow
+                    authScreenLaunchMode: LaunchMode.inAppBrowserView,
+                    // Add scopes to get user profile data
+                    scopes: 'openid profile email',
                   );
 
-                  // After redirection, get current user (this code might need to be triggered after app resumes)
-                  final user = Supabase.instance.client.auth.currentUser;
-
-                  if (user != null && user.email != null) {
-                    final name =
-                        user.userMetadata?['name'] ??
-                        user.userMetadata?['full_name'] ??
-                        user.userMetadata?['preferred_username'] ??
-                        user.userMetadata?['given_name'];
-
-                    if (name == null || name.trim().isEmpty) {
-                      Get.snackbar(
-                        'Error',
-                        'Username not found in LinkedIn profile.',
-                      );
-                      return;
-                    }
-
-                    await controller.handlePostLogin(
-                      user: user,
-                      usernameFromOAuth: name,
-                    );
-                  } else {
+                  if (!response) {
                     Get.snackbar(
                       'Error',
-                      'LinkedIn login failed or was cancelled.',
+                      'LinkedIn login failed. Please try again.',
+                      duration: const Duration(seconds: 3),
                     );
+                    return;
                   }
                 } catch (e) {
-                  Get.snackbar('Error', e.toString());
+                  print('LinkedIn login error: $e');
+                  Get.snackbar(
+                    'Error',
+                    'Failed to login with LinkedIn. Please try again.',
+                    duration: const Duration(seconds: 3),
+                  );
+                } finally {
+                  controller.isLoading.value = false;
                 }
               },
             ),

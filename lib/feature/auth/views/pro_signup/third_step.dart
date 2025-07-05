@@ -38,11 +38,11 @@ class _ThirdStepState extends State<ThirdStep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: BackButton(color: AppColors.textPrimary),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
+        // leading: BackButton(color: AppColors.textPrimary),
+  
+        backgroundColor: Colors.white,
         title: Text(
           'Profile Setup',
           style: TextStyle(

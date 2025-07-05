@@ -43,7 +43,7 @@ Future<void> _initializeApp() async {
       url: AppConstants.supabaseUrl,
       anonKey: AppConstants.supabaseAnonKey,
       debug: kDebugMode,
-    ).timeout(const Duration(seconds: 10), onTimeout: () {
+    ).timeout(const Duration(seconds: 5), onTimeout: () {
       throw TimeoutException('Supabase initialization timed out');
     });
     debugPrint('Supabase initialized successfully');

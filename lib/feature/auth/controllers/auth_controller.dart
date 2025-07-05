@@ -178,7 +178,7 @@ class AuthController extends GetxController {
           .eq('user_id', user.id);
 
       // Handle service provider flow
-      if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
+      if (proServiceResponse.isEmpty) {
         CustomFlutterToast.showInfoToast(
           'Please select the services you offer.',
           seconds: 5,
@@ -186,8 +186,6 @@ class AuthController extends GetxController {
         jobsController.isStep.value = true;
         Get.toNamed(Routes.firstStep);
         return;
-      } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
-        await proSignUpProces();
       } else {
         authService.isAuthenticated.value = true;
         authService.currentUser.value = user;
@@ -287,8 +285,7 @@ class AuthController extends GetxController {
           .select()
           .eq('user_id', authUserId);
 
-      // Handle service provider flow
-      if (proServiceResponse.isEmpty && selectedServices.isEmpty) {
+      if (proServiceResponse.isEmpty) {
         CustomFlutterToast.showInfoToast(
           'Please select the services you offer.',
           seconds: 5,
@@ -296,8 +293,6 @@ class AuthController extends GetxController {
         jobsController.isStep.value = true;
         Get.toNamed(Routes.firstStep);
         return;
-      } else if (proServiceResponse.isEmpty && selectedServices.isNotEmpty) {
-        await proSignUpProces();
       } else {
         authService.isAuthenticated.value = true;
         authService.currentUser.value = user;
@@ -1341,11 +1336,27 @@ class AuthController extends GetxController {
 
   final appLinks = AppLinks();
   void listenForDeepLinks() {
-    appLinks.uriLinkStream.listen((Uri? uri) {
-      if (uri != null) {
-        Supabase.instance.client.auth.getSessionFromUrl(uri);
-      }
-    });
+    appLinks.uriLinkStream.listen(
+      (Uri? uri) {
+        if (uri != null) {
+          Supabase.instance.client.auth.getSessionFromUrl(uri);
+        }
+      },
+      onError: (err) {
+        print('Deep link error: $err');
+      },
+    );
+
+    // Check for initial link
+    appLinks.uriLinkStream.first
+        .then((Uri? uri) {
+          if (uri != null) {
+            Supabase.instance.client.auth.getSessionFromUrl(uri);
+          }
+        })
+        .catchError((err) {
+          print('Initial deep link error: $err');
+        });
   }
 
   // Future<void> signInWithLinkedIn() async {

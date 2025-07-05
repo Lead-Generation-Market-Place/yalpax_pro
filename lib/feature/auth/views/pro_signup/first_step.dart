@@ -24,7 +24,7 @@ class FirstStep extends GetView<AuthController> {
       controller.selectedSubCategories.clear();
       controller.selectedCategories.clear();
       controller.selectedState.value = null;
-      
+
       // Then fetch initial data
       controller.fetchStates('');
       controller.fetchCategories('');
@@ -326,10 +326,13 @@ class FirstStep extends GetView<AuthController> {
         return CustomButton(
           text: 'Next',
           onPressed: isValid
-              ? () {
+              ? () async {
                   jobsController.isStep.value == true
                       ? Get.toNamed(Routes.thirdStep)
                       : Get.offAllNamed(Routes.secondStep);
+                  controller.isAuthenticated
+                      ? await controller.proSignUpProces()
+                      : null;
                 }
               : null,
           enabled: isValid,

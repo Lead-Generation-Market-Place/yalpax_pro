@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/routes/routes.dart';
 import '../../../core/utils/app_constants.dart';
+import '../controllers/auth_controller.dart';
 
 class AuthService extends GetxService {
   final supabase = Supabase.instance.client;
@@ -37,20 +39,21 @@ class AuthService extends GetxService {
       final user = supabase.auth.currentUser;
 
       // Update auth state based on both session and current user
-      final bool isValid = session != null && !session.isExpired && user != null;
-      
+      final bool isValid =
+          session != null && !session.isExpired && user != null;
+
       isAuthenticated.value = isValid;
       currentUser.value = isValid ? user : null;
 
       if (currentUser.value != null) {
         logger.i('Current user id: ${currentUser.value!.id}');
         logger.i('Current user email: ${currentUser.value!.email}');
-        
+
         // Also verify the stored auth state
         final prefs = Get.find<SharedPreferences>();
         final storedToken = prefs.getString(AppConstants.userTokenKey);
         final storedAuthState = prefs.getBool('isAuthenticated') ?? false;
-        
+
         if (!storedAuthState || storedToken == null) {
           await _saveAuthState(session); // Ensure preferences are in sync
         }
@@ -69,41 +72,77 @@ class AuthService extends GetxService {
   }
 
   void _setupAuthStateListener() {
-    _authStateSubscription = supabase.auth.onAuthStateChange.listen((data) async {
+    _authStateSubscription = supabase.auth.onAuthStateChange.listen((
+      data,
+    ) async {
       final AuthChangeEvent event = data.event;
       final Session? session = data.session;
 
       logger.i('Auth state changed: $event');
 
-      switch (event) {
-        case AuthChangeEvent.signedIn:
-          isAuthenticated.value = true;
-          currentUser.value = session?.user;
-          await _saveAuthState(session);
-          break;
-        case AuthChangeEvent.signedOut:
-          isAuthenticated.value = false;
-          currentUser.value = null;
-          await _clearAuthState();
-          break;
-        case AuthChangeEvent.tokenRefreshed:
-          if (session != null && !session.isExpired) {
-            isAuthenticated.value = true;
-            currentUser.value = session.user;
-            await _saveAuthState(session);
-          } else {
-            isAuthenticated.value = false;
-            currentUser.value = null;
+      try {
+        switch (event) {
+          case AuthChangeEvent.signedIn:
+            if (session != null) {
+              await _saveAuthState(session);
+              currentUser.value = session.user;
+              isAuthenticated.value = true;
+
+              // Handle OAuth callback navigation
+              if (Get.currentRoute.contains('/login-callback')) {
+                // Get the auth controller
+                final authController = Get.find<AuthController>();
+
+                // Get user metadata
+                final user = session.user;
+                final name =
+                    user.userMetadata?['name'] ??
+                    user.userMetadata?['full_name'] ??
+                    user.userMetadata?['preferred_username'] ??
+                    user.userMetadata?['given_name'];
+
+                if (name != null && name.toString().trim().isNotEmpty) {
+                  // Handle post-login flow
+                  await authController.handlePostLogin(
+                    user: user,
+                    usernameFromOAuth: name.toString(),
+                  );
+                } else {
+                  // Fallback to jobs route if no metadata
+                  await Get.offAllNamed(Routes.jobs);
+                }
+              }
+            }
+            break;
+          case AuthChangeEvent.signedOut:
             await _clearAuthState();
-          }
-          break;
-        case AuthChangeEvent.userDeleted:
-          isAuthenticated.value = false;
-          currentUser.value = null;
-          await _clearAuthState();
-          break;
-        default:
-          break;
+            currentUser.value = null;
+            isAuthenticated.value = false;
+            break;
+          case AuthChangeEvent.tokenRefreshed:
+            if (session != null && !session.isExpired) {
+              await _saveAuthState(session);
+              currentUser.value = session.user;
+              isAuthenticated.value = true;
+            } else {
+              await _clearAuthState();
+              currentUser.value = null;
+              isAuthenticated.value = false;
+            }
+            break;
+          case AuthChangeEvent.userDeleted:
+            await _clearAuthState();
+            currentUser.value = null;
+            isAuthenticated.value = false;
+            break;
+          default:
+            break;
+        }
+      } catch (e) {
+        logger.e('Error handling auth state change: $e');
+        // Ensure we're in a consistent state even if there's an error
+        isAuthenticated.value = session != null && !session.isExpired;
+        currentUser.value = session?.user;
       }
     });
   }
@@ -113,13 +152,35 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       if (session != null) {
         await prefs.setString(AppConstants.userTokenKey, session.accessToken);
-        await prefs.setBool('isAuthenticated', true);
-        logger.i('Auth state saved successfully');
+        // Handle OAuth callback navigation
+        if (Get.currentRoute.contains('login-callback') || Get.currentRoute.contains('code=')) {
+          // Get the auth controller
+          final authController = Get.find<AuthController>();
+
+          // Get user metadata
+          final user = session.user;
+          final name =
+              user.userMetadata?['name'] ??
+              user.userMetadata?['full_name'] ??
+              user.userMetadata?['preferred_username'] ??
+              user.userMetadata?['given_name'];
+
+          if (name != null && name.toString().trim().isNotEmpty) {
+            // Handle post-login flow
+            await authController.handlePostLogin(
+              user: user,
+              usernameFromOAuth: name.toString(),
+            );
+            await prefs.setBool('isAuthenticated', true);
+            logger.i('Auth state saved successfully');
+          }
+        }
       } else {
         await _clearAuthState();
       }
     } catch (e) {
       logger.e('Error saving auth state: $e');
+      rethrow; // Propagate the error to handle it in the caller
     }
   }
 
@@ -128,7 +189,7 @@ class AuthService extends GetxService {
       final prefs = Get.find<SharedPreferences>();
       await prefs.remove(AppConstants.userTokenKey);
       await prefs.remove('selected_service_ids');
-      
+
       await prefs.setBool('isAuthenticated', false);
       logger.i('Auth state cleared successfully');
     } catch (e) {
@@ -136,29 +197,7 @@ class AuthService extends GetxService {
     }
   }
 
-  Future<bool> signIn(String email, String password) async {
-    try {
-      isLoading.value = true;
-      authError.value = null;
-
-      final response = await supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-
-      if (response.session != null) {
-        await _saveAuthState(response.session);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      authError.value = e.toString();
-      logger.e('Sign in error: $e');
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
-  }
+ 
 
   Future<void> signOut() async {
     try {
@@ -205,14 +244,5 @@ class AuthService extends GetxService {
     }
   }
 
-  void checkAuthStatus() {
-    final user = supabase.auth.currentUser;
-    if (user != null) {
-      isAuthenticated.value = true;
-      currentUser.value = user;
-    } else {
-      isAuthenticated.value = false;
-      currentUser.value = null;
-    }
-  }
+
 }
