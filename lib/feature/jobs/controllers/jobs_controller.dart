@@ -22,7 +22,7 @@ class JobsController extends GetxController {
     isLoading.value = true;
     try {
       await checkStatus();
-      await checkStep();
+      // await checkStep();
     } catch (e) {
       debugPrint('Error in onInit: $e');
     } finally {

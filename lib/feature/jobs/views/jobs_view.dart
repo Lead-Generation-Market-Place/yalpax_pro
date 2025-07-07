@@ -36,14 +36,7 @@ class _JobsViewState extends State<JobsView> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!authService.isAuthenticated.value) {
         Get.offAllNamed(Routes.initial);
-      } else {
-        // Refresh the step count when returning to this screen
-        final res = await jobsController.checkStep();
-        if (res == 0 && authController.isLinkedIn.value == true) {
-          jobsController.isStep.value = true;
-          Get.offAllNamed(Routes.firstStep);
-        }
-      }
+      } 
     });
 
     // Listen to auth state changes

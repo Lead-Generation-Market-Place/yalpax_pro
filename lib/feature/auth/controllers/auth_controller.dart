@@ -66,7 +66,7 @@ class AuthController extends GetxController {
 
   AuthController() {
     // Initialize JobsController lazily
-    jobsController = Get.find<JobsController>();
+    jobsController = Get.put(JobsController(),permanent: true);
   }
 
   @override
@@ -1337,9 +1337,39 @@ class AuthController extends GetxController {
   final appLinks = AppLinks();
   void listenForDeepLinks() {
     appLinks.uriLinkStream.listen(
-      (Uri? uri) {
-        if (uri != null) {
-          Supabase.instance.client.auth.getSessionFromUrl(uri);
+      (Uri? uri) async {
+        if (uri != null && uri.toString().contains('login-callback')) {
+          try {
+            // Wait a bit longer to ensure the session is properly updated after redirect
+            await Future.delayed(const Duration(seconds: 1));
+            
+            // Get the current session instead of from URL to ensure we have the latest
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session != null) {
+              final user = session.user;
+              
+              // Check if this is a LinkedIn login
+              final linkedInIdentity = user.identities?.firstWhereOrNull(
+                (identity) => identity.provider == 'linkedin',
+              );
+              
+              if (linkedInIdentity != null) {
+                // For LinkedIn, try different metadata fields
+                final name = user.userMetadata?['name'] ??
+                           user.userMetadata?['full_name'] ??
+                           linkedInIdentity.identityData?['name'] ??
+                           linkedInIdentity.identityData?['full_name'];
+
+                print('Processing LinkedIn login after redirect. User ID: ${user.id}');
+                await handlePostLogin(
+                  user: user,
+                  usernameFromOAuth: name?.toString(),
+                );
+              }
+            }
+          } catch (e) {
+            print('Error handling deep link auth: $e');
+          }
         }
       },
       onError: (err) {
@@ -1347,16 +1377,47 @@ class AuthController extends GetxController {
       },
     );
 
-    // Check for initial link
-    appLinks.uriLinkStream.first
-        .then((Uri? uri) {
-          if (uri != null) {
-            Supabase.instance.client.auth.getSessionFromUrl(uri);
+    // Check for initial link - use the same logic as above
+    appLinks.uriLinkStream.first.then(
+      (Uri? uri) async {
+        if (uri != null && uri.toString().contains('login-callback')) {
+          try {
+            // Wait a bit longer to ensure the session is properly updated after redirect
+            await Future.delayed(const Duration(seconds: 1));
+            
+            // Get the current session instead of from URL to ensure we have the latest
+            final session = Supabase.instance.client.auth.currentSession;
+            if (session != null) {
+              final user = session.user;
+              
+              // Check if this is a LinkedIn login
+              final linkedInIdentity = user.identities?.firstWhereOrNull(
+                (identity) => identity.provider == 'linkedin',
+              );
+              
+              if (linkedInIdentity != null) {
+                // For LinkedIn, try different metadata fields
+                final name = user.userMetadata?['name'] ??
+                           user.userMetadata?['full_name'] ??
+                           linkedInIdentity.identityData?['name'] ??
+                           linkedInIdentity.identityData?['full_name'];
+
+                print('Processing LinkedIn login after redirect. User ID: ${user.id}');
+                await handlePostLogin(
+                  user: user,
+                  usernameFromOAuth: name?.toString(),
+                );
+              }
+            }
+          } catch (e) {
+            print('Error handling initial deep link auth: $e');
           }
-        })
-        .catchError((err) {
-          print('Initial deep link error: $err');
-        });
+        }
+      },
+      onError: (err) {
+        print('Initial deep link error: $err');
+      },
+    );
   }
 
   // Future<void> signInWithLinkedIn() async {

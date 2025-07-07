@@ -4,7 +4,6 @@ import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
-import 'package:yalpax_pro/feature/jobs/controllers/jobs_controller.dart';
 import '../../../core/routes/routes.dart';
 import '../../../core/utils/app_constants.dart';
 import '../../auth/services/auth_service.dart';
@@ -20,17 +19,12 @@ class SplashController extends GetxController {
   void onInit() {
     super.onInit();
     _prefs = Get.find<SharedPreferences>();
-    _authService = Get.put(AuthService());
+    _authService = Get.find<AuthService>();
     authController = Get.find<AuthController>();
-    _initializeApp();
-
-    // Listen to auth state changes
-    _authStateWorker = ever(_authService.isAuthenticated, (
-      bool isAuthenticated,
-    ) {
-      if (isInitialized.value) {
-        _handleAuthStateChange(isAuthenticated);
-      }
+    
+    // Use Future.delayed to ensure widget tree is built
+    Future.delayed(Duration.zero, () {
+      _initializeApp();
     });
   }
 
@@ -43,46 +37,65 @@ class SplashController extends GetxController {
   Future<void> _initializeApp() async {
     try {
       debugPrint('Splash: Starting initialization');
-      await _authService.initializeAuthState();
-
+      
+      // Check SharedPreferences first for auth state
+      final isAuthenticated = _prefs.getBool('isAuthenticated') ?? false;
+      
       final session = Supabase.instance.client.auth.currentSession;
       final user = Supabase.instance.client.auth.currentUser;
-      final linkedIn = authController.isLinkedIn.value;
-      if (linkedIn) {
-        if (user != null) {
-          final metadata = user.userMetadata ?? {};
-          Logger().d('User ID: ${user.id}');
-          Logger().d('Email: ${user.email}');
-          Logger().d('Name: ${metadata['name']}');
-          Logger().d('Picture: ${metadata['picture']}');
-          Logger().d('AccessToken: ${session?.accessToken}');
+      
+      if (user != null && session != null && !session.isExpired) {
+        // Check if user has completed profile setup
+        final userProfile = await Supabase.instance.client
+            .from('users_profiles')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
 
-          await authController.handlePostLogin(
-            user: user,
-            usernameFromOAuth: metadata['name'],
-          );
-        }
-      } else {
-        // Check onboarding status only on first install or after app reset
-        final hasCompletedOnboarding = _prefs.getBool(
-          AppConstants.onboardingCompleteKey,
-        );
-        debugPrint('Splash: Onboarding status: $hasCompletedOnboarding');
+        if (userProfile == null) {
+          // New user, needs to complete profile
+          await Get.offAllNamed(Routes.firstStep);
+          return;
+        } else {
+          // Existing user, check service provider status
+          final proServices = await Supabase.instance.client
+              .from('pro_services')
+              .select()
+              .eq('user_id', user.id);
 
-        // Only show onboarding if the flag is explicitly false or null (first install)
-        if (hasCompletedOnboarding == null || hasCompletedOnboarding == false) {
-          debugPrint('Splash: Navigating to onboarding');
-          await Get.offAllNamed(Routes.onboarding);
+          if (proServices.isEmpty) {
+            // No services selected, go to first step
+            await Get.offAllNamed(Routes.firstStep);
+          } else {
+            // Services exist, go to jobs
+            await Get.offAllNamed(Routes.jobs);
+          }
           return;
         }
       }
-      // Initial navigation based on auth state
-      _handleAuthStateChange(_authService.isAuthenticated.value);
+
+      // Not authenticated or session expired
+      final hasCompletedOnboarding = _prefs.getBool(
+        AppConstants.onboardingCompleteKey,
+      );
+      debugPrint('Splash: Onboarding status: $hasCompletedOnboarding');
+
+      if (hasCompletedOnboarding == null || hasCompletedOnboarding == false) {
+        debugPrint('Splash: Navigating to onboarding');
+        await Get.offAllNamed(Routes.onboarding);
+        return;
+      }
+
+      // Default to initial route
+      await Get.offAllNamed(Routes.initial);
     } catch (e, stackTrace) {
       debugPrint('Splash: Initialization error: $e');
       debugPrint('Stack trace: $stackTrace');
-      await Get.offAllNamed(Routes.initial);
-      Get.snackbar('Error', 'Failed to initialize app');
+      // Use Future.delayed to avoid navigation during build
+      Future.delayed(Duration.zero, () {
+        Get.offAllNamed(Routes.initial);
+        Get.snackbar('Error', 'Failed to initialize app');
+      });
     } finally {
       isInitialized.value = true;
     }
@@ -104,7 +117,10 @@ class SplashController extends GetxController {
     // Only navigate if we're not already on the target route
     if (currentRoute != nextRoute) {
       debugPrint('Splash: Navigating to $nextRoute');
-      Get.offAllNamed(nextRoute);
+      // Use Future.delayed to avoid navigation during build
+      Future.delayed(Duration.zero, () {
+        Get.offAllNamed(nextRoute);
+      });
     }
   }
 }

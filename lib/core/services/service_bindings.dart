@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
+import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
 import '../controllers/theme_controller.dart';
 import '../../feature/splash/controllers/splash_controller.dart';
 import '../../feature/auth/controllers/auth_controller.dart';
@@ -9,14 +10,17 @@ class ServiceBindings extends Bindings {
   @override
   Future<void> dependencies() async {
     try {
-      // Core Controllers
- 
+      debugPrint('Initializing core services...');
       
-      // Initialize JobsController first since it no longer depends on AuthController
-      Get.put(JobsController(), permanent: true);
+      // First initialize AuthService since other services depend on it
+      final authService = Get.put(AuthService(), permanent: true);
+
       
-      // Then initialize AuthController which depends on JobsController
-      Get.put(AuthController(), permanent: true);
+      // Initialize JobsController before AuthController
+      final jobsController = Get.put(JobsController(), permanent: true);
+      
+      // Initialize AuthController with dependencies
+      final authController = Get.put(AuthController(), permanent: true);
       
       // Finally initialize SplashController which depends on auth
       Get.put(SplashController(), permanent: true);

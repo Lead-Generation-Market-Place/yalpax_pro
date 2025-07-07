@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/routes/routes.dart';
 import '../../../core/utils/app_constants.dart';
 import '../controllers/auth_controller.dart';
 
@@ -22,10 +21,15 @@ class AuthService extends GetxService {
   StreamSubscription<AuthState>? _authStateSubscription;
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-    initializeAuthState();
-    _setupAuthStateListener();
+    // Initialize in sequence
+    try {
+      await setupAuthStateListener();
+      await initializeAuthState();
+    } catch (e) {
+      logger.e('Error in AuthService initialization: $e');
+    }
   }
 
   @override
@@ -43,13 +47,10 @@ class AuthService extends GetxService {
       final bool isValid =
           session != null && !session.isExpired && user != null;
 
-      isAuthenticated.value = isValid;
-      currentUser.value = isValid ? user : null;
-
-      if (currentUser.value != null) {
-        logger.i('Current user id: ${currentUser.value!.id}');
-        logger.i('Current user email: ${currentUser.value!.email}');
-
+      if (isValid) {
+        logger.i('Current user id: ${user!.id}');
+        logger.i('Current user email: ${user.email}');
+   
         // Also verify the stored auth state
         final prefs = Get.find<SharedPreferences>();
         final storedToken = prefs.getString(AppConstants.userTokenKey);
@@ -58,9 +59,13 @@ class AuthService extends GetxService {
         if (!storedAuthState || storedToken == null) {
           await _saveAuthState(session); // Ensure preferences are in sync
         }
+        
+        isAuthenticated.value = true;
+        currentUser.value = user;
       } else {
         logger.i('No authenticated user found');
         isAuthenticated.value = false;
+        currentUser.value = null;
         await _clearAuthState();
       }
     } catch (e) {
@@ -72,7 +77,7 @@ class AuthService extends GetxService {
     }
   }
 
-  void _setupAuthStateListener() {
+  Future<void> setupAuthStateListener() async {
     _authStateSubscription = supabase.auth.onAuthStateChange.listen((
       data,
     ) async {
@@ -89,26 +94,36 @@ class AuthService extends GetxService {
               currentUser.value = session.user;
               isAuthenticated.value = true;
 
-              // Handle OAuth callback navigation only if not already handling
-              if (!isHandlingOAuth.value && (Get.currentRoute.contains('login-callback') || Get.currentRoute.contains('code='))) {
+              final user = session.user;
+              final linkedInIdentity = user.identities?.firstWhereOrNull(
+                (identity) => identity.provider == 'linkedin',
+              );
+              
+              // Handle both LinkedIn and non-LinkedIn OAuth
+              if (!isHandlingOAuth.value &&
+                  (Get.currentRoute.contains('login-callback') ||
+                      Get.currentRoute.contains('code='))) {
                 isHandlingOAuth.value = true;
                 try {
                   final authController = Get.find<AuthController>();
-                  final user = session.user;
-                  final name =
-                      user.userMetadata?['name'] ??
-                      user.userMetadata?['full_name'] ??
-                      user.userMetadata?['preferred_username'] ??
-                      user.userMetadata?['given_name'];
-
-                  if (name != null && name.toString().trim().isNotEmpty) {
-                    await authController.handlePostLogin(
-                      user: user,
-                      usernameFromOAuth: name.toString(),
-                    );
-                  } else {
-                    await Get.offAllNamed(Routes.jobs);
+                  String? name;
+                  
+                  if (linkedInIdentity != null) {
+                    // For LinkedIn, try to get name from identity data first
+                    name = linkedInIdentity.identityData?['name'] ??
+                           linkedInIdentity.identityData?['full_name'];
                   }
+                  
+                  // Fallback to user metadata if needed
+                  name ??= user.userMetadata?['name'] ??
+                          user.userMetadata?['full_name'] ??
+                          user.userMetadata?['preferred_username'] ??
+                          user.userMetadata?['given_name'];
+
+                  await authController.handlePostLogin(
+                    user: user,
+                    usernameFromOAuth: name?.toString(),
+                  );
                 } finally {
                   isHandlingOAuth.value = false;
                 }

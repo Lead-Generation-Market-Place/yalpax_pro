@@ -286,7 +286,7 @@ class LoginView extends GetView<AuthController> {
                 try {
                   // Start loading state
                   controller.isLoading.value = true;
-
+                    
                   final response = await Supabase.instance.client.auth
                       .signInWithOAuth(
                         OAuthProvider.linkedinOidc,
@@ -297,8 +297,39 @@ class LoginView extends GetView<AuthController> {
                         scopes: 'openid profile email',
                       );
 
+   
+
                   if (response) {
                     controller.isLinkedIn.value = true;
+                    // Wait for auth state to update
+                    await Future.delayed(const Duration(seconds: 2));
+                    
+                    // Get current user after OAuth
+                    final user = Supabase.instance.client.auth.currentUser;
+                    if (user != null) {
+                      final linkedInIdentity = user.identities?.firstWhereOrNull(
+                        (identity) => identity.provider == 'linkedin',
+                      );
+                      
+                      final name = user.userMetadata?['name'] ??
+                                 user.userMetadata?['full_name'] ??
+                                 linkedInIdentity?.identityData?['name'] ??
+                                 linkedInIdentity?.identityData?['full_name'];
+
+                      if (name == null || name.toString().trim().isEmpty) {
+                        Get.snackbar(
+                          'Error',
+                          'Username not found in LinkedIn profile.',
+                          duration: const Duration(seconds: 3),
+                        );
+                        return;
+                      }
+
+                    //   await controller.handlePostLogin(
+                    //     user: user,
+                    //     usernameFromOAuth: name.toString(),
+                    //   );
+                    }
                   }
 
                   if (!response) {
@@ -307,7 +338,6 @@ class LoginView extends GetView<AuthController> {
                       'LinkedIn login failed. Please try again.',
                       duration: const Duration(seconds: 3),
                     );
-                    return;
                   }
                 } catch (e) {
                   print('LinkedIn login error: $e');
