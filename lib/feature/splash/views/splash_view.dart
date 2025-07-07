@@ -15,6 +15,12 @@ class SplashView extends GetView<SplashController> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Logo or App Name
+            Image.asset(
+              'assets/icon/y_logo.png', // Replace with your actual logo path
+              height: 120,
+              width: 120,
+            ),
+            const SizedBox(height: 24),
             const Text(
               'Yalpax Pro',
               style: TextStyle(
@@ -24,15 +30,17 @@ class SplashView extends GetView<SplashController> {
               ),
             ),
             const SizedBox(height: 24),
-            // Loading indicator
-            Obx(() => controller.isInitialized.value
-              ? const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                )
-              : const SizedBox.shrink()),
+            // Loading indicator - shows immediately since initialization starts automatically
+            Obx(
+              () => controller.isInitialized.value
+                  ? const SizedBox.shrink() // Hide when initialized
+                  : const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+            ),
           ],
         ),
       ),
     );
   }
-} 
+}

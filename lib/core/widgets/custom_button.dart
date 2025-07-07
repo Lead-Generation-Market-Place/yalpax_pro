@@ -2,18 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import '../constants/app_colors.dart';
 
-enum CustomButtonType {
-  primary,
-  secondary,
-  outline,
-  text
-}
+enum CustomButtonType { primary, secondary, outline, text }
 
-enum CustomButtonSize {
-  small,
-  medium,
-  large
-}
+enum CustomButtonSize { small, medium, large }
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -23,7 +14,7 @@ class CustomButton extends StatelessWidget {
   final bool isLoading;
   final bool isFullWidth;
   final IconData? icon;
-  final bool disabled;
+  final bool enabled;
   final EdgeInsetsGeometry? margin;
   final double? width;
   final double? height;
@@ -37,7 +28,7 @@ class CustomButton extends StatelessWidget {
     this.isLoading = false,
     this.isFullWidth = false,
     this.icon,
-    this.disabled = false,
+    this.enabled = true,
     this.margin,
     this.width,
     this.height,
@@ -45,6 +36,8 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDisabled = !enabled || isLoading || onPressed == null;
+
     return Container(
       margin: margin,
       width: isFullWidth ? double.infinity : width,
@@ -52,16 +45,20 @@ class CustomButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: (disabled || isLoading) ? null : onPressed,
+          onTap: isDisabled ? null : onPressed,
           borderRadius: BorderRadius.circular(12),
+          splashColor: isDisabled ? Colors.transparent : null,
+          highlightColor: isDisabled ? Colors.transparent : null,
           child: Ink(
             decoration: BoxDecoration(
-              color: _getBackgroundColor(),
+              color: _getBackgroundColor(isDisabled),
               borderRadius: BorderRadius.circular(12),
-              border: type == CustomButtonType.outline
+              border: type == CustomButtonType.outline && !isDisabled
                   ? Border.all(color: AppColors.primaryBlue)
+                  : type == CustomButtonType.outline && isDisabled
+                  ? Border.all(color: AppColors.lighten(Colors.white))
                   : null,
-              boxShadow: type != CustomButtonType.text && !disabled
+              boxShadow: type != CustomButtonType.text && !isDisabled
                   ? [
                       BoxShadow(
                         color: AppColors.primaryBlue.withOpacity(0.1),
@@ -74,7 +71,7 @@ class CustomButton extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildContent(),
+                child: _buildContent(isDisabled),
               ),
             ),
           ),
@@ -83,7 +80,7 @@ class CustomButton extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(bool isDisabled) {
     if (isLoading) {
       return SizedBox(
         height: _getLoaderSize(),
@@ -95,7 +92,7 @@ class CustomButton extends StatelessWidget {
       );
     }
 
-    final textStyle = _getTextStyle();
+    final textStyle = _getTextStyle(isDisabled);
     final iconSize = _getIconSize();
 
     if (icon != null) {
@@ -103,13 +100,8 @@ class CustomButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon!,
-            size: iconSize,
-            color: textStyle.color,
-          ),
-          if (text.isNotEmpty)
-            const SizedBox(width: 8),
+          Icon(icon!, size: iconSize, color: textStyle.color),
+          if (text.isNotEmpty) const SizedBox(width: 8),
           Text(text, style: textStyle),
         ],
       );
@@ -118,9 +110,15 @@ class CustomButton extends StatelessWidget {
     return Text(text, style: textStyle);
   }
 
-  Color _getBackgroundColor() {
-    if (disabled) {
-      return AppColors.neutral200;
+  Color _getBackgroundColor(bool isDisabled) {
+    if (isLoading) {
+      return AppColors.primaryBlue;
+    }
+
+    if (isDisabled) {
+      return type == CustomButtonType.text
+          ? Colors.transparent
+          : AppColors.neutral200;
     }
 
     switch (type) {
@@ -134,14 +132,19 @@ class CustomButton extends StatelessWidget {
     }
   }
 
-  TextStyle _getTextStyle() {
+
+  TextStyle _getTextStyle(bool isDisabled) {
     final baseStyle = TextStyle(
       fontWeight: FontWeight.w600,
       fontSize: _getFontSize(),
     );
 
-    if (disabled) {
-      return baseStyle.copyWith(color: AppColors.neutral500);
+    if (isDisabled) {
+      return baseStyle.copyWith(
+        color: type == CustomButtonType.text
+            ? AppColors.neutral400
+            : AppColors.neutral500,
+      );
     }
 
     switch (type) {
@@ -197,4 +200,6 @@ class CustomButton extends StatelessWidget {
         return 48;
     }
   }
+
+  static styleFrom({required Color backgroundColor, required Color foregroundColor, required int elevation, required BorderSide side}) {}
 }

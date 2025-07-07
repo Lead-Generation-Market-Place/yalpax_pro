@@ -2,13 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../constants/app_colors.dart';
 
-enum QuestionType {
-  singleChoice,
-  multipleChoice,
-  text,
-  number,
-  boolean
-}
+enum QuestionType { singleChoice, multipleChoice, text, number, boolean }
 
 class QuestionOption {
   final String id;
@@ -76,7 +70,8 @@ class _QuestionComponentState extends State<QuestionComponent> {
   void initState() {
     super.initState();
     _selectedValue = widget.initialValue;
-    if (widget.question.type == QuestionType.text && widget.initialValue != null) {
+    if (widget.question.type == QuestionType.text &&
+        widget.initialValue != null) {
       _textController.text = widget.initialValue.toString();
     }
   }
@@ -109,7 +104,9 @@ class _QuestionComponentState extends State<QuestionComponent> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isSelected ? AppColors.primaryBlue : AppColors.neutral200,
+                    color: isSelected
+                        ? AppColors.primaryBlue
+                        : AppColors.neutral200,
                     width: isSelected ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(8),
@@ -122,7 +119,9 @@ class _QuestionComponentState extends State<QuestionComponent> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? AppColors.primaryBlue : AppColors.neutral400,
+                          color: isSelected
+                              ? AppColors.primaryBlue
+                              : AppColors.neutral400,
                           width: 2,
                         ),
                       ),
@@ -148,8 +147,12 @@ class _QuestionComponentState extends State<QuestionComponent> {
                       child: Text(
                         option.label,
                         style: TextStyle(
-                          color: isSelected ? AppColors.primaryBlue : AppColors.textPrimary,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          color: isSelected
+                              ? AppColors.primaryBlue
+                              : AppColors.textPrimary,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -164,7 +167,9 @@ class _QuestionComponentState extends State<QuestionComponent> {
   }
 
   Widget _buildMultipleChoice() {
-    final selectedSet = _selectedValue is Set ? _selectedValue as Set : <dynamic>{};
+    final selectedSet = _selectedValue is Set
+        ? _selectedValue as Set
+        : <dynamic>{};
     return Column(
       children: widget.question.options.map((option) {
         final isChecked = selectedSet.contains(option.value);
@@ -189,7 +194,9 @@ class _QuestionComponentState extends State<QuestionComponent> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isChecked ? AppColors.primaryBlue : AppColors.neutral200,
+                    color: isChecked
+                        ? AppColors.primaryBlue
+                        : AppColors.neutral200,
                     width: isChecked ? 2 : 1,
                   ),
                   borderRadius: BorderRadius.circular(8),
@@ -218,8 +225,12 @@ class _QuestionComponentState extends State<QuestionComponent> {
                       child: Text(
                         option.label,
                         style: TextStyle(
-                          color: isChecked ? AppColors.primaryBlue : AppColors.textPrimary,
-                          fontWeight: isChecked ? FontWeight.w600 : FontWeight.normal,
+                          color: isChecked
+                              ? AppColors.primaryBlue
+                              : AppColors.textPrimary,
+                          fontWeight: isChecked
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -259,13 +270,12 @@ class _QuestionComponentState extends State<QuestionComponent> {
       child: Row(
         children: [
           if (widget.onBack != null)
-            TextButton(
-              onPressed: widget.onBack,
-              child: Text('Back'.tr),
-            ),
+            TextButton(onPressed: widget.onBack, child: Text('Back'.tr)),
           const Spacer(),
           ElevatedButton(
-            onPressed: _selectedValue != null ? () => widget.onNext?.call(_selectedValue) : null,
+            onPressed: _selectedValue != null
+                ? () => widget.onNext?.call(_selectedValue)
+                : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryBlue,
               foregroundColor: Colors.white,
@@ -286,7 +296,6 @@ class _QuestionComponentState extends State<QuestionComponent> {
     return Container(
       padding: widget.padding ?? const EdgeInsets.all(24),
       child: ListView(
-   
         children: [
           Text(
             widget.question.question,
@@ -307,10 +316,7 @@ class _QuestionComponentState extends State<QuestionComponent> {
           _buildQuestionContent(),
           _buildActions(),
           if (widget.showDivider)
-            const Padding(
-              padding: EdgeInsets.only(top: 24),
-              child: Divider(),
-            ),
+            const Padding(padding: EdgeInsets.only(top: 24), child: Divider()),
         ],
       ),
     );
@@ -321,11 +327,8 @@ class QuestionFlowScreen extends StatefulWidget {
   final List<Question> questions;
   final VoidCallback? onComplete;
 
-  const QuestionFlowScreen({
-    Key? key,
-    required this.questions,
-    this.onComplete,
-  }) : super(key: key);
+  const QuestionFlowScreen({Key? key, required this.questions, this.onComplete})
+    : super(key: key);
 
   @override
   State<QuestionFlowScreen> createState() => _QuestionFlowScreenState();
@@ -341,7 +344,7 @@ class _QuestionFlowScreenState extends State<QuestionFlowScreen> {
         _answers[widget.questions[_current].id] = answer;
       });
     }
-    
+
     if (_current < widget.questions.length - 1) {
       setState(() => _current++);
     } else {
@@ -368,7 +371,7 @@ class _QuestionFlowScreenState extends State<QuestionFlowScreen> {
           IconButton(
             icon: Icon(Icons.close),
             onPressed: () => Navigator.of(context).pop(),
-          )
+          ),
         ],
       ),
       body: QuestionComponent(

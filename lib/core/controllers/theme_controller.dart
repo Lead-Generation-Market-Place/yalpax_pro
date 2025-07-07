@@ -9,7 +9,7 @@ class ThemeController extends GetxController {
 
   // Theme mode tracker
   final Rx<ThemeMode> _themeMode = ThemeMode.system.obs;
-  
+
   ThemeMode get themeMode => _themeMode.value;
 
   // Load theme on app start
@@ -35,10 +35,12 @@ class ThemeController extends GetxController {
   void _loadThemeFromPrefs() {
     final String? savedTheme = _prefs.getString(_key);
     if (savedTheme != null) {
-      setThemeMode(ThemeMode.values.firstWhere(
-        (e) => e.toString() == savedTheme,
-        orElse: () => ThemeMode.system,
-      ));
+      setThemeMode(
+        ThemeMode.values.firstWhere(
+          (e) => e.toString() == savedTheme,
+          orElse: () => ThemeMode.system,
+        ),
+      );
     }
   }
 
@@ -59,7 +61,9 @@ class ThemeController extends GetxController {
       final brightness = Get.mediaQuery.platformBrightness;
       Get.changeTheme(brightness == Brightness.dark ? darkTheme : lightTheme);
     } else {
-      Get.changeTheme(_themeMode.value == ThemeMode.dark ? darkTheme : lightTheme);
+      Get.changeTheme(
+        _themeMode.value == ThemeMode.dark ? darkTheme : lightTheme,
+      );
     }
   }
 

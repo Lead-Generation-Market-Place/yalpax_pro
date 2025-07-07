@@ -166,8 +166,11 @@ class ResponsiveGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = _getCrossAxisCount(context, constraints.maxWidth);
-        
+        final crossAxisCount = _getCrossAxisCount(
+          context,
+          constraints.maxWidth,
+        );
+
         return GridView.builder(
           shrinkWrap: shrinkWrap,
           physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
@@ -195,17 +198,16 @@ class ResponsiveGrid extends StatelessWidget {
     } else {
       count = 2;
     }
-    return maxCrossAxisCount != null ? count.clamp(1, maxCrossAxisCount!) : count;
+    return maxCrossAxisCount != null
+        ? count.clamp(1, maxCrossAxisCount!)
+        : count;
   }
 }
 
 class ResponsivePadding extends StatelessWidget {
   final Widget child;
 
-  const ResponsivePadding({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
+  const ResponsivePadding({Key? key, required this.child}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +229,8 @@ class ResponsivePage extends StatelessWidget {
     return ResponsiveLayout(
       mobile: _buildMobileLayout(),
       // tablet: _buildTabletLayout(), // Convert method to Widget
-      desktop: _buildMobileLayout(), // Reuse mobile layout since desktop isn't defined
+      desktop:
+          _buildMobileLayout(), // Reuse mobile layout since desktop isn't defined
     );
   }
 
@@ -249,5 +252,4 @@ class ResponsivePage extends StatelessWidget {
   }
 }
 
-class _buildTabletLayout {
-}
+class _buildTabletLayout {}

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart' as picker;
 import 'package:image_picker/image_picker.dart';
@@ -135,7 +136,8 @@ class ImagePickerWidget extends StatelessWidget {
           color: Colors.grey[200],
           borderRadius: BorderRadius.circular(borderRadius ?? 8),
         ),
-        child: placeholder ??
+        child:
+            placeholder ??
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -147,9 +149,7 @@ class ImagePickerWidget extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Add Image',
-                  style: TextStyle(
-                    color: iconColor ?? Colors.grey[600],
-                  ),
+                  style: TextStyle(color: iconColor ?? Colors.grey[600]),
                 ),
               ],
             ),
@@ -193,58 +193,45 @@ class ImagePickerService {
 
   /// Pick an image from the gallery
   Future<File?> pickFromGallery({
-    int imageQuality = 85,
-    int maxWidth = 1920,
-    int maxHeight = 1080,
-  }) async {
-    try {
-      if (Platform.isAndroid) {
-        // For Android 13 and above
-        if (await Permission.storage.status.isGranted) {
-          final XFile? pickedFile = await _picker.pickImage(
-            source: ImageSource.gallery,
-            imageQuality: imageQuality,
-            maxWidth: maxWidth.toDouble(),
-            maxHeight: maxHeight.toDouble(),
-          );
-          return pickedFile != null ? File(pickedFile.path) : null;
+  int imageQuality = 85,
+  int maxWidth = 1920,
+  int maxHeight = 1080,
+}) async {
+  try {
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      final sdkInt = androidInfo.version.sdkInt;
+
+      if (sdkInt >= 33) {
+        final status = await Permission.photos.request(); // READ_MEDIA_IMAGES
+        if (!status.isGranted) {
+          throw Exception('Media permission not granted');
         }
-        
-        // Request storage permission
+      } else {
         final status = await Permission.storage.request();
         if (!status.isGranted) {
           throw Exception('Storage permission not granted');
         }
-      } else if (Platform.isIOS) {
-        // For iOS
-        if (await Permission.photos.status.isGranted) {
-          final XFile? pickedFile = await _picker.pickImage(
-            source: ImageSource.gallery,
-            imageQuality: imageQuality,
-            maxWidth: maxWidth.toDouble(),
-            maxHeight: maxHeight.toDouble(),
-          );
-          return pickedFile != null ? File(pickedFile.path) : null;
-        }
-        
-        // Request photos permission
-        final status = await Permission.photos.request();
-        if (!status.isGranted) {
-          throw Exception('Photos permission not granted');
-        }
       }
-
-      // If we get here, permission was granted, so try picking the image
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: imageQuality,
-        maxWidth: maxWidth.toDouble(),
-        maxHeight: maxHeight.toDouble(),
-      );
-
-      return pickedFile != null ? File(pickedFile.path) : null;
-    } catch (e) {
-      rethrow;
+    } else if (Platform.isIOS) {
+      final status = await Permission.photos.request();
+      if (!status.isGranted) {
+        throw Exception('Photos permission not granted');
+      }
     }
+
+    // Pick image after permission granted
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: imageQuality,
+      maxWidth: maxWidth.toDouble(),
+      maxHeight: maxHeight.toDouble(),
+    );
+
+    return pickedFile != null ? File(pickedFile.path) : null;
+  } catch (e) {
+    rethrow;
   }
+}
+
 }

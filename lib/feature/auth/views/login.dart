@@ -1,362 +1,251 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
 import 'package:yalpax_pro/core/widgets/custom_input.dart';
-import 'package:yalpax_pro/core/widgets/foldable_widgets.dart';
 import 'package:yalpax_pro/feature/auth/controllers/auth_controller.dart';
-
+import 'package:yalpax_pro/feature/auth/services/auth_service.dart';
+import 'package:yalpax_pro/core/localization/localization.dart';
 
 class LoginView extends GetView<AuthController> {
-  const LoginView({super.key});
+  LoginView({super.key});
+
+  final AuthService authService = Get.find<AuthService>();
+
+  final _formKey = GlobalKey<FormState>();
+  final _emailFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      controller.emailController.clear();
-      controller.passwordController.clear();
-    });
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: ResponsiveLayout(
-        mobile: _buildMobileLayout(context),
-        tablet: _buildTabletLayout(context),
-        desktop: _buildDesktopLayout(context),
-      ),
-    );
-  }
-
-  Widget _buildMobileLayout(BuildContext context) {
-    return ResponsiveContainer(
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: Responsive.heightPercent(context, 10)),
-              _buildLogo(),
-              const SizedBox(height: 48),
-              _buildWelcomeText(),
-              const SizedBox(height: 32),
-              _buildLoginForm(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabletLayout(BuildContext context) {
-    return ResponsiveContainer(
-      maxWidth: 600,
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: Responsive.heightPercent(context, 15)),
-              _buildLogo(),
-              const SizedBox(height: 48),
-              _buildWelcomeText(),
-              const SizedBox(height: 32),
-              _buildLoginForm(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDesktopLayout(BuildContext context) {
-    return Row(
-      children: [
-        // Left side - Image or Decoration
-        Expanded(
-          flex: 6,
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue,
-              image: const DecorationImage(
-                image: AssetImage('assets/images/login_bg.png'),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(48.0),
-                child: Column(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                // Logo/Header
+                Image.asset(
+                  'assets/icon/y_logo.png',
+                  height: 80,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 32),
+                // Title
+                Text(
+                  'SIGN IN TO YALPAX PRO'.tr,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                // Email Field
+                CustomInput(
+                  label: 'email'.tr,
+                  hint: 'Enter your email'.tr,
+                  controller: controller.emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Email is required'.tr;
+                    } else if (!GetUtils.isEmail(value)) {
+                      return 'Please enter a valid email'.tr;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                // Password Field
+                CustomInput(
+                  label: 'password'.tr,
+                  hint: 'Enter your password'.tr,
+                  controller: controller.passwordController,
+                  type: CustomInputType.password,
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Password is required'.tr;
+                    } else if (value.length < 8) {
+                      return 'Password must be at least 8 characters'.tr;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                // Forgot Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Get.toNamed(Routes.resetPassword);
+                    },
+                    child: Text(
+                      'forgot_password'.tr,
+                      style: TextStyle(
+                        color: AppColors.primaryBlue,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Sign In Button
+                Obx(
+                  () => CustomButton(
+                    text: 'SIGN IN'.tr,
+                    isLoading: controller.isLoading.value,
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        await controller.login();
+                      }
+                    },
+                    isFullWidth: true,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Divider
+                Row(
+                  children: [
+                    const Expanded(child: Divider()),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'OR'.tr,
+                        style: TextStyle(
+                          color: AppColors.neutral400,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Sign Up
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildLogo(isLight: true),
-                    const SizedBox(height: 24),
                     Text(
-                      'Connect with US',
+                      'Don\'t have an account?'.tr,
                       style: TextStyle(
-                        color: AppColors.textOnPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    TextButton(
+                      onPressed: () {
+                        Get.toNamed(Routes.secondStep);
+                      },
+                      child: Text(
+                        'SIGN UP'.tr,
+                        style: TextStyle(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ),
-        // Right side - Login Form
-        Expanded(
-          flex: 4,
-          child: ResponsiveContainer(
-            maxWidth: 480,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(height: Responsive.heightPercent(context, 15)),
-                    _buildWelcomeText(),
-                    const SizedBox(height: 32),
-                    _buildLoginForm(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogo({bool isLight = false}) {
-    return Image.asset(
-      'assets/images/login.png',
-      height: 60,
-      color: isLight ? AppColors.textOnPrimary : AppColors.primaryBlue,
-    );
-  }
-
-  Widget _buildWelcomeText() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Welcome Back',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Sign in to continue',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoginForm() {
-    return Obx(
-      () => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Email Field
-          CustomInput(
-            label: 'Email',
-            hint: 'Enter your email',
-            controller: controller.emailController,
-            keyboardType: TextInputType.emailAddress,
-            prefixIcon: Icon(Icons.email_outlined),
-            errorText: controller.emailError.value,
-            onChanged: (value) {
-              if (value.isEmpty) {
-                controller.emailError.value = 'Email is required';
-              } else if (!GetUtils.isEmail(value)) {
-                controller.emailError.value = 'Please enter a valid email';
-              } else {
-                controller.emailError.value = null;
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Password Field
-          CustomInput(
-            label: 'Password',
-            hint: 'Enter your password',
-            controller: controller.passwordController,
-            type: CustomInputType.password,
-            prefixIcon: Icon(Icons.lock_outline),
-            errorText: controller.passwordError.value,
-            onChanged: (value) {
-              if (value.isEmpty) {
-                controller.passwordError.value = 'Password is required';
-              } else if (value.length < 6) {
-                controller.passwordError.value = 'Password must be at least 6 characters';
-              } else {
-                controller.passwordError.value = null;
-              }
-            },
-          ),
-          const SizedBox(height: 8),
-
-          // Forgot Password
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => {Get.toNamed(Routes.resetPassword)},
-              child: Text(
-                'Forgot Password?',
-                style: TextStyle(
-                  color: AppColors.primaryBlue,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Login Button
-          CustomButton(
-            text: 'Sign In',
-            isLoading: controller.isLoading.value,
-            onPressed: () {
-              // Clear any previous errors
-              controller.emailError.value = null;
-              controller.passwordError.value = null;
-
-              // Validate before login
-              bool isValid = true;
-              
-              final email = controller.emailController.text;
-              if (email.isEmpty) {
-                controller.emailError.value = 'Email is required';
-                isValid = false;
-              } else if (!GetUtils.isEmail(email)) {
-                controller.emailError.value = 'Please enter a valid email';
-                isValid = false;
-              }
-
-              final password = controller.passwordController.text;
-              if (password.isEmpty) {
-                controller.passwordError.value = 'Password is required';
-                isValid = false;
-              } else if (password.length < 6) {
-                controller.passwordError.value = 'Password must be at least 6 characters';
-                isValid = false;
-              }
-
-              // Only proceed with login if validation passes
-              if (isValid) {
-                controller.login();
-              }
-            },
-            size: CustomButtonSize.large,
-            isFullWidth: true,
-          ),
-          const SizedBox(height: 24),
-
-          // Social Login
-          _buildSocialLogin(),
-          const SizedBox(height: 24),
-
-          // Register Link
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Don\'t have an account? ',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              TextButton(
-                onPressed: () => Get.toNamed(Routes.signup),
-                child: Text(
-                  'Register',
-                  style: TextStyle(
-                    color: AppColors.primaryBlue,
-                    fontWeight: FontWeight.w600,
+                const SizedBox(height: 10),
+                // Language Selector
+                _buildSocialLogin(),
+                const SizedBox(height: 10),
+                Center(
+                  child: DropdownButton<String>(
+                    value: LocalizationService.getCurrentLanguage(),
+                    icon: const Icon(Icons.arrow_drop_down),
+                    underline: const SizedBox(),
+                    items: LocalizationService.languages
+                        .map<DropdownMenuItem<String>>((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(
+                              value,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        LocalizationService.changeLocale(newValue);
+                      }
+                    },
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                // Footer Links
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        // Open privacy policy
+                      },
+                      child: Text(
+                        'Privacy'.tr,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    TextButton(
+                      onPressed: () {
+                        // Open terms
+                      },
+                      child: Text(
+                        'Terms'.tr,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildTextField({
-    required String label,
-    required String hint,
-    required TextEditingController controller,
-    bool isPassword = false,
-    TextInputType? keyboardType,
-    IconData? prefixIcon, required type,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: isPassword,
-          keyboardType: keyboardType,
-          style: TextStyle(color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: AppColors.textTertiary),
-            prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: AppColors.textTertiary)
-                : null,
-            filled: true,
-            fillColor: AppColors.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.neutral200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.neutral200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.primaryBlue),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
   Widget _buildSocialLogin() {
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(child: Divider(color: AppColors.neutral200)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Or continue with',
-                style: TextStyle(color: AppColors.textTertiary),
-              ),
-            ),
-            Expanded(child: Divider(color: AppColors.neutral200)),
-          ],
-        ),
+        // Row(
+        //   children: [
+        //     Expanded(child: Divider(color: AppColors.neutral200)),
+        //     Padding(
+        //       padding: const EdgeInsets.symmetric(horizontal: 16),
+        //       child: Text(
+        //         'Or continue with',
+        //         style: TextStyle(color: AppColors.textTertiary),
+        //       ),
+        //     ),
+        //     Expanded(child: Divider(color: AppColors.neutral200)),
+        //   ],
+        // ),
         const SizedBox(height: 24),
         Wrap(
           alignment: WrapAlignment.center,
@@ -365,13 +254,103 @@ class LoginView extends GetView<AuthController> {
           children: [
             _buildSocialButton(
               icon: 'assets/images/google.png',
-              onPressed: () => controller.signInWithGoogle(),
-            ),
+              onPressed: () async {
+                final res = await AuthController.signInWithGoogle();
+                final user = res.user;
 
-            // _buildSocialButton(
-            //   icon: 'assets/images/github_icon.png',
-            //   onPressed: () => controller.signInWithGithub(),
-            // ),
+                if (user != null && user.email != null) {
+                  final name = user.userMetadata?['name'];
+                  if (name == null || name.trim().isEmpty) {
+                    Get.snackbar(
+                      'Error',
+                      'Username not found in Google profile.'.tr,
+                    );
+                    return;
+                  }
+
+                  await controller.handlePostLogin(
+                    user: res.user,
+                    usernameFromOAuth: res.user?.userMetadata?['name'],
+                  );
+                }
+              },
+            ),
+            // Uncomment if you have GitHub login
+            _buildSocialButton(
+              icon: 'assets/icon/facebook.png', // Make sure this asset exists
+              onPressed: () => {Get.toNamed(Routes.initial)},
+            ),
+            _buildSocialButton(
+              icon: 'assets/icon/linkedin.png',
+              onPressed: () async {
+                try {
+                  // Start loading state
+                  controller.isLoading.value = true;
+                    
+                  final response = await Supabase.instance.client.auth
+                      .signInWithOAuth(
+                        OAuthProvider.linkedinOidc,
+                        redirectTo: 'yalpaxpro://login-callback',
+                        // Use inAppWebView to better handle the flow
+                        authScreenLaunchMode: LaunchMode.inAppBrowserView,
+                        // Add scopes to get user profile data
+                        scopes: 'openid profile email',
+                      );
+
+   
+
+                  if (response) {
+                    controller.isLinkedIn.value = true;
+                    // Wait for auth state to update
+                    await Future.delayed(const Duration(seconds: 2));
+                    
+                    // Get current user after OAuth
+                    final user = Supabase.instance.client.auth.currentUser;
+                    if (user != null) {
+                      final linkedInIdentity = user.identities?.firstWhereOrNull(
+                        (identity) => identity.provider == 'linkedin',
+                      );
+                      
+                      final name = user.userMetadata?['name'] ??
+                                 user.userMetadata?['full_name'] ??
+                                 linkedInIdentity?.identityData?['name'] ??
+                                 linkedInIdentity?.identityData?['full_name'];
+
+                      if (name == null || name.toString().trim().isEmpty) {
+                        Get.snackbar(
+                          'Error',
+                          'Username not found in LinkedIn profile.',
+                          duration: const Duration(seconds: 3),
+                        );
+                        return;
+                      }
+
+                    //   await controller.handlePostLogin(
+                    //     user: user,
+                    //     usernameFromOAuth: name.toString(),
+                    //   );
+                    }
+                  }
+
+                  if (!response) {
+                    Get.snackbar(
+                      'Error',
+                      'LinkedIn login failed. Please try again.',
+                      duration: const Duration(seconds: 3),
+                    );
+                  }
+                } catch (e) {
+                  print('LinkedIn login error: $e');
+                  Get.snackbar(
+                    'Error',
+                    'Failed to login with LinkedIn. Please try again.',
+                    duration: const Duration(seconds: 3),
+                  );
+                } finally {
+                  controller.isLoading.value = false;
+                }
+              },
+            ),
           ],
         ),
       ],
@@ -397,8 +376,6 @@ class LoginView extends GetView<AuthController> {
         ),
       );
     }
-
-    // For other icons (like Google), use the asset image
     return InkWell(
       onTap: onPressed,
       borderRadius: BorderRadius.circular(12),
