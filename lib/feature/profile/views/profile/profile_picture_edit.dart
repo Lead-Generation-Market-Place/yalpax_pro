@@ -181,7 +181,7 @@ class ProfilePictureEdit extends GetView<ProfileController> {
                     CustomInput(
                       hint: 'Enter your business name',
                       label: 'Business Name',
-                      autofocus: true,
+                      autofocus: false,
                       controller: controller.businessNameController,
                       maxLength: 50,
                       validator: (value) {
