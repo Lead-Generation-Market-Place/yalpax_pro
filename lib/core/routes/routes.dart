@@ -28,7 +28,9 @@ import 'package:yalpax_pro/feature/initial_page/views/initial_view.dart';
 import 'package:yalpax_pro/feature/jobs/controllers/jobs_binding.dart';
 import 'package:yalpax_pro/feature/jobs/views/jobs_view.dart';
 import 'package:yalpax_pro/feature/profile/controller/profile_binding.dart';
+import 'package:yalpax_pro/feature/profile/views/profile/business_info.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/profile_picture_edit.dart';
+import 'package:yalpax_pro/feature/profile/views/profile/your_introduction.dart';
 import 'package:yalpax_pro/feature/profile/views/profile_view.dart';
 import 'package:yalpax_pro/feature/messages/views/message_view.dart';
 import 'package:yalpax_pro/feature/one_time_initial_view/controllers/one_time_initial_binding.dart';
@@ -79,6 +81,8 @@ abstract class Routes {
   static const exampleScreen = '/exampleScreen';
   static const reviews = '/reviews';
   static const editProfilePicture = '/editProfilePicture';
+  static const businessInfo = '/businessInfo';
+  static const yourIntroduction = '/yourIntroduction';
 }
 
 // Middleware
@@ -316,6 +320,18 @@ abstract class AppPages {
     GetPage(
       name: Routes.editProfilePicture,
       page: () => ProfilePictureEdit(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.businessInfo,
+      page: () => BusinessInfo(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.yourIntroduction,
+      page: () => YourIntroduction(),
       binding: ProfileBinding(),
       transition: Transition.fadeIn,
     ),

@@ -14,41 +14,138 @@ class ProfileController extends GetxController {
   final AuthService authService = Get.find<AuthService>();
   var isLoading = false.obs;
   final ImagePicker _imagePicker = ImagePicker();
-  RxInt businessNameLength = 0.obs;
+
+  // Business Info Controllers
+  final RxString phone = ''.obs;
+  final RxString website = ''.obs;
+  final RxString address = ''.obs;
+  final RxString suite = ''.obs;
+  final RxString zipCode = ''.obs;
+  final RxString yearFounded = ''.obs;
+  final RxString employees = ''.obs;
+  final RxString introduction = ''.obs;
+  final RxString socialMedia = ''.obs;
+  final RxString businessFAQs = ''.obs;
+
+  // Business Info Controllers
+  final businessNameController = TextEditingController();
+  final yearFoundedController = TextEditingController();
+  final employeesController = TextEditingController();
+  final phoneController = TextEditingController();
+  final addressController = TextEditingController();
+  final suiteController = TextEditingController();
+  final socialMedialController = TextEditingController();
+  final businessFAQSController = TextEditingController();
+  final zipCodeController = TextEditingController();
+  final websiteController = TextEditingController();
+
+  // Social Media Controllers
+  final facebookController = TextEditingController();
+  final twitterController = TextEditingController();
+  final instagramController = TextEditingController();
+  final introductionController = TextEditingController();
+
+  // Business Info
   RxString businessImageUrl = ''.obs;
   RxString businessName = ''.obs;
-  TextEditingController businessNameController = TextEditingController();
+
+  // Payment Methods
+  RxList<String> selectedPaymentMethods = <String>[].obs;
+  final List<String> availablePaymentMethods = [
+    'Credit card',
+    'Cash',
+    'Venmo',
+    'Paypal',
+    'Square cash app',
+    'Check',
+    'Apple Pay',
+    'Google Pay',
+    'Zelle',
+    'Samsung Pay',
+    'Stripe',
+  ];
+
   @override
   void onInit() async {
-    businessNameController.addListener(() {
-      businessNameLength.value = businessNameController.text.length;
-    });
+    await userBusinessProfile();
     super.onInit();
   }
 
-  Future<void> userBusinessProfile() async {
-    try {
-      isLoading.value = true;
-      final response = await supbase
-          .from('service_providers')
-          .select('image_url,business_name')
-          .eq('user_id', authService.userId)
-          .limit(1)
-          .maybeSingle();
-
-      if (response == null) {
-        throw Exception('Error no service provider');
-      }
-
-      businessImageUrl.value = response['image_url'];
-      businessName.value = response['business_name'];
-      businessNameController.text = response['business_name'];
-    } catch (e) {
-      Logger().e('Error fetching business profile. $e');
-    } finally {
-      isLoading.value = false;
-    }
+  @override
+  void onReady() {
+    super.onReady();
+    userBusinessProfile();
   }
+
+  Future<void> userBusinessProfile() async {
+  try {
+    isLoading.value = true;
+
+    final response = await supabase
+        .from('service_providers')
+        .select(
+          '*, users_profiles(*), provider_locations!inner(location:locations(*))',
+        )
+        .eq('user_id', authService.userId)
+        .eq('provider_locations.is_primary', true)
+        .maybeSingle();
+
+    Logger().i(response);
+
+    if (response == null) {
+      throw Exception('Error: No service provider found.');
+    }
+
+    // Update service_providers related data
+    businessImageUrl.value = response['image_url'] ?? '';
+    businessName.value = response['business_name'] ?? '';
+    yearFoundedController.text = response['founded_year']?.toString() ?? '';
+    employeesController.text = response['employees_count']?.toString() ?? '';
+    introductionController.text = response['introduction'] ?? '';
+
+    // Sync observables with controller texts
+    yearFounded.value = yearFoundedController.text;
+    employees.value = employeesController.text;
+    introduction.value = introductionController.text;
+    businessNameController.text = businessName.value;
+
+    // Update users_profiles data
+    final profile = response['users_profiles'];
+    if (profile != null) {
+      phoneController.text = profile['phone_number'] ?? '';
+      websiteController.text = profile['website'] ?? '';
+    }
+
+    phone.value = phoneController.text;
+    website.value = websiteController.text;
+
+    // Update provider_locations > locations data
+    final providerLocations = response['provider_locations'] as List?;
+    if (providerLocations != null && providerLocations.isNotEmpty) {
+      final location = providerLocations.first['location'];
+      if (location != null) {
+        addressController.text = location['address_line1'] ?? '';
+        suiteController.text = location['address_line2'] ?? '';
+        zipCodeController.text = location['zip'] ?? '';
+      }
+    }
+
+    address.value = addressController.text;
+    suite.value = suiteController.text;
+    zipCode.value = zipCodeController.text;
+
+  } catch (e) {
+    Logger().e('Error fetching business profile: $e');
+    Get.snackbar(
+      'Error',
+      'Failed to fetch business profile',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  } finally {
+    isLoading.value = false;
+  }
+}
+
 
   void showImagePickerBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -180,5 +277,47 @@ class ProfileController extends GetxController {
       Logger().e('Error saving business name: $e');
       Get.snackbar('Error', 'Failed to save business name');
     }
+  }
+
+  Future<void> saveBusinessInfo() async {
+    try {
+      isLoading.value = true;
+      await supbase
+          .from('service_providers')
+          .update({
+            'founded_year': int.tryParse(yearFoundedController.text),
+            'employees_count': int.tryParse(employeesController.text),
+            'phone_number': phoneController.text,
+            'address_line1': addressController.text,
+            'suite': suiteController.text,
+            'zip_code': zipCodeController.text,
+            'website': websiteController.text,
+            'payment_methods': selectedPaymentMethods,
+            'facebook': facebookController.text,
+            'twitter': twitterController.text,
+            'instagram': instagramController.text,
+          })
+          .eq('user_id', authService.userId);
+
+      Get.snackbar(
+        'Success',
+        'Business information updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Logger().e('Error saving business info: $e');
+      Get.snackbar('Error', 'Failed to save business information');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  void togglePaymentMethod(String method) {
+    if (selectedPaymentMethods.contains(method)) {
+      selectedPaymentMethods.remove(method);
+    } else {
+      selectedPaymentMethods.add(method);
+    }
+    saveBusinessInfo();
   }
 }
