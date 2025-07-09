@@ -39,7 +39,7 @@ class SettingsController extends GetxController {
           .eq('email', authController.email);
 
       // Update the local state
-      authController.profilePictureUrl.value = fileName;
+      authController.businessImageUrl.value = fileName;
 
       Get.snackbar(
         'Success',

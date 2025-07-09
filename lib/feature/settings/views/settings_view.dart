@@ -164,7 +164,7 @@ class SettingsView extends GetView<SettingsController> {
   Widget build(BuildContext context) {
     // ThemeData for easy access to theme properties
     final theme = Theme.of(context);
-    final imageUrl = authController.profilePictureUrl.value ?? '';
+    final imageUrl = authController.businessImageUrl.value ?? '';
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -201,7 +201,7 @@ class SettingsView extends GetView<SettingsController> {
                       onTap: () => _showImagePickerBottomSheet(context),
                       child: Obx(() {
                         final hasImage =
-                            authController.profilePictureUrl.value.isNotEmpty;
+                            authController.businessImageUrl.value.isNotEmpty;
                         return CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey,

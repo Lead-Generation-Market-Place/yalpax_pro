@@ -27,6 +27,8 @@ import 'package:yalpax_pro/feature/initial_page/controllers/initial_binding.dart
 import 'package:yalpax_pro/feature/initial_page/views/initial_view.dart';
 import 'package:yalpax_pro/feature/jobs/controllers/jobs_binding.dart';
 import 'package:yalpax_pro/feature/jobs/views/jobs_view.dart';
+import 'package:yalpax_pro/feature/profile/controller/profile_binding.dart';
+import 'package:yalpax_pro/feature/profile/views/profile/profile_picture_edit.dart';
 import 'package:yalpax_pro/feature/profile/views/profile_view.dart';
 import 'package:yalpax_pro/feature/messages/views/message_view.dart';
 import 'package:yalpax_pro/feature/one_time_initial_view/controllers/one_time_initial_binding.dart';
@@ -76,6 +78,7 @@ abstract class Routes {
 
   static const exampleScreen = '/exampleScreen';
   static const reviews = '/reviews';
+  static const editProfilePicture = '/editProfilePicture';
 }
 
 // Middleware
@@ -152,6 +155,7 @@ abstract class AppPages {
       name: Routes.profile,
       page: () => ProfileView(),
       middlewares: [AuthMiddleware()],
+      binding: ProfileBinding(),
       transition: Transition.rightToLeft,
     ),
 
@@ -173,12 +177,6 @@ abstract class AppPages {
     GetPage(
       name: Routes.settings,
       page: () => SettingsView(),
-      middlewares: [AuthMiddleware()],
-      transition: Transition.fadeIn,
-    ),
-    GetPage(
-      name: Routes.profile,
-      page: () => ProfileView(),
       middlewares: [AuthMiddleware()],
       transition: Transition.fadeIn,
     ),
@@ -313,6 +311,12 @@ abstract class AppPages {
       name: Routes.finishSetup,
       page: () => FinishSetup(),
       binding: AuthBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.editProfilePicture,
+      page: () => ProfilePictureEdit(),
+      binding: ProfileBinding(),
       transition: Transition.fadeIn,
     ),
   ];

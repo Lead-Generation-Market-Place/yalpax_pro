@@ -67,7 +67,7 @@ class _JobsViewState extends State<JobsView> {
         child: Column(
           children: [
             // Add space before the black label
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             // Black label with Finish Setup button
             Obx(() {
               if (jobsController.isLoading.value) {
@@ -80,8 +80,9 @@ class _JobsViewState extends State<JobsView> {
                       color: const Color.fromARGB(255, 52, 51, 51),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 16,
+                        vertical: 20,
                       ),
+
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
