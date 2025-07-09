@@ -15,7 +15,14 @@ class AuthService extends GetxService {
   final isLoading = false.obs;
   final currentUser = Rxn<User>();
   final authError = RxnString();
+  RxString authUserId = ''.obs;
   final isHandlingOAuth = false.obs;
+  String get userId => authUserId.value;
+
+  // Setter for authUserId
+  set userId(String id) {
+    authUserId.value = id;
+  }
 
   // Stream subscription for auth state changes
   StreamSubscription<AuthState>? _authStateSubscription;
@@ -27,6 +34,7 @@ class AuthService extends GetxService {
     try {
       await setupAuthStateListener();
       await initializeAuthState();
+      authUserId.value = supabase.auth.currentUser!.id;
     } catch (e) {
       logger.e('Error in AuthService initialization: $e');
     }
@@ -50,7 +58,7 @@ class AuthService extends GetxService {
       if (isValid) {
         logger.i('Current user id: ${user!.id}');
         logger.i('Current user email: ${user.email}');
-   
+
         // Also verify the stored auth state
         final prefs = Get.find<SharedPreferences>();
         final storedToken = prefs.getString(AppConstants.userTokenKey);
@@ -59,7 +67,7 @@ class AuthService extends GetxService {
         if (!storedAuthState || storedToken == null) {
           await _saveAuthState(session); // Ensure preferences are in sync
         }
-        
+
         isAuthenticated.value = true;
         currentUser.value = user;
       } else {
@@ -98,7 +106,7 @@ class AuthService extends GetxService {
               final linkedInIdentity = user.identities?.firstWhereOrNull(
                 (identity) => identity.provider == 'linkedin',
               );
-              
+
               // Handle both LinkedIn and non-LinkedIn OAuth
               if (!isHandlingOAuth.value &&
                   (Get.currentRoute.contains('login-callback') ||
@@ -107,18 +115,20 @@ class AuthService extends GetxService {
                 try {
                   final authController = Get.find<AuthController>();
                   String? name;
-                  
+
                   if (linkedInIdentity != null) {
                     // For LinkedIn, try to get name from identity data first
-                    name = linkedInIdentity.identityData?['name'] ??
-                           linkedInIdentity.identityData?['full_name'];
+                    name =
+                        linkedInIdentity.identityData?['name'] ??
+                        linkedInIdentity.identityData?['full_name'];
                   }
-                  
+
                   // Fallback to user metadata if needed
-                  name ??= user.userMetadata?['name'] ??
-                          user.userMetadata?['full_name'] ??
-                          user.userMetadata?['preferred_username'] ??
-                          user.userMetadata?['given_name'];
+                  name ??=
+                      user.userMetadata?['name'] ??
+                      user.userMetadata?['full_name'] ??
+                      user.userMetadata?['preferred_username'] ??
+                      user.userMetadata?['given_name'];
 
                   await authController.handlePostLogin(
                     user: user,

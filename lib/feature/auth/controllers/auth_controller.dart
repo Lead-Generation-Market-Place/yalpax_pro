@@ -35,7 +35,7 @@ class AuthController extends GetxController {
   var isStep = false.obs;
   // Business type related
   final businessType = Rx<String?>(null);
-  final businessTypes = ['company', 'handyman'].obs;
+  final businessTypes = ['company', 'handyman','sub-contractor'].obs;
   // Observable variables
   final acceptedTerms = false.obs;
   final obscurePassword = true.obs;
@@ -47,7 +47,7 @@ class AuthController extends GetxController {
   final termsError = RxnString();
   RxString email = ''.obs;
   RxString name = ''.obs;
-  RxString profilePictureUrl = ''.obs;
+
   RxString googleAccountPictureUrl = ''.obs;
   var isLinkedIn = false.obs;
   // Reset password variables
@@ -55,7 +55,7 @@ class AuthController extends GetxController {
   final resetTokenError = RxnString();
   final resetPasswordError = RxnString();
   final resetConfirmPasswordError = RxnString();
-
+  RxString businessImageUrl = ''.obs;
   // Computed properties
   bool get isAuthenticated => authService.isAuthenticated.value;
   var isLoading = false.obs;
@@ -104,7 +104,7 @@ class AuthController extends GetxController {
           }
         }
 
-        profilePictureUrl.value = userProfile['profile_picture_url'] ?? '';
+        // businessImageUrl.value = userProfile['profile_picture_url'] ?? '';
         name.value = userProfile['username'] ?? '';
       } else {
         debugPrint('No user profile found in the database.');
@@ -742,8 +742,8 @@ class AuthController extends GetxController {
           businessDetailsInfo.text.isNotEmpty) {
         String? profileImageFileName;
         if (selectedImageFile.value != null) {
-          await updateProfileImage(selectedImageFile.value!);
-          profileImageFileName = profilePictureUrl.value;
+          await updateBusinessProfile(selectedImageFile.value!);
+          profileImageFileName = businessImageUrl.value;
         } else {
           profileImageFileName = '';
         }
@@ -931,37 +931,46 @@ class AuthController extends GetxController {
     return true;
   }
 
-  Future<void> updateProfileImage(File imageFile) async {
+  Future<void> updateBusinessProfile(File imageFile) async {
     try {
       isLoading.value = true;
 
       // Get the current user's email
-      final user = supabase.auth.currentUser;
-      if (user == null) {
+      final user = authService.userId;
+      if (user.isEmpty) {
         throw Exception('User not authenticated');
       }
 
-      // Upload image to Supabase Storage
-      final fileName =
-          '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final response = await supabase.storage
-          .from('userprofilepicture')
-          .upload(fileName, imageFile);
+      // Create a subfolder path for better organization
+      final folderPath = 'logos';
+      
+      // Upload image to Supabase Storage with organized path
+      final fileName = '${authService.authUserId.value}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final filePath = '$folderPath/$fileName';
+      
+      await supabase.storage
+          .from('business-logos')
+          .upload(filePath, imageFile);
 
       // Get the public URL of the uploaded image
       final imageUrl = supabase.storage
-          .from('userprofilepicture')
-          .getPublicUrl(fileName);
+          .from('business-logos')
+          .getPublicUrl(filePath);
 
-      // Update the user's profile in the database
+      // Update the user's profile in the database with the complete path
       await supabase
-          .from('users_profiles')
-          .update({'profile_picture_url': fileName})
-          .eq('email', email);
+          .from('service_providers')
+          .update({'image_url': imageUrl})
+          .eq('user_id', authService.userId);
 
-      // Update the local state
-      profilePictureUrl.value = fileName;
-      loadUserData();
+      // Update the local state with the public URL
+      businessImageUrl.value = imageUrl;
+      
+      Get.snackbar(
+        'Success',
+        'Business logo updated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (e) {
       Logger().e('Error updating profile image: $e');
       Get.snackbar(
@@ -973,7 +982,6 @@ class AuthController extends GetxController {
       isLoading.value = false;
     }
   }
-
   Future<void> uploadImageFromUrl(String imageUrl) async {
     try {
       final response = await http.get(Uri.parse(imageUrl));
@@ -987,7 +995,7 @@ class AuthController extends GetxController {
       await file.writeAsBytes(response.bodyBytes);
 
       // Reuse your existing upload logic
-      await updateProfileImage(file);
+      await updateBusinessProfile(file);
     } catch (e) {
       Logger().e('Error uploading image from URL: $e');
       Get.snackbar(
@@ -1116,7 +1124,7 @@ class AuthController extends GetxController {
     try {
       final response = await supabase
           .from('state')
-          .select('id, name, code') // columns in the `state` table
+          .select('id, name') // columns in the `state` table
           .order('name', ascending: true);
 
       allStates.assignAll(List<Map<String, dynamic>>.from(response));
