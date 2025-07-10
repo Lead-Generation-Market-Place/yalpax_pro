@@ -315,7 +315,7 @@ class ProfileView extends GetView<ProfileController> {
                               ? controller.businessFAQs.value
                               : 'Add FAQs',
                           isPlaceholder: controller.businessFAQs.value.isEmpty,
-                          routeName: Routes.businessInfo,
+                          routeName: Routes.businessFAQS,
                         ),
                       ),
                       SizedBox(height: 20),

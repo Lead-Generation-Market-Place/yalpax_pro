@@ -12,8 +12,32 @@ class YourIntroduction extends GetView<ProfileController> {
         title: Text('Your introduction', style: TextStyle(color: Colors.black)),
         actions: [
           TextButton.icon(
-            onPressed: () {},
-            label: Text('Save', style: TextStyle(color: AppColors.primaryBlue)),
+            onPressed: () async {
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text('Save Introduction'),
+                    content: Text('Do you want to save your business introduction?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text('No'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: Text('Yes'),
+                      ),
+                    ],
+                  );
+                },
+              );
+              
+              if (result == true) {
+                await controller.saveBusinessIntroduction();
+              }
+            },
+            label: Text('Save', style: TextStyle(color:Colors.white)),
           ),
         ],
       ),
