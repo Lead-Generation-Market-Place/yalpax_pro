@@ -10,14 +10,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showBackButton;
   final bool showSetupBanner;
   final double horizontalPadding;
-
+  final VoidCallback? onBack; 
   const CustomAppBar({
     super.key,
     this.title = '',
     this.actions,
-    this.showBackButton = true,
+    this.showBackButton = false,
     this.showSetupBanner = true,
     this.horizontalPadding = 16.0,
+     this.onBack,
   });
 
   @override
@@ -70,8 +71,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         AppBar(
           title: Text(title),
           centerTitle: false,
-          automaticallyImplyLeading: showBackButton,
-          actions: actions,
+          automaticallyImplyLeading: false, // 👈 Prevent default back button
+          leading: showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed:
+                      onBack ??
+                      () => Get.back(), // 👈 Use passed function or default
+                )
+              : null,
           elevation: 0,
           scrolledUnderElevation: 4,
           // backgroundColor: Colors.blue[100],
@@ -168,7 +176,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               '${3 - jobsController.isCount.value} setup remaining',
               style: TextStyle(
                 fontSize: 14,
-                color:Colors.white,
+                color: Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -211,15 +219,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         !jobsController.isLoading.value &&
         jobsController.isCount.value < 3;
 
-    final screenWidth = Get.width;
-    final bannerHeight = screenWidth < 400 ? 112 : 64;
+    // Overestimate banner height safely
+    const estimatedBannerHeight = 130;
 
     return Size.fromHeight(
-      hasBanner
-          ? kToolbarHeight +
-                bannerHeight +
-                100 // Removed extra padding calculations
-          : kToolbarHeight,
+      kToolbarHeight + (hasBanner ? estimatedBannerHeight : 0),
     );
   }
 }
