@@ -14,6 +14,62 @@ class BusinessFaqs extends GetView<ProfileController> {
       controller.hasLoadedFaqs = true;
     }
 
+    String? validateMin50IfTyped(String? value) {
+      if (value != null && value.trim().isNotEmpty && value.trim().length < 50) {
+        return 'Please enter at least 50 characters';
+      }
+      return null;
+    }
+
+    Widget buildQuestion({
+      required String title,
+      required TextEditingController controllerText,
+      required RxBool hasTyped,
+      required RxInt charCount,
+    }) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          CustomInput(
+            controller: controllerText,
+            maxLines: null,
+            validator: validateMin50IfTyped,
+          ),
+          Obx(() {
+            final typed = hasTyped.value;
+            final length = charCount.value;
+            final remaining = 50 - length;
+
+            if (!typed) {
+              return Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Minimum 50 characters needed',
+                  style: const TextStyle(color: Colors.green, fontSize: 12),
+                ),
+              );
+            } else if (remaining > 0) {
+              return Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '$remaining more characters needed',
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              );
+            } else {
+              return const SizedBox.shrink();
+            }
+          }),
+          const SizedBox(height: 20),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Business FAQs'),
@@ -30,11 +86,7 @@ class BusinessFaqs extends GetView<ProfileController> {
                   confirmTextColor: Colors.white,
                   onConfirm: () async {
                     Get.back(); // Close dialog
-                    await controller
-                        .answeredBusinessFaqsQuestion(); // Call the save method
-                  },
-                  onCancel: () {
-                    // No need to call Get.back(); it closes automatically
+                    await controller.answeredBusinessFaqsQuestion(); // Save method
                   },
                 );
               }
@@ -47,369 +99,55 @@ class BusinessFaqs extends GetView<ProfileController> {
         child: Form(
           key: _formKey,
           child: ListView(
-            // crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'What should the customer know about your pricing (e.g., discounts, fees)?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              buildQuestion(
+                title: 'What should the customer know about your pricing (e.g., discounts, fees)?',
+                controllerText: controller.firstBusinessQuestion,
+                hasTyped: controller.hasTypedFirstBusiness,
+                charCount: controller.firstBusinessCharCount,
               ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.firstBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
+              buildQuestion(
+                title: 'What is your typical process for working with a new customer?',
+                controllerText: controller.secondtBusinessQuestion,
+                hasTyped: controller.hasTypedSecondBusiness,
+                charCount: controller.secondBusinessCharCount,
               ),
-              Obx(() {
-                final hasTyped = controller.hasTypedFirstBusiness.value;
-                final length = controller.firstBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-              ////////////////////////////////////////////////////////////////////////
-              const SizedBox(height: 20),
-              const Text(
-                'What is your typical process for working with a new customer?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              buildQuestion(
+                title: 'What education and/or training do you have that relates to your work?',
+                controllerText: controller.thirdBusinessQuestion,
+                hasTyped: controller.hasTypedThirdBusiness,
+                charCount: controller.thirdBusinessCharCount,
               ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.secondtBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
+              buildQuestion(
+                title: 'How did you get started doing this type of work?',
+                controllerText: controller.fourthBusinessQuestion,
+                hasTyped: controller.hasTypedFourthBusiness,
+                charCount: controller.fourthBusinessCharCount,
               ),
-              Obx(() {
-                final hasTyped = controller.hasTypedSecondBusiness.value;
-                final length = controller.secondBusinessCharCount.value;
-                final remaining = 0 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 0 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-              ///////////////////////////////////////////////////////////////////////////////////////3
-              const SizedBox(height: 20),
-              const Text(
-                'What education and/or training do you have that relates to your work?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              buildQuestion(
+                title: 'What type of customer have you worked with?',
+                controllerText: controller.fifthBusinessQuestion,
+                hasTyped: controller.hasTypedFifthBusiness,
+                charCount: controller.fifthBusinessCharCount,
               ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.thirdBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
+              buildQuestion(
+                title: 'Describe a recent project you are fond of. How long did it take?',
+                controllerText: controller.sixthBusinessQuestion,
+                hasTyped: controller.hasTypedSixthBusiness,
+                charCount: controller.sixthBusinessCharCount,
               ),
-              Obx(() {
-                final hasTyped = controller.hasTypedThirdBusiness.value;
-                final length = controller.thirdBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-
-              const SizedBox(height: 20),
-              ////////////////////////////////////////////4
-              const SizedBox(height: 20),
-              const Text(
-                'How did you get started doing this type of work?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              buildQuestion(
+                title: 'What advice you would give a customer looking to hire a provider in your area of work?',
+                controllerText: controller.seventhBusinessQuestion,
+                hasTyped: controller.hasTypedSeventhBusiness,
+                charCount: controller.seventhBusinessCharCount,
               ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.fourthBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
+              buildQuestion(
+                title: 'What questions should customers think through before talking to professionals about their project?',
+                controllerText: controller.eightBusinessQuestion,
+                hasTyped: controller.hasTypedEighthBusiness,
+                charCount: controller.eighthBusinessCharCount,
               ),
-              Obx(() {
-                final hasTyped = controller.hasTypedFourthBusiness.value;
-                final length = controller.fourthBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-
-              const SizedBox(height: 20),
-
-              ///////////////////////////////////////////////////5
-              const SizedBox(height: 20),
-              const Text(
-                'What type of customer have you worked with?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.fifthBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
-              ),
-              Obx(() {
-                final hasTyped = controller.hasTypedFifthBusiness.value;
-                final length = controller.fifthBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-
-              const SizedBox(height: 20),
-              ///////////////////////////////////////////6
-              const SizedBox(height: 20),
-              const Text(
-                'Describe a recent project you are fond of. How long did it take?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.sixthBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
-              ),
-              Obx(() {
-                final hasTyped = controller.hasTypedSixthBusiness.value;
-                final length = controller.sixthBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-              ////////////////////////////////////////////////////7
-              const SizedBox(height: 20),
-              const Text(
-                'What advice you would give a customer looking to hire a provider in your area of work?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.seventhBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
-              ),
-              Obx(() {
-                final hasTyped = controller.hasTypedSeventhBusiness.value;
-                final length = controller.seventhBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-
-              const SizedBox(height: 20),
-
-              ///////////////////////////////////////////8
-              const Text(
-                'What questions should customers think through before talking to professionals about their project?',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 8),
-              CustomInput(
-                controller: controller.eightBusinessQuestion,
-                maxLines: null,
-                validator: (value) {
-                  // We don't show error text here — validation handled by message below
-                  return null;
-                },
-              ),
-              Obx(() {
-                final hasTyped = controller.hasTypedEighthBusiness.value;
-                final length = controller.eighthBusinessCharCount.value;
-                final remaining = 50 - length;
-
-                // Always show message
-                if (!hasTyped) {
-                  // Before typing
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Minimum 50 characters needed',
-                      style: const TextStyle(color: Colors.green, fontSize: 12),
-                    ),
-                  );
-                } else if (remaining > 0) {
-                  // While typing but not reached 50
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '$remaining more characters needed',
-                      style: const TextStyle(color: Colors.red, fontSize: 12),
-                    ),
-                  );
-                } else {
-                  // 50 or more characters - no message
-                  return const SizedBox.shrink();
-                }
-              }),
-
-              const SizedBox(height: 20),
             ],
           ),
         ),

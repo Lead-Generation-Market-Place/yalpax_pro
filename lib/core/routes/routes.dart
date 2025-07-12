@@ -30,6 +30,10 @@ import 'package:yalpax_pro/feature/jobs/views/jobs_view.dart';
 import 'package:yalpax_pro/feature/profile/controller/profile_binding.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/business_faqs.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/business_info.dart';
+import 'package:yalpax_pro/feature/profile/views/profile/photo_video_previewer.dart';
+
+import 'package:yalpax_pro/feature/profile/views/profile/photos_videos.dart';
+import 'package:yalpax_pro/feature/profile/views/profile/professional_license.dart';
 
 import 'package:yalpax_pro/feature/profile/views/profile/profile_picture_edit.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/your_introduction.dart';
@@ -86,6 +90,9 @@ abstract class Routes {
   static const businessInfo = '/businessInfo';
   static const yourIntroduction = '/yourIntroduction';
   static const businessFAQS = '/businessFAQS';
+  static const businessProfileLicense = '/businessProfileLicense';
+  static const PhotosVideos = '/PhotosVideos';
+  static const photoVideoPreviewer = '/photoVideoPreviewer';
 }
 
 // Middleware
@@ -341,6 +348,24 @@ abstract class AppPages {
     GetPage(
       name: Routes.businessFAQS,
       page: () => BusinessFaqs(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.businessProfileLicense,
+      page: () => ProfessionalLicense(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.PhotosVideos,
+      page: () => PhotosVideos(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.photoVideoPreviewer,
+      page: () => const PhotoVideoPreviewer(),
       binding: ProfileBinding(),
       transition: Transition.fadeIn,
     ),

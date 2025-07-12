@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:get/get.dart';
 import 'package:logger/web.dart';
+import 'package:path/path.dart' as path;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
@@ -97,44 +99,51 @@ class ProfileController extends GetxController {
     'Stripe',
   ];
 
+  // Professional License Variables
+
   @override
   void onInit() async {
     await userBusinessProfile();
-    firstBusinessQuestion.addListener(() {
-      hasTypedFirstBusiness.value = true;
-      firstBusinessCharCount.value = firstBusinessQuestion.text.length;
-    });
-    secondtBusinessQuestion.addListener(() {
-      hasTypedSecondBusiness.value = true;
-      secondBusinessCharCount.value = secondtBusinessQuestion.text.length;
-    });
-    thirdBusinessQuestion.addListener(() {
-      hasTypedThirdBusiness.value = true;
-      thirdBusinessCharCount.value = thirdBusinessQuestion.text.length;
-    });
-    fourthBusinessQuestion.addListener(() {
-      hasTypedFourthBusiness.value = true;
-      fourthBusinessCharCount.value = fourthBusinessQuestion.text.length;
-    });
-    fifthBusinessQuestion.addListener(() {
-      hasTypedFifthBusiness.value = true;
-      fifthBusinessCharCount.value = fifthBusinessQuestion.text.length;
-    });
-    sixthBusinessQuestion.addListener(() {
-      hasTypedSixthBusiness.value = true;
-      sixthBusinessCharCount.value = sixthBusinessQuestion.text.length;
-    });
-    seventhBusinessQuestion.addListener(() {
-      hasTypedSeventhBusiness.value = true;
-      secondBusinessCharCount.value = seventhBusinessQuestion.text.length;
-    });
-    eightBusinessQuestion.addListener(() {
-      hasTypedEighthBusiness.value = true;
-      eighthBusinessCharCount.value = eightBusinessQuestion.text.length;
-    });
-    ningthBusinessQuestion.addListener(() {
-      hasTypedNinthBusiness.value = true;
-      ninthBusinessCharCount.value = ningthBusinessQuestion.text.length;
+
+    await fetchUserImages();
+    // firstBusinessQuestion.addListener(() {
+    //   hasTypedFirstBusiness.value = true;
+    //   firstBusinessCharCount.value = firstBusinessQuestion.text.length;
+    // });
+    // secondtBusinessQuestion.addListener(() {
+    //   hasTypedSecondBusiness.value = true;
+    //   secondBusinessCharCount.value = secondtBusinessQuestion.text.length;
+    // });
+    // thirdBusinessQuestion.addListener(() {
+    //   hasTypedThirdBusiness.value = true;
+    //   thirdBusinessCharCount.value = thirdBusinessQuestion.text.length;
+    // });
+    // fourthBusinessQuestion.addListener(() {
+    //   hasTypedFourthBusiness.value = true;
+    //   fourthBusinessCharCount.value = fourthBusinessQuestion.text.length;
+    // });
+    // fifthBusinessQuestion.addListener(() {
+    //   hasTypedFifthBusiness.value = true;
+    //   fifthBusinessCharCount.value = fifthBusinessQuestion.text.length;
+    // });
+    // sixthBusinessQuestion.addListener(() {
+    //   hasTypedSixthBusiness.value = true;
+    //   sixthBusinessCharCount.value = sixthBusinessQuestion.text.length;
+    // });
+    // seventhBusinessQuestion.addListener(() {
+    //   hasTypedSeventhBusiness.value = true;
+    //   secondBusinessCharCount.value = seventhBusinessQuestion.text.length;
+    // });
+    // eightBusinessQuestion.addListener(() {
+    //   hasTypedEighthBusiness.value = true;
+    //   eighthBusinessCharCount.value = eightBusinessQuestion.text.length;
+    // });
+    // ningthBusinessQuestion.addListener(() {
+    //   hasTypedNinthBusiness.value = true;
+    //   ninthBusinessCharCount.value = ningthBusinessQuestion.text.length;
+    // });
+    licenseNumberController.addListener(() {
+      update();
     });
 
     super.onInit();
@@ -151,6 +160,7 @@ class ProfileController extends GetxController {
     seventhBusinessQuestion.dispose();
     eightBusinessQuestion.dispose();
     ningthBusinessQuestion.dispose();
+    licenseNumberController.dispose();
     super.onClose();
   }
 
@@ -224,6 +234,13 @@ class ProfileController extends GetxController {
         final location = providerLocations.first['location'];
         if (location != null) {
           addressController.text = location['address_line1'] ?? '';
+          final addressLine1 = location['address_line1'] ?? '';
+          final addressLine2 = location['address_line2'] ?? '';
+          address.value = [
+            addressLine1,
+            addressLine2,
+          ].where((line) => line.isNotEmpty).join(', ');
+
           suiteController.text = location['address_line2'] ?? '';
           zipCodeController.text = location['zip'] ?? '';
         }
@@ -493,9 +510,8 @@ class ProfileController extends GetxController {
 
       if (existing == null) {
         // 2. INSERT new record with a manually generated UUID
-        final uuid = Uuid();
+
         final insertResponse = await supabase.from('business_faqs').insert({
-          'id': uuid.v4(),
           'user_id': authService.userId,
           'first_question': firstBusinessQuestion.text,
           'second_question': secondtBusinessQuestion.text,
@@ -586,4 +602,582 @@ class ProfileController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  Future<void> saveProfessionalLicense() async {
+    try {
+      isLoading.value = true;
+
+      if (selectedState.isEmpty ||
+          selectedLicenseType.isEmpty ||
+          licenseNumberController.text.isEmpty) {
+        throw Exception('Please fill in all fields');
+      }
+
+      final provider = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', authService.userId)
+          .select()
+          .limit(1);
+
+      if (provider == null) {
+        throw Exception('Error fetching provider id');
+      }
+      // Ensure we have the correct license ID
+      if (selectedLicenseTypeId.value.isEmpty) {
+        final selected = licenseTypeOptions.firstWhereOrNull(
+          (item) => item['name'] == selectedLicenseType.value,
+        );
+        selectedLicenseTypeId.value = selected?['id'] ?? '';
+      }
+
+      final response = await supabase
+          .from(
+            'provider_license',
+          ) // saving to provider_license as per your latest instruction
+          .insert({
+            'provider_id': provider[0]['provider_id'],
+            'state_id': selectedState
+                .value, // optionally use selectedStateId if you're mapping states too
+            'license_id': selectedLicenseTypeId.value,
+            'license_number': licenseNumberController.text,
+          })
+          .select()
+          .single();
+
+      if (response.isEmpty) {
+        throw Exception('Failed to save license information');
+      }
+
+      CustomFlutterToast.showSuccessToast(
+        'License information saved successfully',
+      );
+      Get.offAndToNamed(Routes.profile);
+    } catch (e) {
+      Logger().e('Error saving professional license: $e');
+      CustomFlutterToast.showErrorToast('Failed to save license information');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  RxString businessLicenseStatus = ''.obs;
+  var isBusinessLicenseExists = false.obs;
+  Future<bool> fetchProfessionalLicense() async {
+    try {
+      isLoading.value = true;
+
+      final providerData = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', authService.userId)
+          .maybeSingle(); // Use maybeSingle here to get a single map
+
+      final providerId = providerData?['provider_id'];
+
+      if (providerId == null) {
+        Logger().w('No provider ID found for user.');
+        return false;
+      }
+
+      final response = await supabase
+          .from('provider_license')
+          .select()
+          .eq('provider_id', providerId)
+          .maybeSingle();
+
+      final licenseResponse = await supabase
+          .from('licenses')
+          .select('name')
+          .eq('id', response?['license_id']);
+
+      if (response != null) {
+        selectedState.value = response['state'] ?? '';
+        selectedLicenseType.value = licenseResponse[0]['name'] ?? '';
+        licenseNumberController.text = response['license_number'] ?? '';
+        businessLicenseStatus.value = response['busines_licens_status'] ?? '';
+        // licenseStatus.text = response['licenseStatus'] ?? '';
+      }
+      isBusinessLicenseExists.value = true;
+      return true;
+    } catch (e) {
+      Logger().e('Error fetching professional license: $e');
+      isBusinessLicenseExists.value = false;
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /////////////////////////
+  RxList<String> licenseTypes = <String>[].obs;
+  RxList<String> states = <String>[].obs;
+  RxString selectedLicenseType = ''.obs;
+  RxString selectedState = ''.obs;
+  RxString selectedLicenseTypeId = ''.obs;
+
+  // Inputs
+  final licenseNumberController = TextEditingController();
+
+  /// Fetches licenses and stores them as a list of maps with 'id' and 'name'.
+  /// The UI should display the name but use the id as the selected value.
+  RxList<Map<String, String>> licenseTypeOptions = <Map<String, String>>[].obs;
+
+  Future<void> fetchLicenses() async {
+    try {
+      final response = await supabase.from('licenses').select('id,name');
+      if (response.isEmpty) {
+        throw Exception('No licenses found.');
+      }
+
+      // Full map with id and name
+      licenseTypeOptions.value = List<Map<String, String>>.from(
+        response.map<Map<String, String>>(
+          (item) => {
+            'id': item['id'].toString(),
+            'name': item['name'].toString(),
+          },
+        ),
+      );
+
+      // Extract just the names for the dropdown
+      licenseTypes.value = licenseTypeOptions
+          .map((item) => item['name']!)
+          .toList();
+    } catch (e) {
+      Logger().e('Failed to fetch licenses: $e');
+    }
+  }
+
+  Future<void> fetchStates() async {
+    try {
+      final response = await supabase.from('state').select('id');
+      if (response.isEmpty) {
+        throw Exception('No states found.');
+      }
+
+      states.value = List<String>.from(
+        response.map((item) => item['id'] as String),
+      );
+    } catch (e) {
+      Logger().e('Failed to fetch states: $e');
+    }
+  }
+
+  Future<void> pickMedia({
+    required ImageSource source,
+    required bool isVideo,
+  }) async {
+    try {
+      bool permissionGranted = false;
+
+      // Request permissions
+      if (source == ImageSource.camera) {
+        final status = await Permission.camera.request();
+        permissionGranted = status.isGranted;
+        if (status.isPermanentlyDenied) {
+          await _showPermissionSettingsDialog('Camera');
+          return;
+        }
+      } else {
+        if (Platform.isAndroid) {
+          final status = await Permission.storage.request();
+          permissionGranted = status.isGranted;
+          if (status.isPermanentlyDenied) {
+            await _showPermissionSettingsDialog('Storage');
+            return;
+          }
+        } else if (Platform.isIOS) {
+          final status = await Permission.photos.request();
+          permissionGranted = status.isGranted;
+          if (status.isPermanentlyDenied) {
+            await _showPermissionSettingsDialog('Photos');
+            return;
+          }
+        }
+      }
+
+      if (!permissionGranted) {
+        Get.snackbar(
+          'Permission Denied',
+          'Please grant permission to access ${source == ImageSource.camera ? 'camera' : 'gallery'}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[100],
+          colorText: Colors.red[900],
+        );
+        return;
+      }
+
+      if (isVideo) {
+        final XFile? video = await ImagePicker().pickVideo(source: source);
+
+        if (video != null) {
+          final File videoFile = File(video.path);
+          final int fileSize = await videoFile.length();
+          if (fileSize > 10 * 1024 * 1024) {
+            CustomFlutterToast.showErrorToast(
+              'Video size must be less than 10MB',
+            );
+            return;
+          }
+          await _uploadFile(videoFile, isVideo: true);
+        }
+      } else {
+        final List<XFile>? images = source == ImageSource.gallery
+            ? await ImagePicker().pickMultiImage(
+                maxHeight: 1200,
+                maxWidth: 1200,
+                imageQuality: 85,
+              )
+            : [
+                await ImagePicker().pickImage(
+                  source: source,
+                  maxHeight: 1200,
+                  maxWidth: 1200,
+                  imageQuality: 85,
+                ),
+              ].whereType<XFile>().toList();
+
+        if (images != null && images.isNotEmpty) {
+          for (var image in images) {
+            final File imageFile = File(image.path);
+            final int fileSize = await imageFile.length();
+            if (fileSize > 1 * 1024 * 1024) {
+              CustomFlutterToast.showErrorToast(
+                'Image size must be less than 1MB',
+              );
+              continue;
+            }
+            await _uploadFile(imageFile, isVideo: false);
+          }
+        }
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick file: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    }
+  }
+
+  Future<void> _showPermissionSettingsDialog(String permissionType) async {
+    await Get.dialog(
+      AlertDialog(
+        title: Text('$permissionType Permission Required'),
+        content: Text(
+          'We need $permissionType permission to proceed. Please enable it in settings.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  final RxList<String> userImageUrls = <String>[].obs;
+
+  // Future<void> _uploadImage(File imageFile) async {
+  //   String? fileName;
+  //   try {
+  //     isLoading.value = true;
+
+  //     // Get provider_id first
+  //     final providerResponse = await supabase
+  //         .from('service_providers')
+  //         .select('provider_id')
+  //         .eq('user_id', authService.userId)
+  //         .single();
+
+  //     final providerId = providerResponse['provider_id'];
+  //     if (providerId == null) {
+  //       throw Exception('Provider ID not found');
+  //     }
+
+  //     final userId = authService.userId;
+  //     fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+  //     // This is the key: store under private/userId/fileName
+  //     final filePath = 'private/$userId/$fileName';
+
+  //     // Upload the image to Supabase Storage
+  //     await supabase.storage
+  //         .from('provider-project-files')
+  //         .upload(filePath, imageFile);
+
+  //     // Save file reference in database
+  //     await supabase.from('provider_project_files').insert({
+  //       'name': fileName,
+  //       'provider_id': providerId,
+  //       'caption': 'Project photo', // Optional
+  //       'file_path': filePath, // You might want to save the full path
+  //     });
+
+  //     CustomFlutterToast.showSuccessToast('Image uploaded successfully');
+  //     await fetchUserImages();
+  //   } catch (e) {
+  //     Logger().e('Error uploading image: $e');
+  //     CustomFlutterToast.showErrorToast('Failed to upload image');
+
+  //     // Cleanup: Try removing uploaded image if failed
+  //     if (fileName != null) {
+  //       try {
+  //         final userId = authService.userId;
+  //         final filePath = 'private/$userId/$fileName';
+  //         await supabase.storage.from('provider-project-files').remove([
+  //           filePath,
+  //         ]);
+  //       } catch (_) {
+  //         // Ignore cleanup errors
+  //       }
+  //     }
+  //   } finally {
+  //     isLoading.value = false;
+  //   }
+  // }
+
+  Future<void> _uploadFile(File file, {required bool isVideo}) async {
+    String? fileName;
+    try {
+      isLoading.value = true;
+
+      final providerResponse = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', authService.userId)
+          .single();
+
+      final providerId = providerResponse['provider_id'];
+      if (providerId == null) {
+        throw Exception('Provider ID not found');
+      }
+
+      final userId = authService.userId;
+      final extension = path.extension(
+        file.path,
+      ); // Use `package:path/path.dart` as path
+      fileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
+      final filePath = 'private/$userId/$fileName';
+
+      await supabase.storage
+          .from('provider-project-files')
+          .upload(filePath, file);
+
+      await supabase.from('provider_project_files').insert({
+        'name': fileName,
+        'provider_id': providerId,
+        'caption': '',
+        'file_path': filePath,
+        'type': isVideo ? 'video' : 'image',
+      });
+
+      // CustomFlutterToast.showSuccessToast('File uploaded successfully');
+      await fetchUserImages();
+    } catch (e) {
+      Logger().e('Error uploading file: $e');
+      CustomFlutterToast.showErrorToast('Failed to upload file');
+
+      if (fileName != null) {
+        final userId = authService.userId;
+        final filePath = 'private/$userId/$fileName';
+        try {
+          await supabase.storage.from('provider-project-files').remove([
+            filePath,
+          ]);
+        } catch (_) {}
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchUserImages() async {
+    try {
+      isLoading.value = true;
+      final userId = authService.userId;
+      final folderPath = 'private/$userId';
+
+      final files = await supabase.storage
+          .from('provider-project-files')
+          .list(path: folderPath);
+
+      final urls = await Future.wait(
+        files.map((file) async {
+          final url = await supabase.storage
+              .from('provider-project-files')
+              .createSignedUrl('$folderPath/${file.name}', 60 * 60);
+          return url;
+        }),
+      );
+
+      // Make sure userImageUrls is a reactive variable (RxList)
+      userImageUrls.assignAll(urls);
+      
+      // Fetch captions after loading images
+      await fetchImageCaptions();
+    } catch (e) {
+      Logger().e('Error fetching user images: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Map to store image captions with image index as key
+  final RxMap<int, String> _imageCaptions = <int, String>{}.obs;
+  Map<int, String> get imageCaptions => _imageCaptions;
+
+  // Method to update image caption
+  Future<void> saveImageCaption(int index, String caption) async {
+    try {
+      isLoading.value = true;
+      final userId = authService.userId;
+      final imageUrl = userImageUrls[index];
+      final folderPath = 'private/$userId';
+      
+      // Get the filename from the URL
+      final uri = Uri.parse(imageUrl);
+      final pathSegments = uri.pathSegments;
+      final fileName = pathSegments.last;
+      
+      // Get provider_id
+      final providerResponse = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', userId)
+          .single();
+      
+      final providerId = providerResponse['provider_id'];
+      
+      // Update the caption in the database
+      await supabase
+          .from('provider_project_files')
+          .update({'caption': caption})
+          .eq('provider_id', providerId)
+          .eq('name', fileName);
+      
+      // Update local state
+      _imageCaptions[index] = caption;
+      
+      CustomFlutterToast.showSuccessToast('Caption updated successfully');
+    } catch (e) {
+      Logger().e('Error saving caption: $e');
+      CustomFlutterToast.showErrorToast('Failed to save caption');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Method to fetch image captions
+  Future<void> fetchImageCaptions() async {
+    try {
+      final userId = authService.userId;
+      
+      // Get provider_id
+      final providerResponse = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', userId)
+          .single();
+      
+      final providerId = providerResponse['provider_id'];
+      
+      // Fetch all captions
+      final response = await supabase
+          .from('provider_project_files')
+          .select('name, caption')
+          .eq('provider_id', providerId);
+      
+      // Clear existing captions
+      _imageCaptions.clear();
+      
+      // Map captions to images
+      for (int i = 0; i < userImageUrls.length; i++) {
+        final imageUrl = userImageUrls[i];
+        final uri = Uri.parse(imageUrl);
+        final fileName = uri.pathSegments.last;
+        
+        final fileData = response.firstWhere(
+          (file) => file['name'] == fileName,
+          orElse: () => {},
+        );
+        
+        if (fileData != null && fileData['caption'] != null) {
+          _imageCaptions[i] = fileData['caption'];
+        }
+      }
+      
+      Logger().i('Captions loaded: ${_imageCaptions}');
+    } catch (e) {
+      Logger().e('Error fetching captions: $e');
+    }
+  }
+
+  // Method to delete image
+  Future<void> deleteImage(int index) async {
+    try {
+      isLoading.value = true;
+      final userId = authService.userId;
+      final imageUrl = userImageUrls[index];
+      
+      // Get the filename from the URL
+      final uri = Uri.parse(imageUrl);
+      final fileName = uri.pathSegments.last;
+      final filePath = 'private/$userId/$fileName';
+      
+      // Get provider_id
+      final providerResponse = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', userId)
+          .single();
+      
+      final providerId = providerResponse['provider_id'];
+      
+      // Delete from database first
+      await supabase
+          .from('provider_project_files')
+          .delete()
+          .eq('provider_id', providerId)
+          .eq('name', fileName);
+      
+      // Then delete from storage
+      await supabase.storage
+          .from('provider-project-files')
+          .remove([filePath]);
+      
+      // Update local state
+      userImageUrls.removeAt(index);
+      _imageCaptions.remove(index);
+      
+      // Reindex remaining captions
+      final Map<int, String> newCaptions = {};
+      _imageCaptions.forEach((key, value) {
+        if (key > index) {
+          newCaptions[key - 1] = value;
+        } else if (key < index) {
+          newCaptions[key] = value;
+        }
+      });
+      _imageCaptions.clear();
+      _imageCaptions.addAll(newCaptions);
+      
+      CustomFlutterToast.showSuccessToast('Image deleted successfully');
+    } catch (e) {
+      Logger().e('Error deleting image: $e');
+      CustomFlutterToast.showErrorToast('Failed to delete image');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+
 }
