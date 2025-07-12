@@ -27,6 +27,7 @@ class _ProfileViewState extends State<ProfileView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await controller.userBusinessProfile();
+      await controller.fetchUserImages();
     });
   }
 
@@ -701,17 +702,8 @@ class _ProfileViewState extends State<ProfileView> {
                                           // Add Photo Button
                                           return GestureDetector(
                                             onTap: () {
-                                              Get.toNamed(
-                                                Routes.photoVideoPreviewer,
-                                                arguments: {
-                                                  'images': images,
-                                                  'initialIndex':
-                                                      index -
-                                                      1, // Because index 0 is the 'add' button
-                                                },
-                                              );
+                                              Get.toNamed(Routes.PhotosVideos);
                                             },
-
                                             child: Container(
                                               decoration: BoxDecoration(
                                                 border: Border.all(
@@ -723,8 +715,7 @@ class _ProfileViewState extends State<ProfileView> {
                                               child: const Center(
                                                 child: Icon(
                                                   Icons.add_circle_outline,
-                                                  color: Colors
-                                                      .blue, // Or use AppColors.primaryBlue if defined
+                                                  color: Colors.blue,
                                                   size: 36,
                                                 ),
                                               ),
@@ -732,31 +723,80 @@ class _ProfileViewState extends State<ProfileView> {
                                           );
                                         } else {
                                           final imageUrl = images[index - 1];
+                                          final isVideo =
+                                              imageUrl.toLowerCase().contains(
+                                                '.mp4',
+                                              ) ||
+                                              imageUrl.toLowerCase().contains(
+                                                '.mov',
+                                              ) ||
+                                              imageUrl.toLowerCase().contains(
+                                                '.avi',
+                                              );
 
-                                          return ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            child: Image.network(
-                                              imageUrl,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  const Icon(
-                                                    Icons.broken_image,
+                                          return GestureDetector(
+                                            onTap: () {
+                                              Get.toNamed(
+                                                Routes.photoVideoPreviewer,
+                                                arguments: {
+                                                  'images': images,
+                                                  'initialIndex': index - 1,
+                                                },
+                                              );
+                                            },
+                                            child: Stack(
+                                              fit: StackFit.expand,
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  child: Image.network(
+                                                    imageUrl,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder:
+                                                        (
+                                                          _,
+                                                          __,
+                                                          ___,
+                                                        ) => const Icon(
+                                                          Icons.broken_image,
+                                                        ),
+                                                    loadingBuilder:
+                                                        (
+                                                          context,
+                                                          child,
+                                                          loadingProgress,
+                                                        ) {
+                                                          if (loadingProgress ==
+                                                              null)
+                                                            return child;
+                                                          return const Center(
+                                                            child:
+                                                                CircularProgressIndicator(),
+                                                          );
+                                                        },
                                                   ),
-                                              loadingBuilder:
-                                                  (
-                                                    context,
-                                                    child,
-                                                    loadingProgress,
-                                                  ) {
-                                                    if (loadingProgress == null)
-                                                      return child;
-                                                    return const Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    );
-                                                  },
+                                                ),
+                                                if (isVideo)
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: const Center(
+                                                      child: Icon(
+                                                        Icons
+                                                            .play_circle_outline,
+                                                        color: Colors.white,
+                                                        size: 32,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
                                           );
                                         }
@@ -822,6 +862,117 @@ class _ProfileViewState extends State<ProfileView> {
                                       ],
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 25),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Featured Projects',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      Spacer(),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          Get.toNamed(Routes.featuredProjects);
+                                        },
+                                        label: Text('Add project'),
+                                        icon: Icon(
+                                          Icons.add_circle_outline_rounded,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  /// Reactive section
+                                  Obx(() {
+                                    if (!controller
+                                        .isBusinessLicenseExists
+                                        .value) {
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 20),
+                                          Container(
+                                            alignment: Alignment.center,padding: EdgeInsets.all(80),
+                                        decoration: BoxDecoration(border: Border.all(width: 0.3),),
+                                            child: IconButton(
+                                              onPressed: () {
+                                                Get.toNamed(
+                                                  Routes.featuredProjects,
+                                                );
+                                              },
+                                      
+                                              icon: Icon(
+                                                Icons
+                                                    .add_circle_outline_rounded,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${controller.selectedLicenseType.value.isNotEmpty ? controller.selectedLicenseType.value : 'N/A'} • ${controller.licenseNumberController.text.isNotEmpty ? controller.licenseNumberController.text : 'N/A'}',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              color: AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.grey.shade300,
+                                              borderRadius:
+                                                  BorderRadius.circular(15),
+                                            ),
+                                            child: Obx(() {
+                                              return Text(
+                                                controller
+                                                    .businessLicenseStatus
+                                                    .value,
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                  }),
                                 ],
                               ),
                             ),
