@@ -93,6 +93,7 @@ abstract class Routes {
   static const businessProfileLicense = '/businessProfileLicense';
   static const PhotosVideos = '/PhotosVideos';
   static const photoVideoPreviewer = '/photoVideoPreviewer';
+  static const featuredProjects = '/featuredProjects';
 }
 
 // Middleware
@@ -365,6 +366,12 @@ abstract class AppPages {
     ),
     GetPage(
       name: Routes.photoVideoPreviewer,
+      page: () => const PhotoVideoPreviewer(),
+      binding: ProfileBinding(),
+      transition: Transition.fadeIn,
+    ),
+    GetPage(
+      name: Routes.featuredProjects,
       page: () => const PhotoVideoPreviewer(),
       binding: ProfileBinding(),
       transition: Transition.fadeIn,

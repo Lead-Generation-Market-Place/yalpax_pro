@@ -53,7 +53,7 @@ dependencies:
   path: ^1.9.1
   app_links: ^6.4.0
   uuid: ^4.5.1
-  video_player: ^2.10.0
+  video_player: ^2.8.2
   
 
 dev_dependencies:
