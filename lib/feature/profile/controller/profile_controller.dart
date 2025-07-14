@@ -21,6 +21,14 @@ class ProfileController extends GetxController {
   var isLoading = false.obs;
   final ImagePicker _imagePicker = ImagePicker();
 
+  // Services variables
+  RxList<Map<String, dynamic>> services = <Map<String, dynamic>>[].obs;
+  RxString selectedServiceId = ''.obs;
+
+  // City search variables
+  RxList<Map<String, dynamic>> citySearchResults = <Map<String, dynamic>>[].obs;
+  RxBool isCitySearching = false.obs;
+
   // Business Info Controllers
   final RxString phone = ''.obs;
   final RxString website = ''.obs;
@@ -103,8 +111,6 @@ class ProfileController extends GetxController {
 
   @override
   void onInit() async {
-    await userBusinessProfile();
-
     await fetchUserImages();
     // firstBusinessQuestion.addListener(() {
     //   hasTypedFirstBusiness.value = true;
@@ -162,12 +168,6 @@ class ProfileController extends GetxController {
     ningthBusinessQuestion.dispose();
     licenseNumberController.dispose();
     super.onClose();
-  }
-
-  @override
-  void onReady() {
-    super.onReady();
-    userBusinessProfile();
   }
 
   Future<void> userBusinessProfile() async {
@@ -885,6 +885,7 @@ class ProfileController extends GetxController {
   }
 
   final RxList<String> userImageUrls = <String>[].obs;
+  final RxList<String> featureProjectImageUrls = <String>[].obs;
 
   // Future<void> _uploadImage(File imageFile) async {
   //   String? fileName;
@@ -945,7 +946,12 @@ class ProfileController extends GetxController {
   //   }
   // }
 
-  Future<void> _uploadFile(File file, {required bool isVideo}) async {
+  Future<void> _uploadFile(
+    File file, {
+    required bool isVideo,
+    int? featuredProjectId,
+    bool fromFeaturedProjectSection = false,
+  }) async {
     String? fileName;
     try {
       isLoading.value = true;
@@ -955,37 +961,36 @@ class ProfileController extends GetxController {
           .select('provider_id')
           .eq('user_id', authService.userId)
           .single();
-
       final providerId = providerResponse['provider_id'];
-      if (providerId == null) {
-        throw Exception('Provider ID not found');
-      }
+      if (providerId == null) throw Exception('Provider ID not found');
 
       final userId = authService.userId;
-      final extension = path.extension(
-        file.path,
-      ); // Use `package:path/path.dart` as path
+      final extension = path.extension(file.path);
       fileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
       final filePath = 'private/$userId/$fileName';
 
+      // Upload file to storage
       await supabase.storage
           .from('provider-project-files')
           .upload(filePath, file);
 
+      // Insert into DB with featured_project_id logic
       await supabase.from('provider_project_files').insert({
         'name': fileName,
         'provider_id': providerId,
         'caption': '',
         'file_path': filePath,
         'type': isVideo ? 'video' : 'image',
+        'featured_project_id': fromFeaturedProjectSection
+            ? (featuredProjectId ?? 0)
+            : null,
       });
 
-      // CustomFlutterToast.showSuccessToast('File uploaded successfully');
-      await fetchUserImages();
+      await fetchUserImages(); // Refresh UI
     } catch (e) {
       Logger().e('Error uploading file: $e');
       CustomFlutterToast.showErrorToast('Failed to upload file');
-
+      // Cleanup
       if (fileName != null) {
         final userId = authService.userId;
         final filePath = 'private/$userId/$fileName';
@@ -1021,7 +1026,7 @@ class ProfileController extends GetxController {
 
       // Make sure userImageUrls is a reactive variable (RxList)
       userImageUrls.assignAll(urls);
-      
+
       // Fetch captions after loading images
       await fetchImageCaptions();
     } catch (e) {
@@ -1042,31 +1047,31 @@ class ProfileController extends GetxController {
       final userId = authService.userId;
       final imageUrl = userImageUrls[index];
       final folderPath = 'private/$userId';
-      
+
       // Get the filename from the URL
       final uri = Uri.parse(imageUrl);
       final pathSegments = uri.pathSegments;
       final fileName = pathSegments.last;
-      
+
       // Get provider_id
       final providerResponse = await supabase
           .from('service_providers')
           .select('provider_id')
           .eq('user_id', userId)
           .single();
-      
+
       final providerId = providerResponse['provider_id'];
-      
+
       // Update the caption in the database
       await supabase
           .from('provider_project_files')
           .update({'caption': caption})
           .eq('provider_id', providerId)
           .eq('name', fileName);
-      
+
       // Update local state
       _imageCaptions[index] = caption;
-      
+
       CustomFlutterToast.showSuccessToast('Caption updated successfully');
     } catch (e) {
       Logger().e('Error saving caption: $e');
@@ -1080,41 +1085,41 @@ class ProfileController extends GetxController {
   Future<void> fetchImageCaptions() async {
     try {
       final userId = authService.userId;
-      
+
       // Get provider_id
       final providerResponse = await supabase
           .from('service_providers')
           .select('provider_id')
           .eq('user_id', userId)
           .single();
-      
+
       final providerId = providerResponse['provider_id'];
-      
+
       // Fetch all captions
       final response = await supabase
           .from('provider_project_files')
           .select('name, caption')
           .eq('provider_id', providerId);
-      
+
       // Clear existing captions
       _imageCaptions.clear();
-      
+
       // Map captions to images
       for (int i = 0; i < userImageUrls.length; i++) {
         final imageUrl = userImageUrls[i];
         final uri = Uri.parse(imageUrl);
         final fileName = uri.pathSegments.last;
-        
+
         final fileData = response.firstWhere(
           (file) => file['name'] == fileName,
           orElse: () => {},
         );
-        
+
         if (fileData != null && fileData['caption'] != null) {
           _imageCaptions[i] = fileData['caption'];
         }
       }
-      
+
       Logger().i('Captions loaded: ${_imageCaptions}');
     } catch (e) {
       Logger().e('Error fetching captions: $e');
@@ -1127,37 +1132,35 @@ class ProfileController extends GetxController {
       isLoading.value = true;
       final userId = authService.userId;
       final imageUrl = userImageUrls[index];
-      
+
       // Get the filename from the URL
       final uri = Uri.parse(imageUrl);
       final fileName = uri.pathSegments.last;
       final filePath = 'private/$userId/$fileName';
-      
+
       // Get provider_id
       final providerResponse = await supabase
           .from('service_providers')
           .select('provider_id')
           .eq('user_id', userId)
           .single();
-      
+
       final providerId = providerResponse['provider_id'];
-      
+
       // Delete from database first
       await supabase
           .from('provider_project_files')
           .delete()
           .eq('provider_id', providerId)
           .eq('name', fileName);
-      
+
       // Then delete from storage
-      await supabase.storage
-          .from('provider-project-files')
-          .remove([filePath]);
-      
+      await supabase.storage.from('provider-project-files').remove([filePath]);
+
       // Update local state
       userImageUrls.removeAt(index);
       _imageCaptions.remove(index);
-      
+
       // Reindex remaining captions
       final Map<int, String> newCaptions = {};
       _imageCaptions.forEach((key, value) {
@@ -1169,7 +1172,7 @@ class ProfileController extends GetxController {
       });
       _imageCaptions.clear();
       _imageCaptions.addAll(newCaptions);
-      
+
       CustomFlutterToast.showSuccessToast('Image deleted successfully');
     } catch (e) {
       Logger().e('Error deleting image: $e');
@@ -1179,5 +1182,251 @@ class ProfileController extends GetxController {
     }
   }
 
+  Future<void> fetchServices() async {
+    try {
+      isLoading.value = true;
+      final response = await supabase
+          .from('services')
+          .select('id, name')
+          .order('name');
 
+      if (response != null) {
+        services.value = List<Map<String, dynamic>>.from(response);
+      }
+    } catch (e) {
+      Logger().e('Error fetching services: $e');
+      CustomFlutterToast.showErrorToast('Failed to fetch services');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> searchCities(String query) async {
+    if (query.isEmpty) {
+      citySearchResults.clear();
+      return;
+    }
+
+    try {
+      isCitySearching.value = true;
+      final response = await supabase
+          .from('cities')
+          .select('id, city, state_id')
+          .ilike('city', '%$query%')
+          .limit(5);
+
+      if (response != null) {
+        citySearchResults.value = List<Map<String, dynamic>>.from(response);
+      }
+    } catch (e) {
+      Logger().e('Error searching cities: $e');
+    } finally {
+      isCitySearching.value = false;
+    }
+  }
+
+  Future<void> saveFeaturedProject() async {
+    try {
+      isLoading.value = true;
+
+      // Get provider ID from service_providers
+      final providerData = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', authService.userId)
+          .maybeSingle();
+
+      final providerId = providerData?['provider_id'];
+      if (providerId == null) {
+        throw Exception('No provider ID found for user.');
+      }
+
+      // Insert into featured_projects table
+      final featuredProjectResponse = await supabase
+          .from('featured_projects')
+          .insert({
+            'service_id': int.tryParse(selectedServiceId.value),
+            'cities_id': selectedCityId.value.isNotEmpty
+                ? int.tryParse(selectedCityId.value)
+                : null,
+            'project_title': projectTitleController.text,
+            'service_provider_id': providerId,
+          })
+          .select()
+          .single();
+
+      if (featuredProjectResponse == null) {
+        throw Exception('Failed to create featured project');
+      }
+
+      final featuredProjectId = featuredProjectResponse['id'];
+
+      // Update existing project files with the featured_project_id
+      final existingFiles = await supabase
+          .from('provider_project_files')
+          .select('id')
+          .eq('provider_id', providerId)
+          .eq('featured_project_id', 0);
+
+      if (existingFiles != null && existingFiles.isNotEmpty) {
+        await supabase
+            .from('provider_project_files')
+            .update({'featured_project_id': featuredProjectId})
+            .eq('provider_id', providerId)
+            .eq('featured_project_id', 0);
+      }
+
+      CustomFlutterToast.showSuccessToast('Project saved successfully');
+      Get.offAndToNamed(Routes.profile);
+    } catch (e) {
+      Logger().e('Error saving featured project: $e');
+      CustomFlutterToast.showErrorToast('Failed to save project');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Add projectTitleController
+  final projectTitleController = TextEditingController();
+  final RxString selectedCityId = ''.obs;
+ Future<void> pickMediaForFeatureProjects({
+  required ImageSource source,
+  required bool isVideo,
+  int? featureProjectId, // Now optional
+  bool fromFeaturedProjectSection = true, // New param
+}) async {
+  try {
+    bool permissionGranted = false;
+
+    // [Permission logic remains unchanged]
+
+    if (isVideo) {
+      final XFile? video = await ImagePicker().pickVideo(source: source);
+      if (video != null) {
+        final File videoFile = File(video.path);
+        final int fileSize = await videoFile.length();
+        if (fileSize > 10 * 1024 * 1024) {
+          CustomFlutterToast.showErrorToast('Video size must be less than 10MB');
+          return;
+        }
+        await _uploadFile(
+          videoFile,
+          isVideo: true,
+          featuredProjectId: featureProjectId,
+          fromFeaturedProjectSection: fromFeaturedProjectSection,
+        );
+      }
+    } else {
+      final List<XFile>? images = source == ImageSource.gallery
+          ? await ImagePicker().pickMultiImage(
+              maxHeight: 1200,
+              maxWidth: 1200,
+              imageQuality: 85,
+            )
+          : [
+              await ImagePicker().pickImage(
+                source: source,
+                maxHeight: 1200,
+                maxWidth: 1200,
+                imageQuality: 85,
+              ),
+            ].whereType<XFile>().toList();
+
+      if (images != null && images.isNotEmpty) {
+        for (var image in images) {
+          final File imageFile = File(image.path);
+          final int fileSize = await imageFile.length();
+          if (fileSize > 1 * 1024 * 1024) {
+            CustomFlutterToast.showErrorToast('Image size must be less than 1MB');
+            continue;
+          }
+          await _uploadFile(
+            imageFile,
+            isVideo: false,
+            featuredProjectId: featureProjectId,
+            fromFeaturedProjectSection: fromFeaturedProjectSection,
+          );
+        }
+      }
+    }
+  } catch (e) {
+    Get.snackbar(
+      'Error',
+      'Failed to pick file: $e',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+}
+
+
+void showMediaPickerWithProjectId(int featuredProjectId) {
+  showModalBottomSheet(
+    context: Get.context!,
+    builder: (context) => Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Add Photos or Video',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: Icon(Icons.photo_library),
+            title: Text('Choose from Gallery'),
+            onTap: () {
+              Get.back();
+              pickMediaForFeatureProjects(
+                source: ImageSource.gallery,
+                isVideo: false,
+                featureProjectId: featuredProjectId,
+                fromFeaturedProjectSection: true,
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.videocam),
+            title: Text('Choose Video from Gallery'),
+            onTap: () {
+              Get.back();
+              pickMediaForFeatureProjects(
+                source: ImageSource.gallery,
+                isVideo: true,
+                featureProjectId: featuredProjectId,
+                fromFeaturedProjectSection: true,
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.camera_alt),
+            title: Text('Take a Photo'),
+            onTap: () {
+              Get.back();
+              pickMediaForFeatureProjects(
+                source: ImageSource.camera,
+                isVideo: false,
+                featureProjectId: featuredProjectId,
+                fromFeaturedProjectSection: true,
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.videocam),
+            title: Text('Record a Video'),
+            onTap: () {
+              Get.back();
+              pickMediaForFeatureProjects(
+                source: ImageSource.camera,
+                isVideo: true,
+                featureProjectId: featuredProjectId,
+                fromFeaturedProjectSection: true,
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
 }
