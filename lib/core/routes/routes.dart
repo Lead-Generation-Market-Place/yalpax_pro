@@ -30,6 +30,7 @@ import 'package:yalpax_pro/feature/jobs/views/jobs_view.dart';
 import 'package:yalpax_pro/feature/profile/controller/profile_binding.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/business_faqs.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/business_info.dart';
+import 'package:yalpax_pro/feature/profile/views/profile/featured_projects.dart';
 import 'package:yalpax_pro/feature/profile/views/profile/photo_video_previewer.dart';
 
 import 'package:yalpax_pro/feature/profile/views/profile/photos_videos.dart';
@@ -372,7 +373,7 @@ abstract class AppPages {
     ),
     GetPage(
       name: Routes.featuredProjects,
-      page: () => const PhotoVideoPreviewer(),
+      page: () => const AddProjectPage(),
       binding: ProfileBinding(),
       transition: Transition.fadeIn,
     ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:logger/web.dart';
 import 'package:yalpax_pro/core/constants/file_urls.dart';
 import 'package:yalpax_pro/core/widgets/bottom_navbar.dart';
 import 'package:yalpax_pro/core/constants/app_colors.dart';
@@ -25,10 +26,16 @@ class _ProfileViewState extends State<ProfileView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    initialize();
+  }
+
+  Future<void> initialize() async {
+    try {
       await controller.userBusinessProfile();
       await controller.fetchUserImages();
-    });
+    } catch (e) {
+      Logger().e(e);
+    }
   }
 
   @override
@@ -919,15 +926,18 @@ class _ProfileViewState extends State<ProfileView> {
                                         children: [
                                           const SizedBox(height: 20),
                                           Container(
-                                            alignment: Alignment.center,padding: EdgeInsets.all(80),
-                                        decoration: BoxDecoration(border: Border.all(width: 0.3),),
+                                            alignment: Alignment.center,
+                                            padding: EdgeInsets.all(80),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(width: 0.3),
+                                            ),
                                             child: IconButton(
                                               onPressed: () {
                                                 Get.toNamed(
                                                   Routes.featuredProjects,
                                                 );
                                               },
-                                      
+
                                               icon: Icon(
                                                 Icons
                                                     .add_circle_outline_rounded,
