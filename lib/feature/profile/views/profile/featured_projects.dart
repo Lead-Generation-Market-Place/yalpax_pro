@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:logger/web.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:yalpax_pro/core/routes/routes.dart';
 import 'package:yalpax_pro/core/widgets/advanced_dropdown_field.dart';
 import 'package:yalpax_pro/core/widgets/custom_button.dart';
+import 'package:yalpax_pro/core/widgets/custom_flutter_toast.dart';
 import 'package:yalpax_pro/feature/profile/controller/profile_controller.dart';
 
 class AddProjectPage extends StatefulWidget {
@@ -44,6 +46,8 @@ class _AddProjectPageState extends State<AddProjectPage> {
       });
     }
   }
+
+  final List<XFile> selectedFiles = [];
 
   final List<XFile> photos = [];
 
@@ -191,6 +195,7 @@ class _AddProjectPageState extends State<AddProjectPage> {
             // Photos
             Obx(() {
               final images = profileController.featureProjectImageUrls;
+              final allFiles = [...selectedFiles.map((e) => e.path), ...images];
 
               return GridView.builder(
                 shrinkWrap: true,
@@ -200,94 +205,101 @@ class _AddProjectPageState extends State<AddProjectPage> {
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
                 ),
-                itemCount: images.length + 1,
+                itemCount: allFiles.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {
                     return _buildAddPhotoButton();
                   } else {
-                    final imageUrl = images[index - 1];
+                    final filePath = allFiles[index - 1];
                     final isVideo =
-                        imageUrl.toLowerCase().contains('.mp4') ||
-                        imageUrl.toLowerCase().contains('.mov') ||
-                        imageUrl.toLowerCase().contains('.avi');
+                        filePath.toLowerCase().endsWith('.mp4') ||
+                        filePath.toLowerCase().endsWith('.mov') ||
+                        filePath.toLowerCase().endsWith('.avi');
 
-                    return GestureDetector(
-                      // onTap: () {
-                      //   Get.toNamed(
-                      //     // Routes.photoVideoPreviewer,
-                      //     // arguments: {
-                      //     //   'images': images,
-                      //     //   'initialIndex': index - 1,
-                      //     // },
-                      //   // );
-                      // },
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value:
-                                            loadingProgress
-                                                    .expectedTotalBytes !=
-                                                null
-                                            ? loadingProgress
-                                                      .cumulativeBytesLoaded /
-                                                  loadingProgress
-                                                      .expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(8),
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        isVideo
+                            ? Container(
+                                color: Colors.black12,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.play_circle_outline,
+                                    size: 40,
                                   ),
-                                  child: const Icon(
-                                    Icons.error_outline,
-                                    color: Colors.red,
-                                  ),
+                                ),
+                              )
+                            : Image.file(
+                                File(filePath),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(Icons.broken_image),
+                              ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedFiles.removeWhere(
+                                  (file) => file.path == filePath,
                                 );
-                              },
+                                profileController.featureProjectImageUrls
+                                    .remove(filePath);
+                              });
+                            },
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
-                          if (isVideo)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.play_circle_outline,
-                                  color: Colors.white,
-                                  size: 32,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   }
                 },
               );
             }),
+
             const SizedBox(height: 30),
 
             // Submit Button
             CustomButton(
               text: 'Submit',
               onPressed: () async {
-                await profileController.saveFeaturedProject();
+                final title = projectTitleController.text.trim();
+                final serviceId = profileController.selectedServiceId.value;
+                final cityId =
+                    profileController.selectedCityId.value;
+
+                if (selectedFiles.isEmpty) {
+                  CustomFlutterToast.showErrorToast(
+                    'Please select at least one media file',
+                  );
+                  return;
+                }
+
+                if (title.isEmpty || serviceId.isEmpty) {
+                  CustomFlutterToast.showErrorToast(
+                    'Title and service are required',
+                  );
+                  return;
+                }
+
+                await profileController.saveFeaturedProjectAndFiles(
+                  selectedFiles: selectedFiles,
+                  projectTitle: title,
+                  serviceId: serviceId,
+                  cityId: cityId,
+                );
               },
             ),
           ],
@@ -305,9 +317,7 @@ class _AddProjectPageState extends State<AddProjectPage> {
       ),
       child: InkWell(
         onTap: () {
-          // Use the controller's showMediaPickerWithProjectId method
-          // Pass 0 as the default featuredProjectId for new projects, or the actual id if available
-          profileController.showMediaPickerWithProjectId(0); // Replace 0 with the actual project id if you have it
+          _showImagePickerBottomSheet(context);
         },
         child: Center(
           child: Icon(
@@ -316,6 +326,274 @@ class _AddProjectPageState extends State<AddProjectPage> {
             color: Colors.blue[400],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showImagePickerBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              height: 4,
+              width: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Add Photos',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildOptionTile(
+              icon: Icons.photo_library_outlined,
+              title: 'Choose from Gallery',
+              onTap: () async {
+                Get.back(); // Close the bottom sheet
+
+                await Get.defaultDialog(
+                  title: 'Select Media Type',
+                  content: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.image),
+                        title: const Text('Image'),
+                        onTap: () async {
+                          Get.back(); // Close dialog
+                          await pickMedia(
+                            source: ImageSource.gallery,
+                            isVideo: false,
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.videocam),
+                        title: const Text('Video'),
+                        onTap: () async {
+                          Get.back(); // Close dialog
+                          await pickMedia(
+                            source: ImageSource.gallery,
+                            isVideo: true,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            _buildOptionTile(
+              icon: Icons.camera_alt_outlined,
+              title: 'Take a Photo or Video',
+              onTap: () async {
+                Get.back(); // Close the bottom sheet
+
+                await Get.defaultDialog(
+                  title: 'Select Media Type',
+                  content: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.photo_camera),
+                        title: const Text('Photo'),
+                        onTap: () async {
+                          Get.back(); // Close dialog
+                          await pickMedia(
+                            source: ImageSource.camera,
+                            isVideo: false,
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.videocam),
+                        title: const Text('Video'),
+                        onTap: () async {
+                          Get.back(); // Close dialog
+                          await pickMedia(
+                            source: ImageSource.camera,
+                            isVideo: true,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.blue[400], size: 24),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontFamily: 'Poppins',
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> pickMedia({
+    required ImageSource source,
+    required bool isVideo,
+  }) async {
+    try {
+      bool permissionGranted = false;
+
+      // Request permissions
+      if (source == ImageSource.camera) {
+        final status = await Permission.camera.request();
+        permissionGranted = status.isGranted;
+        if (status.isPermanentlyDenied) {
+          await _showPermissionSettingsDialog('Camera');
+          return;
+        }
+      } else {
+        if (Platform.isAndroid) {
+          final status = await Permission.storage.request();
+          permissionGranted = status.isGranted;
+          if (status.isPermanentlyDenied) {
+            await _showPermissionSettingsDialog('Storage');
+            return;
+          }
+        } else if (Platform.isIOS) {
+          final status = await Permission.photos.request();
+          permissionGranted = status.isGranted;
+          if (status.isPermanentlyDenied) {
+            await _showPermissionSettingsDialog('Photos');
+            return;
+          }
+        }
+      }
+
+      if (!permissionGranted) {
+        Get.snackbar(
+          'Permission Denied',
+          'Please grant permission to access ${source == ImageSource.camera ? 'camera' : 'gallery'}',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red[100],
+          colorText: Colors.red[900],
+        );
+        return;
+      }
+
+      if (isVideo) {
+        final XFile? video = await ImagePicker().pickVideo(source: source);
+
+        if (video != null) {
+          final File videoFile = File(video.path);
+          final int fileSize = await videoFile.length();
+          if (fileSize > 10 * 1024 * 1024) {
+            CustomFlutterToast.showErrorToast(
+              'Video size must be less than 10MB',
+            );
+            return;
+          }
+
+          setState(() {
+            selectedFiles.add(video); // Add video to selectedFiles
+          });
+        }
+      } else {
+        final List<XFile>? images = source == ImageSource.gallery
+            ? await ImagePicker().pickMultiImage(
+                maxHeight: 1200,
+                maxWidth: 1200,
+                imageQuality: 85,
+              )
+            : [
+                await ImagePicker().pickImage(
+                  source: source,
+                  maxHeight: 1200,
+                  maxWidth: 1200,
+                  imageQuality: 85,
+                ),
+              ].whereType<XFile>().toList();
+
+        if (images != null && images.isNotEmpty) {
+          for (var image in images) {
+            final File imageFile = File(image.path);
+            final int fileSize = await imageFile.length();
+            if (fileSize > 1 * 1024 * 1024) {
+              CustomFlutterToast.showErrorToast(
+                'Image size must be less than 1MB',
+              );
+              continue;
+            }
+            setState(() {
+              selectedFiles.add(image); // Add image to selectedFiles
+            });
+          }
+        }
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to pick file: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    }
+  }
+
+  Future<void> _showPermissionSettingsDialog(String permissionType) async {
+    await Get.dialog(
+      AlertDialog(
+        title: Text('$permissionType Permission Required'),
+        content: Text(
+          'We need $permissionType permission to proceed. Please enable it in settings.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
       ),
     );
   }

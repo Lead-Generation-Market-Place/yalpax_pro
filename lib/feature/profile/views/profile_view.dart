@@ -92,7 +92,7 @@ class _ProfileViewState extends State<ProfileView> {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewPadding.bottom + 80,
+                  bottom: MediaQuery.of(context).viewPadding.bottom + 10,
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.only(bottom: 16),

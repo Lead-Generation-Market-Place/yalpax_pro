@@ -47,12 +47,12 @@ class _JobsViewState extends State<JobsView> {
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Refresh step count when returning to this screen
-    jobsController.checkStep();
-  }
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   // Refresh step count when returning to this screen
+  //   jobsController.checkStep();
+  // }
 
   @override
   void dispose() {
