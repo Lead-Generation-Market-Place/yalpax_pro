@@ -42,6 +42,7 @@ class BottomNavbar extends StatelessWidget {
     final itemWidth = width / 5;
 
     return Container(
+      
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(

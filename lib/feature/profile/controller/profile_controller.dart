@@ -820,7 +820,7 @@ class ProfileController extends GetxController {
             );
             return;
           }
-          await _uploadFile(videoFile, isVideo: true);
+          await uploadFile(videoFile, isVideo: true);
         }
       } else {
         final List<XFile>? images = source == ImageSource.gallery
@@ -848,7 +848,7 @@ class ProfileController extends GetxController {
               );
               continue;
             }
-            await _uploadFile(imageFile, isVideo: false);
+            await uploadFile(imageFile, isVideo: false);
           }
         }
       }
@@ -946,7 +946,7 @@ class ProfileController extends GetxController {
   //   }
   // }
 
-  Future<void> _uploadFile(
+  Future<void> uploadFile(
     File file, {
     required bool isVideo,
     int? featuredProjectId,
@@ -1008,26 +1008,42 @@ class ProfileController extends GetxController {
   Future<void> fetchUserImages() async {
     try {
       isLoading.value = true;
-      final userId = authService.userId;
-      final folderPath = 'private/$userId';
+      final user = authService.userId; // Assuming userId == provider_id
+      // Get provider_id
+      final providerResponse = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', user)
+          .single();
 
-      final files = await supabase.storage
-          .from('provider-project-files')
-          .list(path: folderPath);
+      final providerId = providerResponse['provider_id'];
 
+      // Step 1: Query table where featured_project_id is null
+      final response = await supabase
+          .from('provider_project_files')
+          .select('file_path, name')
+          .eq('provider_id', providerId)
+          .filter('featured_project_id', 'is', null);
+
+      if (response.isEmpty) {
+        userImageUrls.clear();
+        return;
+      }
+
+      // Step 2: Generate signed URLs for each file
       final urls = await Future.wait(
-        files.map((file) async {
-          final url = await supabase.storage
+        response.map((file) async {
+          final filePath = file['file_path'] as String;
+          final signedUrl = await supabase.storage
               .from('provider-project-files')
-              .createSignedUrl('$folderPath/${file.name}', 60 * 60);
-          return url;
+              .createSignedUrl(filePath, 60 * 60);
+          return signedUrl;
         }),
       );
 
-      // Make sure userImageUrls is a reactive variable (RxList)
       userImageUrls.assignAll(urls);
 
-      // Fetch captions after loading images
+      // Step 3: Optionally fetch captions
       await fetchImageCaptions();
     } catch (e) {
       Logger().e('Error fetching user images: $e');
@@ -1225,208 +1241,89 @@ class ProfileController extends GetxController {
     }
   }
 
-  Future<void> saveFeaturedProject() async {
-    try {
-      isLoading.value = true;
+Future<void> saveFeaturedProjectAndFiles({
+  required List<XFile> selectedFiles,
+  required String projectTitle,
+  required String serviceId,
+  required String cityId,
+}) async {
+  try {
+    isLoading.value = true;
 
-      // Get provider ID from service_providers
-      final providerData = await supabase
-          .from('service_providers')
-          .select('provider_id')
-          .eq('user_id', authService.userId)
-          .maybeSingle();
+    final userId = authService.userId;
 
-      final providerId = providerData?['provider_id'];
-      if (providerId == null) {
-        throw Exception('No provider ID found for user.');
+    // Get provider_id
+    final providerData = await supabase
+        .from('service_providers')
+        .select('provider_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    final providerId = providerData?['provider_id'];
+    if (providerId == null) throw Exception('No provider ID found for user.');
+
+    // Insert featured project
+    final featuredProjectResponse = await supabase
+        .from('featured_projects')
+        .insert({
+          'service_id': int.tryParse(serviceId),
+          'cities_id': cityId.isNotEmpty ? int.tryParse(cityId) : null,
+          'project_title': projectTitle,
+          'service_provider_id': providerId,
+        })
+        .select()
+        .single();
+
+    final int featuredProjectId = featuredProjectResponse['id'];
+
+    // Upload each file
+    for (final file in selectedFiles) {
+      final extension = path.extension(file.path);
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
+      final filePath = 'private/$userId/$fileName';
+      final fileToUpload = File(file.path);
+
+      // Detect file type
+      final isVideo = extension.toLowerCase() == '.mp4' ||
+          extension.toLowerCase() == '.mov' ||
+          extension.toLowerCase() == '.avi';
+
+      try {
+        // Upload to Supabase storage
+        await supabase.storage
+            .from('provider-project-files')
+            .upload(filePath, fileToUpload);
+      } catch (e) {
+        throw Exception('Failed to upload file: $fileName — $e');
       }
 
-      // Insert into featured_projects table
-      final featuredProjectResponse = await supabase
-          .from('featured_projects')
-          .insert({
-            'service_id': int.tryParse(selectedServiceId.value),
-            'cities_id': selectedCityId.value.isNotEmpty
-                ? int.tryParse(selectedCityId.value)
-                : null,
-            'project_title': projectTitleController.text,
-            'service_provider_id': providerId,
-          })
-          .select()
-          .single();
-
-      if (featuredProjectResponse == null) {
-        throw Exception('Failed to create featured project');
-      }
-
-      final featuredProjectId = featuredProjectResponse['id'];
-
-      // Update existing project files with the featured_project_id
-      final existingFiles = await supabase
+      // Insert metadata into DB
+      final insertResult = await supabase
           .from('provider_project_files')
-          .select('id')
-          .eq('provider_id', providerId)
-          .eq('featured_project_id', 0);
+          .insert({
+            'provider_id': providerId,
+            'featured_project_id': featuredProjectId,
+            'name': fileName,
+            'file_path': filePath,
+            'type': isVideo ? 'video' : 'image',
+            'created_at': DateTime.now().toIso8601String(),
+          });
 
-      if (existingFiles != null && existingFiles.isNotEmpty) {
-        await supabase
-            .from('provider_project_files')
-            .update({'featured_project_id': featuredProjectId})
-            .eq('provider_id', providerId)
-            .eq('featured_project_id', 0);
-      }
-
-      CustomFlutterToast.showSuccessToast('Project saved successfully');
-      Get.offAndToNamed(Routes.profile);
-    } catch (e) {
-      Logger().e('Error saving featured project: $e');
-      CustomFlutterToast.showErrorToast('Failed to save project');
-    } finally {
-      isLoading.value = false;
     }
+
+    CustomFlutterToast.showSuccessToast('Project and files saved successfully');
+    Get.offAndToNamed(Routes.profile);
+  } catch (e) {
+    Logger().e('Error saving featured project and files: $e');
+    CustomFlutterToast.showErrorToast('Failed to save project and files');
+  } finally {
+    isLoading.value = false;
   }
+}
+
+
 
   // Add projectTitleController
   final projectTitleController = TextEditingController();
   final RxString selectedCityId = ''.obs;
- Future<void> pickMediaForFeatureProjects({
-  required ImageSource source,
-  required bool isVideo,
-  int? featureProjectId, // Now optional
-  bool fromFeaturedProjectSection = true, // New param
-}) async {
-  try {
-    bool permissionGranted = false;
-
-    // [Permission logic remains unchanged]
-
-    if (isVideo) {
-      final XFile? video = await ImagePicker().pickVideo(source: source);
-      if (video != null) {
-        final File videoFile = File(video.path);
-        final int fileSize = await videoFile.length();
-        if (fileSize > 10 * 1024 * 1024) {
-          CustomFlutterToast.showErrorToast('Video size must be less than 10MB');
-          return;
-        }
-        await _uploadFile(
-          videoFile,
-          isVideo: true,
-          featuredProjectId: featureProjectId,
-          fromFeaturedProjectSection: fromFeaturedProjectSection,
-        );
-      }
-    } else {
-      final List<XFile>? images = source == ImageSource.gallery
-          ? await ImagePicker().pickMultiImage(
-              maxHeight: 1200,
-              maxWidth: 1200,
-              imageQuality: 85,
-            )
-          : [
-              await ImagePicker().pickImage(
-                source: source,
-                maxHeight: 1200,
-                maxWidth: 1200,
-                imageQuality: 85,
-              ),
-            ].whereType<XFile>().toList();
-
-      if (images != null && images.isNotEmpty) {
-        for (var image in images) {
-          final File imageFile = File(image.path);
-          final int fileSize = await imageFile.length();
-          if (fileSize > 1 * 1024 * 1024) {
-            CustomFlutterToast.showErrorToast('Image size must be less than 1MB');
-            continue;
-          }
-          await _uploadFile(
-            imageFile,
-            isVideo: false,
-            featuredProjectId: featureProjectId,
-            fromFeaturedProjectSection: fromFeaturedProjectSection,
-          );
-        }
-      }
-    }
-  } catch (e) {
-    Get.snackbar(
-      'Error',
-      'Failed to pick file: $e',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-  }
-}
-
-
-void showMediaPickerWithProjectId(int featuredProjectId) {
-  showModalBottomSheet(
-    context: Get.context!,
-    builder: (context) => Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Add Photos or Video',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: Icon(Icons.photo_library),
-            title: Text('Choose from Gallery'),
-            onTap: () {
-              Get.back();
-              pickMediaForFeatureProjects(
-                source: ImageSource.gallery,
-                isVideo: false,
-                featureProjectId: featuredProjectId,
-                fromFeaturedProjectSection: true,
-              );
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.videocam),
-            title: Text('Choose Video from Gallery'),
-            onTap: () {
-              Get.back();
-              pickMediaForFeatureProjects(
-                source: ImageSource.gallery,
-                isVideo: true,
-                featureProjectId: featuredProjectId,
-                fromFeaturedProjectSection: true,
-              );
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.camera_alt),
-            title: Text('Take a Photo'),
-            onTap: () {
-              Get.back();
-              pickMediaForFeatureProjects(
-                source: ImageSource.camera,
-                isVideo: false,
-                featureProjectId: featuredProjectId,
-                fromFeaturedProjectSection: true,
-              );
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.videocam),
-            title: Text('Record a Video'),
-            onTap: () {
-              Get.back();
-              pickMediaForFeatureProjects(
-                source: ImageSource.camera,
-                isVideo: true,
-                featureProjectId: featuredProjectId,
-                fromFeaturedProjectSection: true,
-              );
-            },
-          ),
-        ],
-      ),
-    ),
-  );
-}
 }
