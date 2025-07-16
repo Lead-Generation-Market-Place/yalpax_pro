@@ -31,8 +31,12 @@ class _ProfileViewState extends State<ProfileView> {
 
   Future<void> initialize() async {
     try {
-      await controller.userBusinessProfile();
-      await controller.fetchUserImages();
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        jobsController.checkStep();
+        await controller.userBusinessProfile();
+        await controller.fetchUserImages();
+        await controller.fetchFeaturedProjects();
+      });
     } catch (e) {
       Logger().e(e);
     }
@@ -481,7 +485,7 @@ class _ProfileViewState extends State<ProfileView> {
                                       height: 1.5,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 20),
                                   TextButton(
                                     onPressed: () {
                                       // Get.toNamed(Routes.businessProfileLicense);
@@ -544,7 +548,7 @@ class _ProfileViewState extends State<ProfileView> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 20),
 
                                   /// Reactive section
                                   Obx(() {
@@ -873,61 +877,54 @@ class _ProfileViewState extends State<ProfileView> {
                               ),
                             ),
                             const SizedBox(height: 25),
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Featured Projects',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      Spacer(),
-                                      TextButton.icon(
-                                        onPressed: () {
-                                          Get.toNamed(Routes.featuredProjects);
-                                        },
-                                        label: Text('Add project'),
-                                        icon: Icon(
-                                          Icons.add_circle_outline_rounded,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
 
-                                  /// Reactive section
-                                  Obx(() {
-                                    if (!controller
-                                        .isBusinessLicenseExists
-                                        .value) {
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const SizedBox(height: 20),
-                                          Container(
+                            Obx(() {
+                              final projects = controller.featuredProjects;
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Text(
+                                          'Featured Projects',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            Get.toNamed(
+                                              Routes.featuredProjects,
+                                            );
+                                          },
+                                          label: const Text('Add project'),
+                                          icon: const Icon(
+                                            Icons.add_circle_outline_rounded,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    projects.isEmpty
+                                        ? Container(
                                             alignment: Alignment.center,
-                                            padding: EdgeInsets.all(80),
+                                            padding: const EdgeInsets.all(80),
                                             decoration: BoxDecoration(
                                               border: Border.all(width: 0.3),
                                             ),
@@ -937,55 +934,73 @@ class _ProfileViewState extends State<ProfileView> {
                                                   Routes.featuredProjects,
                                                 );
                                               },
-
-                                              icon: Icon(
+                                              icon: const Icon(
                                                 Icons
                                                     .add_circle_outline_rounded,
                                               ),
                                             ),
-                                          ),
-                                        ],
-                                      );
-                                    } else {
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '${controller.selectedLicenseType.value.isNotEmpty ? controller.selectedLicenseType.value : 'N/A'} • ${controller.licenseNumberController.text.isNotEmpty ? controller.licenseNumberController.text : 'N/A'}',
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              color: AppColors.textPrimary,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Container(
-                                            padding: const EdgeInsets.all(10),
-                                            decoration: BoxDecoration(
-                                              color: Colors.grey.shade300,
-                                              borderRadius:
-                                                  BorderRadius.circular(15),
-                                            ),
-                                            child: Obx(() {
-                                              return Text(
-                                                controller
-                                                    .businessLicenseStatus
-                                                    .value,
-                                                style: const TextStyle(
-                                                  fontSize: 15,
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.w600,
+                                          )
+                                        : ListView.builder(
+                                            shrinkWrap: true,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            itemCount: projects.length,
+                                            itemBuilder: (context, index) {
+                                              final project = projects[index];
+                                              return Card(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(
+                                                    16,
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.work_history,
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Text(
+                                                        project['project_title'] ??
+                                                            'No Title',
+                                                      ),
+                                                      const SizedBox(width: 12),
+                                                      Container(
+                                                        margin:
+                                                            const EdgeInsets.only(
+                                                              left: 20,
+                                                            ),
+                                                        child: IconButton(
+                                                          icon: const Icon(
+                                                            Icons.edit,
+                                                          ),
+                                                          onPressed: () {
+                                                            Get.toNamed(
+                                                              Routes
+                                                                  .featuredProjects,
+                                                              arguments: {
+                                                                'project':
+                                                                    project,
+                                                              },
+                                                            );
+                                                          },
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               );
-                                            }),
+                                            },
                                           ),
-                                        ],
-                                      );
-                                    }
-                                  }),
-                                ],
-                              ),
-                            ),
+                                  ],
+                                ),
+                              );
+                            }),
                           ],
                         ),
                       ),
