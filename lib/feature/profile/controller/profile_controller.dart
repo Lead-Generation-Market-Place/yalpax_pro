@@ -111,7 +111,8 @@ class ProfileController extends GetxController {
 
   @override
   void onInit() async {
-    await fetchUserImages();
+    // await fetchUserImages();
+
     // firstBusinessQuestion.addListener(() {
     //   hasTypedFirstBusiness.value = true;
     //   firstBusinessCharCount.value = firstBusinessQuestion.text.length;
@@ -1241,89 +1242,122 @@ class ProfileController extends GetxController {
     }
   }
 
-Future<void> saveFeaturedProjectAndFiles({
-  required List<XFile> selectedFiles,
-  required String projectTitle,
-  required String serviceId,
-  required String cityId,
-}) async {
-  try {
-    isLoading.value = true;
+  Future<void> saveFeaturedProjectAndFiles({
+    required List<XFile> selectedFiles,
+    required String projectTitle,
+    required String serviceId,
+    required String cityId,
+  }) async {
+    try {
+      isLoading.value = true;
 
-    final userId = authService.userId;
+      final userId = authService.userId;
 
-    // Get provider_id
-    final providerData = await supabase
-        .from('service_providers')
-        .select('provider_id')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Get provider_id
+      final providerData = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-    final providerId = providerData?['provider_id'];
-    if (providerId == null) throw Exception('No provider ID found for user.');
+      final providerId = providerData?['provider_id'];
+      if (providerId == null) throw Exception('No provider ID found for user.');
 
-    // Insert featured project
-    final featuredProjectResponse = await supabase
-        .from('featured_projects')
-        .insert({
-          'service_id': int.tryParse(serviceId),
-          'cities_id': cityId.isNotEmpty ? int.tryParse(cityId) : null,
-          'project_title': projectTitle,
-          'service_provider_id': providerId,
-        })
-        .select()
-        .single();
+      // Insert featured project
+      final featuredProjectResponse =
+          await supabase.from('featured_projects').insert({
+            'service_id': int.tryParse(serviceId),
+            'cities_id': int.tryParse(cityId),
+            'project_title': projectTitle,
+            'service_provider_id': providerId,
+          }).select();
 
-    final int featuredProjectId = featuredProjectResponse['id'];
+      final int featuredProjectId = featuredProjectResponse[0]['id'];
 
-    // Upload each file
-    for (final file in selectedFiles) {
-      final extension = path.extension(file.path);
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
-      final filePath = 'private/$userId/$fileName';
-      final fileToUpload = File(file.path);
+      // Upload each file
+      for (final file in selectedFiles) {
+        final extension = path.extension(file.path);
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}$extension';
+        final filePath = 'private/$userId/$fileName';
+        final fileToUpload = File(file.path);
 
-      // Detect file type
-      final isVideo = extension.toLowerCase() == '.mp4' ||
-          extension.toLowerCase() == '.mov' ||
-          extension.toLowerCase() == '.avi';
+        // Detect file type
+        final isVideo =
+            extension.toLowerCase() == '.mp4' ||
+            extension.toLowerCase() == '.mov' ||
+            extension.toLowerCase() == '.avi';
 
-      try {
-        // Upload to Supabase storage
-        await supabase.storage
-            .from('provider-project-files')
-            .upload(filePath, fileToUpload);
-      } catch (e) {
-        throw Exception('Failed to upload file: $fileName — $e');
+        try {
+          // Upload to Supabase storage
+          await supabase.storage
+              .from('provider-project-files')
+              .upload(filePath, fileToUpload);
+        } catch (e) {
+          throw Exception('Failed to upload file: $fileName — $e');
+        }
+
+        // Insert metadata into DB
+        final insertResult = await supabase
+            .from('provider_project_files')
+            .insert({
+              'provider_id': providerId,
+              'featured_project_id': featuredProjectId,
+              'name': fileName,
+              'file_path': filePath,
+              'type': isVideo ? 'video' : 'image',
+              'created_at': DateTime.now().toIso8601String(),
+            });
       }
 
-      // Insert metadata into DB
-      final insertResult = await supabase
-          .from('provider_project_files')
-          .insert({
-            'provider_id': providerId,
-            'featured_project_id': featuredProjectId,
-            'name': fileName,
-            'file_path': filePath,
-            'type': isVideo ? 'video' : 'image',
-            'created_at': DateTime.now().toIso8601String(),
-          });
-
+      CustomFlutterToast.showSuccessToast(
+        'Project and files saved successfully',
+      );
+      Get.offAndToNamed(Routes.profile);
+    } catch (e) {
+      Logger().e('Error saving featured project and files: $e');
+      CustomFlutterToast.showErrorToast('Failed to save project and files');
+    } finally {
+      isLoading.value = false;
     }
-
-    CustomFlutterToast.showSuccessToast('Project and files saved successfully');
-    Get.offAndToNamed(Routes.profile);
-  } catch (e) {
-    Logger().e('Error saving featured project and files: $e');
-    CustomFlutterToast.showErrorToast('Failed to save project and files');
-  } finally {
-    isLoading.value = false;
   }
-}
-
-
 
   // Add projectTitleController
   final projectTitleController = TextEditingController();
   final RxString selectedCityId = ''.obs;
+
+  RxList<Map<String, dynamic>> featuredProjects = <Map<String, dynamic>>[].obs;
+
+  Future<bool> fetchFeaturedProjects() async {
+    try {
+      isLoading.value = true;
+
+      final userId = authService.userId;
+
+      // Get provider_id
+      final providerData = await supabase
+          .from('service_providers')
+          .select('provider_id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      final providerId = providerData?['provider_id'];
+      if (providerId == null) throw Exception('No provider ID found for user.');
+
+      // Fetch featured projects
+      final response = await supabase
+          .from('featured_projects')
+          .select('id, project_title, service_id, cities_id')
+          .eq('service_provider_id', providerId);
+
+      if (response != null) {
+        featuredProjects.value = List<Map<String, dynamic>>.from(response);
+      }
+      return true;
+    } catch (e) {
+      Logger().e('Error fetching featured projects: $e');
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

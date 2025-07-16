@@ -32,6 +32,7 @@ class _AddProjectPageState extends State<AddProjectPage> {
   Future<void> fetchServices() async {
     try {
       await profileController.fetchServices();
+      await profileController.fetchFeaturedProjects();
     } catch (e) {
       Logger().d(e);
     }
