@@ -20,6 +20,9 @@ class _PhotoVideoPreviewerState extends State<PhotoVideoPreviewer> {
   final TextEditingController captionController = TextEditingController();
   bool hasChanges = false;
 
+
+
+
   @override
   void initState() {
     super.initState();
